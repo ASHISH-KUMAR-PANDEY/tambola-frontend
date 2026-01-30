@@ -1,7 +1,7 @@
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
 
 const config: ThemeConfig = {
-  initialColorMode: 'light',
+  initialColorMode: 'dark',
   useSystemColorMode: false,
 };
 
@@ -9,28 +9,63 @@ const theme = extendTheme({
   config,
   colors: {
     brand: {
-      50: '#F5F3FF',
-      100: '#EDE9FE',
-      200: '#DDD6FE',
-      300: '#C4B5FD',
-      400: '#A78BFA',
-      500: '#8B5CF6', // STAGE purple
-      600: '#7C3AED',
-      700: '#6D28D9',
-      800: '#5B21B6',
-      900: '#4C1D95',
+      50: '#E8F5EF',
+      100: '#C4E5D7',
+      200: '#9DD5BE',
+      300: '#76C5A5',
+      400: '#58B892',
+      500: '#258D58', // Stage primary green
+      600: '#1F7A4C',
+      700: '#18653F',
+      800: '#125033',
+      900: '#0A3520',
     },
     accent: {
-      50: '#FFF5F5',
-      100: '#FED7D7',
-      200: '#FEB2B2',
-      300: '#FC8181',
-      400: '#F56565',
-      500: '#E53E3E',
-      600: '#C53030',
-      700: '#9B2C2C',
-      800: '#822727',
-      900: '#63171B',
+      50: '#FCE9EE',
+      100: '#F8C8D2',
+      200: '#F3A3B5',
+      300: '#EE7E98',
+      400: '#EA6282',
+      500: '#E10D37', // Stage red
+      600: '#CD0C32',
+      700: '#B00A2B',
+      800: '#930825',
+      900: '#6A0519',
+    },
+    highlight: {
+      50: '#FDF6E9',
+      100: '#FAE8C8',
+      200: '#F7D9A3',
+      300: '#F4CA7E',
+      400: '#F1BE62',
+      500: '#EFA73F', // Stage mustard/highlight
+      600: '#D99636',
+      700: '#BC822C',
+      800: '#9F6E23',
+      900: '#735015',
+    },
+    grey: {
+      50: '#F5F5F5',
+      100: '#E1E1E1',
+      200: '#CACACA',
+      300: '#B6B6B6',
+      400: '#B2B2B2',
+      500: '#464646',
+      600: '#313131',
+      700: '#1A1A1A',
+      800: '#151515',
+      900: '#000000',
+    },
+  },
+  styles: {
+    global: {
+      body: {
+        bg: 'grey.900',
+        color: 'white',
+      },
+      'h1, h2, h3, h4, h5, h6': {
+        color: 'white',
+      },
     },
   },
   fonts: {

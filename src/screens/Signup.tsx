@@ -16,6 +16,7 @@ import {
   FormErrorMessage,
 } from '@chakra-ui/react';
 import { useAuthStore } from '../stores/authStore';
+import { Logo } from '../components/Logo';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -107,18 +108,21 @@ export default function Signup() {
   return (
     <Container maxW="md" py={{ base: 8, md: 12, lg: 20 }} px={{ base: 4, md: 6 }}>
       <Box
-        bg="white"
+        bg="grey.700"
         p={{ base: 4, md: 6, lg: 8 }}
         borderRadius="lg"
         boxShadow="lg"
         border="1px"
-        borderColor="gray.200"
+        borderColor="grey.600"
       >
         <Stack spacing={{ base: 4, md: 6 }}>
-          <Heading as="h1" size={{ base: 'lg', md: 'xl' }} textAlign="center" color="brand.500">
-            Tambola Game
+          <Box display="flex" justifyContent="center" mb={2}>
+            <Logo height={{ base: '28px', md: '32px' }} />
+          </Box>
+          <Heading as="h1" size={{ base: 'lg', md: 'xl' }} textAlign="center" color="white">
+            TAMBOLA
           </Heading>
-          <Heading as="h2" size={{ base: 'sm', md: 'md' }} textAlign="center" color="gray.600">
+          <Heading as="h2" size={{ base: 'sm', md: 'md' }} textAlign="center" color="grey.600">
             Create your account
           </Heading>
 

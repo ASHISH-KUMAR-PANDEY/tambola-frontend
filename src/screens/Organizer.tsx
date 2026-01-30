@@ -23,6 +23,7 @@ import {
 import { apiService, type Game } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useGameStore } from '../stores/gameStore';
+import { Logo } from '../components/Logo';
 
 export default function Organizer() {
   const navigate = useNavigate();
@@ -191,7 +192,15 @@ export default function Organizer() {
         setCurrentGame(game);
       }
 
-      loadMyGames();
+      toast({
+        title: 'Game Started',
+        description: 'Redirecting to game control...',
+        status: 'success',
+        duration: 2000,
+      });
+
+      // Navigate to GameControl screen
+      navigate(`/game-control/${gameId}`);
     } catch (error) {
       toast({
         title: 'Error',
@@ -267,26 +276,47 @@ export default function Organizer() {
       case 'ACTIVE':
         return 'orange';
       case 'COMPLETED':
-        return 'gray';
+        return 'grey';
       default:
-        return 'gray';
+        return 'grey';
     }
   };
 
+  const upcomingGames = myGames.filter(g => g.status === 'LOBBY');
+
   return (
-    <Container maxW="container.xl" py={{ base: 4, md: 8 }} px={{ base: 2, md: 4 }}>
-      <Stack spacing={{ base: 4, md: 8 }}>
+    <Box w="100vw" minH="100vh" bg="grey.900">
+      <VStack spacing={6} w="100%" align="stretch" p={6}>
         {/* Header */}
-        <Stack direction={{ base: 'column', md: 'row' }} justify="space-between" align={{ base: 'stretch', md: 'center' }} spacing={4}>
-          <Heading size={{ base: 'md', md: 'lg' }} color="brand.500">
-            Organizer Panel
+        <Box position="relative" w="100%" minH="50px" mb={2}>
+          <Box position="absolute" left={0} top={0}>
+            <Logo height="28px" />
+          </Box>
+          <Heading
+            size="xl"
+            color="white"
+            position="absolute"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            whiteSpace="nowrap"
+          >
+            TAMBOLA - Organizer
           </Heading>
-          <Button variant="outline" onClick={() => navigate('/lobby')} size={{ base: 'sm', md: 'md' }}>
+          <Button
+            position="absolute"
+            top={0}
+            right={0}
+            variant="outline"
+            colorScheme="brand"
+            onClick={() => navigate('/lobby')}
+            size="sm"
+          >
             Back to Lobby
           </Button>
-        </Stack>
+        </Box>
 
-        <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={8}>
+        <Grid templateColumns={{ base: '1fr', lg: '500px 1fr' }} gap={8} maxW="1400px" w="100%" mx="auto">
           {/* Left Column - Create Game */}
           <GridItem>
             <Box
@@ -295,59 +325,61 @@ export default function Organizer() {
               borderRadius="lg"
               boxShadow="md"
               border="1px"
-              borderColor="gray.200"
+              borderColor="grey.200"
             >
-              <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 4, md: 6 }}>
+              <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 4, md: 6 }} color="grey.900">
                 Create New Game
               </Heading>
 
               <form onSubmit={handleCreateGame}>
                 <VStack spacing={4} align="stretch">
                   <FormControl>
-                    <FormLabel>Scheduled Time (Optional)</FormLabel>
+                    <FormLabel color="grey.900" fontWeight="semibold">Scheduled Time (Optional)</FormLabel>
                     <Input
                       type="datetime-local"
                       value={scheduledTime}
                       onChange={(e) => setScheduledTime(e.target.value)}
+                      color="grey.900"
+                      borderColor="grey.300"
                     />
                   </FormControl>
 
-                  <Divider />
+                  <Divider borderColor="grey.300" />
 
-                  <Heading size="sm">Prize Configuration</Heading>
+                  <Heading size="sm" color="grey.900">Prize Configuration</Heading>
 
                   <FormControl>
-                    <FormLabel>Early 5</FormLabel>
+                    <FormLabel color="grey.900" fontWeight="semibold">Early 5</FormLabel>
                     <NumberInput value={early5Prize} onChange={(_, val) => setEarly5Prize(val)}>
-                      <NumberInputField />
+                      <NumberInputField color="grey.900" borderColor="grey.300" />
                     </NumberInput>
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel>Top Line</FormLabel>
+                    <FormLabel color="grey.900" fontWeight="semibold">Top Line</FormLabel>
                     <NumberInput value={topLinePrize} onChange={(_, val) => setTopLinePrize(val)}>
-                      <NumberInputField />
+                      <NumberInputField color="grey.900" borderColor="grey.300" />
                     </NumberInput>
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel>Middle Line</FormLabel>
+                    <FormLabel color="grey.900" fontWeight="semibold">Middle Line</FormLabel>
                     <NumberInput value={middleLinePrize} onChange={(_, val) => setMiddleLinePrize(val)}>
-                      <NumberInputField />
+                      <NumberInputField color="grey.900" borderColor="grey.300" />
                     </NumberInput>
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel>Bottom Line</FormLabel>
+                    <FormLabel color="grey.900" fontWeight="semibold">Bottom Line</FormLabel>
                     <NumberInput value={bottomLinePrize} onChange={(_, val) => setBottomLinePrize(val)}>
-                      <NumberInputField />
+                      <NumberInputField color="grey.900" borderColor="grey.300" />
                     </NumberInput>
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel>Full House</FormLabel>
+                    <FormLabel color="grey.900" fontWeight="semibold">Full House</FormLabel>
                     <NumberInput value={fullHousePrize} onChange={(_, val) => setFullHousePrize(val)}>
-                      <NumberInputField />
+                      <NumberInputField color="grey.900" borderColor="grey.300" />
                     </NumberInput>
                   </FormControl>
 
@@ -365,197 +397,82 @@ export default function Organizer() {
             </Box>
           </GridItem>
 
-          {/* Right Column - My Games */}
+          {/* Right Column - Upcoming Games */}
           <GridItem>
-            <Box
-              p={{ base: 4, md: 6 }}
-              bg="white"
-              borderRadius="lg"
-              boxShadow="md"
-              border="1px"
-              borderColor="gray.200"
-            >
-              <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 4, md: 6 }}>
-                My Games
-              </Heading>
+            <VStack align="stretch" spacing={6}>
+              {/* Upcoming Games Section */}
+              <Box
+                p={6}
+                bg="white"
+                borderRadius="lg"
+                boxShadow="md"
+                border="1px"
+                borderColor="grey.200"
+              >
+                <Heading size="md" mb={4}>
+                  Upcoming Games
+                </Heading>
 
-              <VStack align="stretch" spacing={4}>
-                {myGames.length === 0 ? (
-                  <Text color="gray.600" textAlign="center">
-                    No games created yet
-                  </Text>
-                ) : (
-                  myGames.map((game) => (
+                <VStack align="stretch" spacing={4}>
+                  {upcomingGames.length === 0 ? (
+                    <Text color="grey.600" textAlign="center">
+                      No upcoming games
+                    </Text>
+                  ) : (
+                    upcomingGames.map((game) => (
                     <Box
                       key={game.id}
                       p={4}
-                      bg="gray.50"
+                      bg="grey.50"
                       borderRadius="md"
                       border="1px"
-                      borderColor="gray.200"
+                      borderColor="grey.200"
                     >
                       <VStack align="stretch" spacing={3}>
                         <Stack direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'start', sm: 'center' }} spacing={2}>
                           <Badge colorScheme={getStatusColor(game.status)} fontSize={{ base: 'xs', md: 'sm' }}>
                             {game.status}
                           </Badge>
-                          <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
+                          <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.600">
                             Players: {game.playerCount || 0}
                           </Text>
                         </Stack>
 
                         <Stack direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'start', sm: 'center' }} spacing={2}>
-                          <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
+                          <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.600">
                             Full House Prize:
                           </Text>
                           <Text fontWeight="semibold" fontSize={{ base: 'sm', md: 'md' }}>{game.prizes.fullHouse} pts</Text>
                         </Stack>
 
-                        {game.status === 'ACTIVE' && (
-                          <Stack direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'start', sm: 'center' }} spacing={2}>
-                            <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
-                              Numbers Called:
-                            </Text>
-                            <Text fontWeight="semibold" fontSize={{ base: 'sm', md: 'md' }}>{game.calledNumbers?.length || 0}/90</Text>
-                          </Stack>
-                        )}
-
-                        <Stack direction={{ base: 'column', sm: 'row' }} spacing={2}>
-                          {game.status === 'LOBBY' && (
-                            <>
-                              <Button
-                                size="sm"
-                                colorScheme="green"
-                                onClick={() => handleStartGame(game.id)}
-                              >
-                                Start Game
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="red"
-                                variant="outline"
-                                onClick={() => handleDeleteGame(game.id)}
-                              >
-                                Delete
-                              </Button>
-                            </>
-                          )}
-
-                          {game.status === 'ACTIVE' && (
-                            <VStack align="stretch" spacing={3} w="100%">
-                              <HStack>
-                                <NumberInput
-                                  value={numberToCall}
-                                  onChange={(valueString) => setNumberToCall(valueString)}
-                                  min={1}
-                                  max={90}
-                                  flex={1}
-                                >
-                                  <NumberInputField placeholder="Enter number (1-90)" />
-                                </NumberInput>
-                                <Button
-                                  colorScheme="orange"
-                                  onClick={() => handleCallNumber(game.id)}
-                                >
-                                  Call Number
-                                </Button>
-                              </HStack>
-
-                              {/* 90 Number Grid */}
-                              <Box>
-                                <Text fontSize={{ base: '2xs', md: 'xs' }} color="gray.600" mb={2}>
-                                  Called Numbers:
-                                </Text>
-                                <Grid templateColumns={{ base: 'repeat(10, minmax(0, 1fr))', md: 'repeat(10, 1fr)' }} gap={{ base: 0.5, md: 1 }}>
-                                  {Array.from({ length: 90 }, (_, i) => i + 1).map((num) => {
-                                    const isCalled = (calledNumbersByGame[game.id] || []).includes(num) ||
-                                                      game.calledNumbers?.includes(num);
-                                    return (
-                                      <Box
-                                        key={num}
-                                        w={{ base: '24px', sm: '28px', md: '30px' }}
-                                        h={{ base: '24px', sm: '28px', md: '30px' }}
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        bg={isCalled ? 'brand.500' : 'gray.100'}
-                                        color={isCalled ? 'white' : 'gray.600'}
-                                        borderRadius="sm"
-                                        fontSize={{ base: '2xs', sm: 'xs', md: 'xs' }}
-                                        fontWeight={isCalled ? 'bold' : 'normal'}
-                                      >
-                                        {num}
-                                      </Box>
-                                    );
-                                  })}
-                                </Grid>
-                              </Box>
-
-                              {/* Won Categories */}
-                              <Box>
-                                <Text fontSize={{ base: '2xs', md: 'xs' }} color="gray.600" mb={2}>
-                                  Won Categories:
-                                </Text>
-                                <VStack align="stretch" spacing={1}>
-                                  {[
-                                    { key: 'EARLY_5', label: 'Early 5' },
-                                    { key: 'TOP_LINE', label: 'Top Line' },
-                                    { key: 'MIDDLE_LINE', label: 'Middle Line' },
-                                    { key: 'BOTTOM_LINE', label: 'Bottom Line' },
-                                    { key: 'FULL_HOUSE', label: 'Full House' },
-                                  ].map(({ key, label }) => {
-                                    const isWon = wonCategories[game.id]?.has(key);
-                                    return (
-                                      <Stack key={key} direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'start', sm: 'center' }} p={{ base: 1.5, md: 2 }} bg={isWon ? 'green.50' : 'gray.50'} borderRadius="sm" spacing={1}>
-                                        <Text fontSize={{ base: '2xs', md: 'xs' }}>{label}</Text>
-                                        {isWon ? (
-                                          <Badge colorScheme="green" fontSize={{ base: '2xs', md: 'xs' }}>Won ✓</Badge>
-                                        ) : (
-                                          <Badge colorScheme="gray" fontSize={{ base: '2xs', md: 'xs' }}>Pending</Badge>
-                                        )}
-                                      </Stack>
-                                    );
-                                  })}
-                                </VStack>
-                              </Box>
-                            </VStack>
-                          )}
-                        </Stack>
+                        <HStack spacing={2} justify="flex-end">
+                          <Button
+                            size="sm"
+                            colorScheme="brand"
+                            onClick={() => handleStartGame(game.id)}
+                          >
+                            Start Game
+                          </Button>
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => handleDeleteGame(game.id)}
+                          >
+                            Delete
+                          </Button>
+                        </HStack>
                       </VStack>
                     </Box>
                   ))
                 )}
               </VStack>
             </Box>
-
-            {/* Active Game Players */}
-            {currentGame && currentGame.status === 'ACTIVE' && (
-              <Box
-                mt={{ base: 4, md: 6 }}
-                p={{ base: 4, md: 6 }}
-                bg="white"
-                borderRadius="lg"
-                boxShadow="md"
-                border="1px"
-                borderColor="gray.200"
-              >
-                <Heading size={{ base: 'xs', md: 'sm' }} mb={{ base: 2, md: 4 }}>
-                  Active Players ({players.length})
-                </Heading>
-                <Box maxH="200px" overflowY="auto">
-                  <VStack align="stretch" spacing={1}>
-                    {players.map((player) => (
-                      <Text key={player.playerId} fontSize="sm" color="gray.600">
-                        {player.userName}
-                      </Text>
-                    ))}
-                  </VStack>
-                </Box>
-              </Box>
-            )}
-          </GridItem>
-        </Grid>
-      </Stack>
-    </Container>
-  );
+          </VStack>
+        </GridItem>
+      </Grid>
+    </VStack>
+  </Box>
+);
 }
+

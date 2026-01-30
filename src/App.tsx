@@ -7,16 +7,15 @@ import Signup from './screens/Signup';
 import Lobby from './screens/Lobby';
 import Game from './screens/Game';
 import Organizer from './screens/Organizer';
+import GameControl from './screens/GameControl';
 import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
-import { ConnectionStatus } from './components/ConnectionStatus';
 
 export const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <BrowserRouter>
-        <ConnectionStatus />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -42,6 +41,14 @@ export const App = () => {
             element={
               <OrganizerRoute>
                 <Organizer />
+              </OrganizerRoute>
+            }
+          />
+          <Route
+            path="/game-control/:gameId"
+            element={
+              <OrganizerRoute>
+                <GameControl />
               </OrganizerRoute>
             }
           />

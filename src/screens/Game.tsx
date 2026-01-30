@@ -19,6 +19,7 @@ import { wsService } from '../services/websocket.service';
 import { useGameStore } from '../stores/gameStore';
 import { useAuthStore } from '../stores/authStore';
 import { Ticket } from '../components/Ticket';
+import { Logo } from '../components/Logo';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -189,8 +190,8 @@ export default function Game() {
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                bg={isCurrent ? 'orange.400' : isCalled ? 'brand.500' : 'gray.100'}
-                color={isCalled || isCurrent ? 'white' : 'gray.600'}
+                bg={isCurrent ? 'orange.400' : isCalled ? 'brand.500' : 'grey.100'}
+                color={isCalled || isCurrent ? 'white' : 'grey.500'}
                 borderRadius="md"
                 fontWeight={isCurrent ? 'bold' : 'normal'}
                 fontSize={{ base: isCurrent ? 'sm' : 'xs', sm: isCurrent ? 'md' : 'sm', md: isCurrent ? 'lg' : 'md' }}
@@ -222,152 +223,135 @@ export default function Game() {
   }
 
   return (
-    <Container maxW="container.xl" py={{ base: 4, md: 8 }} px={{ base: 2, md: 4 }}>
-      <Stack spacing={{ base: 4, md: 8 }}>
+    <Box w="100vw" minH="100vh" bg="grey.900">
+      <VStack spacing={{ base: 3, md: 4 }} w="100%" align="stretch" p={{ base: 3, md: 4 }}>
         {/* Header */}
-        <Stack direction={{ base: 'column', md: 'row' }} justify="space-between" align={{ base: 'stretch', md: 'center' }} spacing={4}>
-          <VStack align={{ base: 'center', md: 'start' }} spacing={1}>
-            <Heading size={{ base: 'md', md: 'lg' }} color="brand.500">
-              Tambola Game
-            </Heading>
-            <Text color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>Player: {user?.name}</Text>
-          </VStack>
-          <Button variant="outline" colorScheme="red" onClick={handleLeaveGame} size={{ base: 'sm', md: 'md' }}>
-            Leave Game
+        <Box position="relative" w="100%" minH={{ base: '40px', md: '50px' }} mb={{ base: 1, md: 2 }}>
+          <Box position="absolute" left={0} top={0}>
+            <Logo height={{ base: '24px', md: '28px' }} />
+          </Box>
+          <Heading
+            size={{ base: 'lg', md: 'xl' }}
+            color="white"
+            position="absolute"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            whiteSpace="nowrap"
+          >
+            TAMBOLA
+          </Heading>
+          <Button
+            position="absolute"
+            top={0}
+            right={0}
+            variant="outline"
+            colorScheme="red"
+            onClick={handleLeaveGame}
+            size={{ base: 'xs', md: 'sm' }}
+            borderWidth="2px"
+          >
+            Leave
           </Button>
-        </Stack>
+        </Box>
 
+        {/* Your Ticket */}
+        <Box w="100%" maxW="600px" mx="auto">
+          <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
+            Your Ticket (Click numbers to mark)
+          </Heading>
+          <Ticket ticket={ticket} showMarked={true} onNumberClick={handleNumberClick} />
+        </Box>
 
-        {/* Main Content Grid */}
-        <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={8}>
-          {/* Left Column - Your Ticket */}
-          <GridItem>
-            <VStack align="stretch" spacing={6}>
-              <Box>
-                <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 4 }}>
-                  Your Ticket (Click numbers to mark)
-                </Heading>
-                <Ticket ticket={ticket} showMarked={true} onNumberClick={handleNumberClick} />
-              </Box>
+        {/* Stats - Compact */}
+        <HStack spacing={{ base: 4, md: 6 }} justify="center" w="100%">
+          <HStack spacing={2}>
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400">Marked:</Text>
+            <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="brand.500">
+              {getMarkedCount()}/15
+            </Text>
+          </HStack>
+          <HStack spacing={2}>
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400">Called:</Text>
+            <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="brand.500">
+              {calledNumbers.length}/90
+            </Text>
+          </HStack>
+        </HStack>
 
-              {/* Stats */}
-              <Box p={{ base: 3, md: 4 }} bg="gray.50" borderRadius="md">
-                <Grid templateColumns="repeat(2, 1fr)" gap={{ base: 2, md: 4 }}>
-                  <VStack>
-                    <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
-                      Marked
-                    </Text>
-                    <Text fontSize={{ base: 'xl', md: '2xl' }} fontWeight="bold" color="brand.500">
-                      {getMarkedCount()}/15
-                    </Text>
-                  </VStack>
-                  <VStack>
-                    <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
-                      Called
-                    </Text>
-                    <Text fontSize={{ base: 'xl', md: '2xl' }} fontWeight="bold" color="brand.500">
-                      {calledNumbers.length}/90
-                    </Text>
-                  </VStack>
-                </Grid>
-              </Box>
+        {/* Win Categories */}
+        <Box w="100%" maxW="600px" mx="auto">
+          <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
+            Win Categories
+          </Heading>
+          <VStack align="stretch" spacing={{ base: 2, md: 3 }}>
+            {[
+              { key: 'EARLY_5', label: 'Early 5' },
+              { key: 'TOP_LINE', label: 'Top Line', lineIndex: 0 },
+              { key: 'MIDDLE_LINE', label: 'Middle Line', lineIndex: 1 },
+              { key: 'BOTTOM_LINE', label: 'Bottom Line', lineIndex: 2 },
+              { key: 'FULL_HOUSE', label: 'Full House' },
+            ].map(({ key, label, lineIndex }) => {
+              const winner = getCategoryWinner(key);
+              const isComplete =
+                lineIndex !== undefined
+                  ? checkLineComplete(lineIndex)
+                  : key === 'FULL_HOUSE'
+                  ? checkFullHouse()
+                  : getMarkedCount() >= 5;
 
-              {/* Win Categories */}
-              <Box>
-                <Heading size={{ base: 'xs', md: 'sm' }} mb={{ base: 2, md: 3 }}>
-                  Win Categories
-                </Heading>
-                <VStack align="stretch" spacing={2}>
-                  {[
-                    { key: 'EARLY_5', label: 'Early 5' },
-                    { key: 'TOP_LINE', label: 'Top Line', lineIndex: 0 },
-                    { key: 'MIDDLE_LINE', label: 'Middle Line', lineIndex: 1 },
-                    { key: 'BOTTOM_LINE', label: 'Bottom Line', lineIndex: 2 },
-                    { key: 'FULL_HOUSE', label: 'Full House' },
-                  ].map(({ key, label, lineIndex }) => {
-                    const winner = getCategoryWinner(key);
-                    const isComplete =
-                      lineIndex !== undefined
-                        ? checkLineComplete(lineIndex)
-                        : key === 'FULL_HOUSE'
-                        ? checkFullHouse()
-                        : getMarkedCount() >= 5;
+              return (
+                <HStack key={key} justify="space-between" p={{ base: 3, md: 4 }} bg="white" borderRadius="md" border="1px" borderColor="grey.300" spacing={2}>
+                  <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="grey.900">{label}</Text>
+                  {winner ? (
+                    <Badge colorScheme="green" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>Won ✓</Badge>
+                  ) : isComplete ? (
+                    <Button
+                      size={{ base: 'sm', md: 'md' }}
+                      colorScheme="yellow"
+                      onClick={() => handleClaimWin(key)}
+                      px={{ base: 4, md: 6 }}
+                    >
+                      Claim Win
+                    </Button>
+                  ) : (
+                    <Badge colorScheme="grey" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>In Progress</Badge>
+                  )}
+                </HStack>
+              );
+            })}
+          </VStack>
+        </Box>
 
-                    return (
-                      <Stack key={key} direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'stretch', sm: 'center' }} p={{ base: 2, md: 3 }} bg="white" borderRadius="md" border="1px" borderColor="gray.200" spacing={2}>
-                        <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="medium">{label}</Text>
-                        {winner ? (
-                          <Badge colorScheme="green" fontSize="xs" textAlign="center">Won ✓</Badge>
-                        ) : isComplete ? (
-                          <Button
-                            size={{ base: 'xs', md: 'sm' }}
-                            colorScheme="yellow"
-                            onClick={() => handleClaimWin(key)}
-                          >
-                            Claim Win
-                          </Button>
-                        ) : (
-                          <Badge colorScheme="gray" fontSize="xs" textAlign="center">In Progress</Badge>
-                        )}
-                      </Stack>
-                    );
-                  })}
-                </VStack>
-              </Box>
+        {/* Number Board */}
+        <Box w="100%" maxW="600px" mx="auto">
+          <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
+            Number Board
+          </Heading>
+          {renderNumberBoard()}
+        </Box>
+
+        {/* Winners */}
+        {winners.length > 0 && (
+          <Box w="100%" maxW="600px" mx="auto">
+            <Heading size={{ base: 'xs', md: 'sm' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
+              Winners
+            </Heading>
+            <VStack align="stretch" spacing={2}>
+              {winners.map((winner, index) => (
+                <HStack key={index} justify="space-between" p={{ base: 2, md: 3 }} bg="green.50" borderRadius="md" spacing={2}>
+                  <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="semibold" color="green.700">
+                    {winner.category.split('_').join(' ')}
+                  </Text>
+                  <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.600">
+                    {winner.userName || 'Player'}
+                  </Text>
+                </HStack>
+              ))}
             </VStack>
-          </GridItem>
-
-          {/* Right Column - Number Board */}
-          <GridItem>
-            <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
-              <Box>
-                <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 4 }}>
-                  Number Board
-                </Heading>
-                {renderNumberBoard()}
-              </Box>
-
-              <Divider />
-
-              {/* Players & Winners */}
-              <Box>
-                <Heading size={{ base: 'xs', md: 'sm' }} mb={{ base: 2, md: 3 }}>
-                  Players ({players.length})
-                </Heading>
-                <Box maxH="150px" overflowY="auto">
-                  <VStack align="stretch" spacing={1}>
-                    {players.map((player) => (
-                      <Text key={player.playerId} fontSize="sm" color="gray.600">
-                        {player.userName}
-                      </Text>
-                    ))}
-                  </VStack>
-                </Box>
-              </Box>
-
-              {winners.length > 0 && (
-                <Box>
-                  <Heading size={{ base: 'xs', md: 'sm' }} mb={{ base: 2, md: 3 }}>
-                    Winners
-                  </Heading>
-                  <VStack align="stretch" spacing={2}>
-                    {winners.map((winner, index) => (
-                      <Stack key={index} direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'start', sm: 'center' }} p={{ base: 2, md: 2 }} bg="green.50" borderRadius="md" spacing={1}>
-                        <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="semibold" color="green.700">
-                          {winner.category.split('_').join(' ')}
-                        </Text>
-                        <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
-                          {winner.userName || 'Player'}
-                        </Text>
-                      </Stack>
-                    ))}
-                  </VStack>
-                </Box>
-              )}
-            </VStack>
-          </GridItem>
-        </Grid>
-      </Stack>
-    </Container>
+          </Box>
+        )}
+      </VStack>
+    </Box>
   );
 }

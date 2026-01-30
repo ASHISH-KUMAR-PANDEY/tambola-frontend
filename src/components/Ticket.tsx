@@ -72,13 +72,13 @@ export const Ticket = ({ ticket, showMarked = true, compact = false, onNumberCli
                 justifyContent="center"
                 bg={
                   cell === 0
-                    ? 'gray.100'
+                    ? 'grey.100'
                     : showMarked && isNumberMarked(cell)
                     ? 'brand.500'
                     : 'white'
                 }
                 border="1px"
-                borderColor={cell === 0 ? 'gray.200' : 'brand.300'}
+                borderColor={cell === 0 ? 'grey.200' : 'brand.300'}
                 borderRadius="md"
                 fontWeight="bold"
                 fontSize={fontSize}
@@ -87,7 +87,7 @@ export const Ticket = ({ ticket, showMarked = true, compact = false, onNumberCli
                     ? 'transparent'
                     : showMarked && isNumberMarked(cell)
                     ? 'white'
-                    : 'gray.700'
+                    : 'grey.900'
                 }
                 transition="all 0.2s"
                 cursor={cell !== 0 && onNumberClick ? 'pointer' : 'default'}
