@@ -132,13 +132,36 @@ export default function Game() {
           navigate('/lobby');
         }, 3000);
       },
-      onError: (error) => {
+      onGameDeleted: (data) => {
         toast({
-          title: 'Error',
-          description: error.message,
-          status: 'error',
+          title: 'Game Deleted',
+          description: data.message || 'The game has been deleted by the organizer',
+          status: 'warning',
           duration: 5000,
+          isClosable: true,
         });
+        clearGame();
+        navigate('/lobby');
+      },
+      onError: (error) => {
+        // Special handling for game not found (deleted game)
+        if (error.code === 'GAME_NOT_FOUND') {
+          toast({
+            title: 'Game Deleted',
+            description: 'Game has been deleted by the organizer',
+            status: 'warning',
+            duration: 5000,
+          });
+          clearGame();
+          navigate('/lobby');
+        } else {
+          toast({
+            title: 'Error',
+            description: error.message,
+            status: 'error',
+            duration: 5000,
+          });
+        }
       },
     });
 

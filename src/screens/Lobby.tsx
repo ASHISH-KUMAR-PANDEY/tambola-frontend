@@ -64,13 +64,37 @@ export default function Lobby() {
         setJoiningGameId(null);
         navigate(`/game/${data.gameId}`);
       },
-      onError: (error) => {
+      onGameDeleted: (data) => {
         toast({
-          title: 'Error',
-          description: error.message,
-          status: 'error',
+          title: 'Game Deleted',
+          description: data.message || 'A game has been deleted',
+          status: 'info',
           duration: 5000,
         });
+        // Reload games list to reflect the deletion
+        loadGames();
+        loadMyActiveGames();
+      },
+      onError: (error) => {
+        // Special handling for game not found (deleted game)
+        if (error.code === 'GAME_NOT_FOUND') {
+          toast({
+            title: 'Game Deleted',
+            description: 'Game has been deleted by the organizer',
+            status: 'warning',
+            duration: 5000,
+          });
+          // Remove the game from the list
+          loadGames();
+          loadMyActiveGames();
+        } else {
+          toast({
+            title: 'Error',
+            description: error.message,
+            status: 'error',
+            duration: 5000,
+          });
+        }
         setJoiningGameId(null);
       },
     });
@@ -134,6 +158,56 @@ export default function Lobby() {
 
     // Navigate directly to game
     navigate(`/game/${game.id}`);
+  };
+
+  const handleStartGame = async (gameId: string) => {
+    try {
+      // Start the game (update status to ACTIVE)
+      wsService.startGame(gameId);
+      await apiService.updateGameStatus(gameId, 'ACTIVE');
+
+      // Set as current game to track events
+      const game = games.find(g => g.id === gameId);
+      if (game) {
+        setCurrentGame(game);
+      }
+
+      toast({
+        title: 'Game Started',
+        description: 'Redirecting to game control...',
+        status: 'success',
+        duration: 2000,
+      });
+
+      // Navigate to GameControl screen (it will join the game room on mount)
+      navigate(`/game-control/${gameId}`);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to start game',
+        status: 'error',
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleDeleteGame = async (gameId: string) => {
+    try {
+      await apiService.deleteGame(gameId);
+      toast({
+        title: 'Game Deleted',
+        status: 'success',
+        duration: 3000,
+      });
+      loadGames();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete game',
+        status: 'error',
+        duration: 5000,
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -206,8 +280,8 @@ export default function Lobby() {
         {/* Welcome Message */}
         <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">Welcome, {user?.name}!</Text>
 
-        {/* Create Game Button for Organizers */}
-        {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
+        {/* Create Game Button for Organizers - Only show if no games exist */}
+        {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && games.length === 0 && !isLoading && (
           <Button colorScheme="brand" onClick={() => navigate('/organizer')} size={{ base: 'sm', md: 'md' }} alignSelf="center">
             Create Game
           </Button>
@@ -231,16 +305,6 @@ export default function Lobby() {
               <Text color="grey.300" fontSize={{ base: 'md', md: 'lg' }}>
                 No games available at the moment
               </Text>
-              {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
-                <Button
-                  mt={4}
-                  colorScheme="brand"
-                  onClick={() => navigate('/organizer')}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  Create a Game
-                </Button>
-              )}
             </Box>
           ) : (
             <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }} gap={{ base: 3, md: 4 }} w="100%">
@@ -289,22 +353,52 @@ export default function Lobby() {
                         const isMyGame = myActiveGames.some((g) => g.id === game.id);
                         const isCreator = game.createdBy === user?.id;
 
-                        // If user is the creator, show "Manage Game" button
+                        // If user is the creator, show different buttons based on game status
                         if (isCreator) {
-                          return (
-                            <Button
-                              w="100%"
-                              bg="highlight.500"
-                              color="white"
-                              size={{ base: 'md', md: 'lg' }}
-                              h={{ base: '44px', md: '48px' }}
-                              fontSize={{ base: 'sm', md: 'md' }}
-                              onClick={() => navigate('/organizer')}
-                              _hover={{ bg: 'highlight.600' }}
-                            >
-                              Manage Game
-                            </Button>
-                          );
+                          if (game.status === 'LOBBY') {
+                            // Show Start Game and Delete Game buttons
+                            return (
+                              <VStack w="100%" spacing={2}>
+                                <Button
+                                  w="100%"
+                                  colorScheme="brand"
+                                  size={{ base: 'md', md: 'lg' }}
+                                  h={{ base: '44px', md: '48px' }}
+                                  fontSize={{ base: 'sm', md: 'md' }}
+                                  onClick={() => handleStartGame(game.id)}
+                                >
+                                  Start Game
+                                </Button>
+                                <Button
+                                  w="100%"
+                                  colorScheme="red"
+                                  variant="outline"
+                                  size={{ base: 'sm', md: 'md' }}
+                                  h={{ base: '36px', md: '40px' }}
+                                  fontSize={{ base: 'xs', md: 'sm' }}
+                                  onClick={() => handleDeleteGame(game.id)}
+                                >
+                                  Delete Game
+                                </Button>
+                              </VStack>
+                            );
+                          } else if (game.status === 'ACTIVE') {
+                            // Show Manage Game button for active games
+                            return (
+                              <Button
+                                w="100%"
+                                bg="highlight.500"
+                                color="white"
+                                size={{ base: 'md', md: 'lg' }}
+                                h={{ base: '44px', md: '48px' }}
+                                fontSize={{ base: 'sm', md: 'md' }}
+                                onClick={() => navigate(`/game-control/${game.id}`)}
+                                _hover={{ bg: 'highlight.600' }}
+                              >
+                                Manage Game
+                              </Button>
+                            );
+                          }
                         }
 
                         // If user already joined, show "Rejoin Game"

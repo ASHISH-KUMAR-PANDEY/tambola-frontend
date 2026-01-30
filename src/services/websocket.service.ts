@@ -45,6 +45,11 @@ export interface StateSyncPayload {
   winners: Array<{ playerId: string; category: string }>;
 }
 
+export interface GameDeletedPayload {
+  gameId: string;
+  message: string;
+}
+
 export type GameEventHandlers = {
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -56,6 +61,7 @@ export type GameEventHandlers = {
   onWinner?: (data: WinnerPayload) => void;
   onWinClaimed?: (data: WinClaimedPayload) => void;
   onGameCompleted?: (data: GameCompletedPayload) => void;
+  onGameDeleted?: (data: GameDeletedPayload) => void;
   onError?: (data: ErrorPayload) => void;
 };
 
@@ -257,6 +263,11 @@ class WebSocketService {
     this.socket.on('game:completed', (data: GameCompletedPayload) => {
       console.log('Game completed:', data);
       this.handlers.onGameCompleted?.(data);
+    });
+
+    this.socket.on('game:deleted', (data: GameDeletedPayload) => {
+      console.log('Game deleted:', data);
+      this.handlers.onGameDeleted?.(data);
     });
 
     this.socket.on('error', (data: ErrorPayload) => {

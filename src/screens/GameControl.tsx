@@ -51,6 +51,13 @@ export default function GameControl() {
 
     // Setup WebSocket
     wsService.on({
+      onStateSync: (data) => {
+        // Sync game state when organizer joins
+        setCalledNumbers(data.calledNumbers || []);
+        setCurrentNumber(data.currentNumber || null);
+        setPlayers(data.players || []);
+        setWinners(data.winners || []);
+      },
       onPlayerJoined: (data) => {
         setPlayers((prev) => [...prev, { playerId: data.playerId, userName: data.userName }]);
         toast({
@@ -94,6 +101,11 @@ export default function GameControl() {
       setGame(gameData);
       setCalledNumbers(gameData.calledNumbers || []);
       setCurrentNumber(gameData.currentNumber || null);
+
+      // Load existing winners
+      if (gameData.winners && gameData.winners.length > 0) {
+        setWinners(gameData.winners);
+      }
     } catch (error) {
       console.error('Failed to load game:', error);
       toast({
@@ -151,11 +163,11 @@ export default function GameControl() {
       await apiService.updateGameStatus(gameId!, 'COMPLETED');
       toast({
         title: 'Game Completed',
-        description: 'Game has been marked as completed',
+        description: 'Returning to lobby...',
         status: 'success',
-        duration: 3000,
+        duration: 2000,
       });
-      navigate('/organizer');
+      navigate('/lobby');
     } catch (error) {
       toast({
         title: 'Error',

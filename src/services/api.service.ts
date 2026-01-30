@@ -94,9 +94,13 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Only set Content-Type for requests with a body
+    if (options.body) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     const token = this.getToken();
     if (token) {
@@ -113,6 +117,11 @@ class ApiService {
         message: 'An error occurred',
       }));
       throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return undefined as T;
     }
 
     return response.json();
