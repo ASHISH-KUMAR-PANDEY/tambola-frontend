@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tambola Test</title>
+</head>
+<body>
+    <h1>Tambola Frontend Test</h1>
+    <p>If you see this, the server is working!</p>
+    <script>
+        console.log('Test page loaded successfully');
+
+        // Test fetch to backend
+        fetch('http://localhost:3000')
+            .then(r => r.text())
+            .then(data => {
+                console.log('Backend response:', data);
+                document.body.innerHTML += '<p style="color: green;">✅ Backend is responding!</p>';
+            })
+            .catch(err => {
+                console.error('Backend error:', err);
+                document.body.innerHTML += '<p style="color: red;">❌ Backend error: ' + err.message + '</p>';
+            });
+    </script>
+</body>
+</html>
