@@ -15,13 +15,16 @@ import {
   HStack,
   VStack,
   useToast,
+  Icon,
 } from '@chakra-ui/react';
+import { BellIcon } from '@chakra-ui/icons';
 import { apiService, type Game } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
 import { useGameStore } from '../stores/gameStore';
 import { useUIStore } from '../stores/uiStore';
 import { Logo } from '../components/Logo';
+import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -34,6 +37,11 @@ export default function Lobby() {
   const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
+  const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
+    // Load reminded games from localStorage
+    const saved = localStorage.getItem('remindedGames');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
 
   useEffect(() => {
     loadGames();
@@ -215,6 +223,40 @@ export default function Lobby() {
     navigate('/login');
   };
 
+  const handleRemindMe = (gameId: string) => {
+    const updated = new Set(remindedGames);
+    if (updated.has(gameId)) {
+      updated.delete(gameId);
+      toast({
+        title: 'Reminder Removed',
+        description: 'You will no longer be reminded about this game',
+        status: 'info',
+        duration: 3000,
+      });
+    } else {
+      updated.add(gameId);
+      toast({
+        title: 'Reminder Set',
+        description: 'We will remind you when the game is about to start',
+        status: 'success',
+        duration: 3000,
+        icon: <BellIcon />,
+      });
+    }
+    setRemindedGames(updated);
+    localStorage.setItem('remindedGames', JSON.stringify(Array.from(updated)));
+  };
+
+  const canJoinGame = (scheduledTime: string): boolean => {
+    const now = new Date().getTime();
+    const scheduled = new Date(scheduledTime).getTime();
+    const timeRemaining = scheduled - now;
+    const thirtyMinutesInMs = 30 * 60 * 1000;
+
+    // Can join if within 30 minutes or time has passed
+    return timeRemaining <= thirtyMinutesInMs;
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -235,6 +277,30 @@ export default function Lobby() {
       default:
         return 'grey';
     }
+  };
+
+  // GameCountdown Component
+  const GameCountdown = ({ scheduledTime }: { scheduledTime: string }) => {
+    const timeRemaining = useCountdown(scheduledTime);
+    const countdownText = formatCountdown(timeRemaining);
+
+    return (
+      <HStack
+        justify="center"
+        w="100%"
+        p={3}
+        bg={timeRemaining.isExpired ? 'orange.500' : 'brand.500'}
+        borderRadius="md"
+        spacing={2}
+      >
+        <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="bold" color="white">
+          ⏱️
+        </Text>
+        <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="white">
+          {timeRemaining.isExpired ? 'Starting Soon' : `Starts in: ${countdownText}`}
+        </Text>
+      </HStack>
+    );
   };
 
   if (isLoading) {
@@ -349,6 +415,9 @@ export default function Lobby() {
                         </HStack>
                       </VStack>
 
+                      {/* Countdown Timer */}
+                      <GameCountdown scheduledTime={game.scheduledTime} />
+
                       {(() => {
                         const isMyGame = myActiveGames.some((g) => g.id === game.id);
                         const isCreator = game.createdBy === user?.id;
@@ -419,20 +488,59 @@ export default function Lobby() {
                           );
                         }
 
-                        // Otherwise show "Join Game" or "Watch Game"
+                        // For regular players - check if within 30 minutes
+                        const canJoin = canJoinGame(game.scheduledTime);
+                        const isReminded = remindedGames.has(game.id);
+
+                        // If active game, always show Join/Watch
+                        if (game.status === 'ACTIVE') {
+                          return (
+                            <Button
+                              w="100%"
+                              colorScheme="brand"
+                              size={{ base: 'md', md: 'lg' }}
+                              h={{ base: '44px', md: '48px' }}
+                              fontSize={{ base: 'sm', md: 'md' }}
+                              isLoading={joiningGameId === game.id}
+                              loadingText="Joining..."
+                              onClick={() => handleJoinGame(game)}
+                            >
+                              Watch Game
+                            </Button>
+                          );
+                        }
+
+                        // If lobby game and can join (within 30 mins or expired)
+                        if (canJoin) {
+                          return (
+                            <Button
+                              w="100%"
+                              colorScheme="brand"
+                              size={{ base: 'md', md: 'lg' }}
+                              h={{ base: '44px', md: '48px' }}
+                              fontSize={{ base: 'sm', md: 'md' }}
+                              isLoading={joiningGameId === game.id}
+                              loadingText="Joining..."
+                              onClick={() => handleJoinGame(game)}
+                            >
+                              Join Game
+                            </Button>
+                          );
+                        }
+
+                        // If lobby game but NOT within 30 mins - show Remind Me
                         return (
                           <Button
                             w="100%"
-                            colorScheme="brand"
+                            colorScheme={isReminded ? 'green' : 'yellow'}
+                            variant={isReminded ? 'solid' : 'outline'}
                             size={{ base: 'md', md: 'lg' }}
                             h={{ base: '44px', md: '48px' }}
                             fontSize={{ base: 'sm', md: 'md' }}
-                            isLoading={joiningGameId === game.id}
-                            loadingText="Joining..."
-                            isDisabled={game.status !== 'LOBBY' && game.status !== 'ACTIVE'}
-                            onClick={() => handleJoinGame(game)}
+                            leftIcon={<BellIcon />}
+                            onClick={() => handleRemindMe(game.id)}
                           >
-                            {game.status === 'ACTIVE' ? 'Watch Game' : 'Join Game'}
+                            {isReminded ? 'Reminder Set' : 'Remind Me'}
                           </Button>
                         );
                       })()}
