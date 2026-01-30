@@ -41,6 +41,9 @@ export interface Game {
   currentNumber?: number;
   playerCount?: number;
   winnerCount?: number;
+  ticket?: number[][];
+  playerId?: string;
+  markedNumbers?: number[];
 }
 
 export interface CreateGameRequest {
@@ -199,6 +202,14 @@ class ApiService {
     await this.request<void>(`/api/v1/games/${gameId}`, {
       method: 'DELETE',
     });
+  }
+
+  /**
+   * Get player's active games (can rejoin)
+   */
+  async getMyActiveGames(): Promise<Game[]> {
+    const response = await this.request<{ games: Game[] }>('/api/v1/games/my-active');
+    return response.games;
   }
 }
 

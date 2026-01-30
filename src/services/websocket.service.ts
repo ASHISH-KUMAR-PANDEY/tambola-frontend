@@ -38,10 +38,18 @@ export interface ErrorPayload {
   message: string;
 }
 
+export interface StateSyncPayload {
+  calledNumbers: number[];
+  currentNumber?: number;
+  players: Array<{ playerId: string; userName: string }>;
+  winners: Array<{ playerId: string; category: string }>;
+}
+
 export type GameEventHandlers = {
   onConnected?: () => void;
   onDisconnected?: () => void;
   onGameJoined?: (data: GameJoinedPayload) => void;
+  onStateSync?: (data: StateSyncPayload) => void;
   onPlayerJoined?: (data: PlayerJoinedPayload) => void;
   onGameStarted?: (data: { gameId: string }) => void;
   onNumberCalled?: (data: NumberCalledPayload) => void;
@@ -153,6 +161,17 @@ class WebSocketService {
   }
 
   /**
+   * Mark a number manually (player only)
+   */
+  markNumber(gameId: string, playerId: string, number: number): void {
+    if (!this.socket?.connected) {
+      console.error('WebSocket not connected');
+      return;
+    }
+    this.socket.emit('game:markNumber', { gameId, playerId, number });
+  }
+
+  /**
    * Claim a win (player only)
    */
   claimWin(gameId: string, category: string): void {
@@ -203,6 +222,11 @@ class WebSocketService {
     this.socket.on('game:joined', (data: GameJoinedPayload) => {
       console.log('Game joined:', data);
       this.handlers.onGameJoined?.(data);
+    });
+
+    this.socket.on('game:stateSync', (data: StateSyncPayload) => {
+      console.log('Game state sync:', data);
+      this.handlers.onStateSync?.(data);
     });
 
     this.socket.on('game:playerJoined', (data: PlayerJoinedPayload) => {

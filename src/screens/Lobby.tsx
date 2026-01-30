@@ -25,16 +25,18 @@ import { useUIStore } from '../stores/uiStore';
 export default function Lobby() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { user, logout, loadUser } = useAuthStore();
-  const { setCurrentGame, setTicket } = useGameStore();
+  const { user, logout } = useAuthStore();
+  const { setCurrentGame, setTicket, restoreGameState } = useGameStore();
   const { setConnected } = useUIStore();
 
   const [games, setGames] = useState<Game[]>([]);
+  const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGames();
+    loadMyActiveGames();
 
     // Setup WebSocket event handlers
     wsService.on({
@@ -98,10 +100,39 @@ export default function Lobby() {
     }
   };
 
+  const loadMyActiveGames = async () => {
+    try {
+      const activeGames = await apiService.getMyActiveGames();
+      setMyActiveGames(activeGames);
+    } catch (error) {
+      console.error('Failed to load active games:', error);
+      setMyActiveGames([]);
+    }
+  };
+
   const handleJoinGame = async (game: Game) => {
     setJoiningGameId(game.id);
     setCurrentGame(game);
     wsService.joinGame(game.id);
+  };
+
+  const handleRejoinGame = async (game: Game) => {
+    setJoiningGameId(game.id);
+    setCurrentGame(game);
+
+    // Restore full game state from myActiveGames
+    const activeGame = myActiveGames.find((g) => g.id === game.id);
+    if (activeGame && activeGame.ticket && activeGame.playerId) {
+      restoreGameState(
+        activeGame.playerId,
+        activeGame.ticket,
+        activeGame.markedNumbers || [],
+        activeGame.calledNumbers || []
+      );
+    }
+
+    // Navigate directly to game
+    navigate(`/game/${game.id}`);
   };
 
   const handleLogout = () => {
@@ -232,17 +263,38 @@ export default function Lobby() {
                         </Stack>
                       </VStack>
 
-                      <Button
-                        w="100%"
-                        colorScheme="brand"
-                        size={{ base: 'md', md: 'lg' }}
-                        isLoading={joiningGameId === game.id}
-                        loadingText="Joining..."
-                        isDisabled={game.status !== 'LOBBY' && game.status !== 'ACTIVE'}
-                        onClick={() => handleJoinGame(game)}
-                      >
-                        {game.status === 'ACTIVE' ? 'Watch Game' : 'Join Game'}
-                      </Button>
+                      {(() => {
+                        const isMyGame = myActiveGames.some((g) => g.id === game.id);
+
+                        if (isMyGame) {
+                          return (
+                            <Button
+                              w="100%"
+                              colorScheme="green"
+                              size={{ base: 'md', md: 'lg' }}
+                              isLoading={joiningGameId === game.id}
+                              loadingText="Rejoining..."
+                              onClick={() => handleRejoinGame(game)}
+                            >
+                              Rejoin Game
+                            </Button>
+                          );
+                        }
+
+                        return (
+                          <Button
+                            w="100%"
+                            colorScheme="brand"
+                            size={{ base: 'md', md: 'lg' }}
+                            isLoading={joiningGameId === game.id}
+                            loadingText="Joining..."
+                            isDisabled={game.status !== 'LOBBY' && game.status !== 'ACTIVE'}
+                            onClick={() => handleJoinGame(game)}
+                          >
+                            {game.status === 'ACTIVE' ? 'Watch Game' : 'Join Game'}
+                          </Button>
+                        );
+                      })()}
                     </VStack>
                   </Box>
                 </GridItem>

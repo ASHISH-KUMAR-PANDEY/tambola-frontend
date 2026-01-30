@@ -36,6 +36,7 @@ export default function Game() {
     addCalledNumber,
     addPlayer,
     addWinner,
+    syncGameState,
     getMarkedCount,
     checkLineComplete,
     checkFullHouse,
@@ -48,11 +49,20 @@ export default function Game() {
       return;
     }
 
-    // Join the game room
+    // Join the game room (backend will return existing ticket if already joined)
     wsService.joinGame(gameId);
 
     // Setup WebSocket event handlers
     wsService.on({
+      onStateSync: (data) => {
+        // Sync game state when rejoining
+        syncGameState(
+          data.calledNumbers,
+          data.currentNumber || null,
+          data.players,
+          data.winners as any
+        );
+      },
       onPlayerJoined: (data) => {
         addPlayer({ playerId: data.playerId, userName: data.userName });
         toast({
@@ -153,8 +163,10 @@ export default function Game() {
   };
 
   const handleNumberClick = (number: number) => {
-    // Number successfully marked
-    console.log('Number marked:', number);
+    // Number successfully marked in frontend state, now sync to backend
+    if (gameId && playerId) {
+      wsService.markNumber(gameId, playerId, number);
+    }
   };
 
   const getCategoryWinner = (category: string) => {

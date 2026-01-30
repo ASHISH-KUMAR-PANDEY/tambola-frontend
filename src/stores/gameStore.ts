@@ -27,6 +27,8 @@ interface GameState {
   // Actions
   setCurrentGame: (game: Game | null) => void;
   setTicket: (playerId: string, ticket: number[][]) => void;
+  restoreGameState: (playerId: string, ticket: number[][], markedNumbers: number[], calledNumbers: number[]) => void;
+  syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[]) => void;
   addCalledNumber: (number: number) => void;
   addPlayer: (player: Player) => void;
   addWinner: (winner: Winner) => void;
@@ -54,6 +56,29 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setTicket: (playerId: string, ticket: number[][]) => {
     set({ playerId, ticket, markedNumbers: new Set() });
+  },
+
+  restoreGameState: (playerId: string, ticket: number[][], markedNumbers: number[], calledNumbers: number[]) => {
+    // Only restore manually marked numbers - don't auto-mark called numbers
+    // User needs to manually mark numbers on their ticket
+    set({
+      playerId,
+      ticket,
+      markedNumbers: new Set(markedNumbers),
+      calledNumbers,
+      currentNumber: calledNumbers.length > 0 ? calledNumbers[calledNumbers.length - 1] : null,
+    });
+  },
+
+  syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[]) => {
+    // Sync game state when rejoining (called numbers, players, winners)
+    // Don't override ticket or markedNumbers
+    set({
+      calledNumbers,
+      currentNumber,
+      players,
+      winners,
+    });
   },
 
   addCalledNumber: (number: number) => {
