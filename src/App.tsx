@@ -9,6 +9,7 @@ import Game from './screens/Game';
 import Organizer from './screens/Organizer';
 import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { OrganizerRoute } from './components/OrganizerRoute';
 import { ConnectionStatus } from './components/ConnectionStatus';
 
 export const App = () => {
@@ -39,9 +40,9 @@ export const App = () => {
           <Route
             path="/organizer"
             element={
-              <ProtectedRoute>
+              <OrganizerRoute>
                 <Organizer />
-              </ProtectedRoute>
+              </OrganizerRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

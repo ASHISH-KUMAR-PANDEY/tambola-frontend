@@ -25,7 +25,7 @@ import { useUIStore } from '../stores/uiStore';
 export default function Lobby() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { user, logout } = useAuthStore();
+  const { user, logout, loadUser } = useAuthStore();
   const { setCurrentGame, setTicket } = useGameStore();
   const { setConnected } = useUIStore();
 
@@ -151,9 +151,11 @@ export default function Lobby() {
             <Text color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>Welcome, {user?.name}!</Text>
           </VStack>
           <Stack direction={{ base: 'column', sm: 'row' }} spacing={{ base: 2, md: 4 }}>
-            <Button colorScheme="brand" onClick={() => navigate('/organizer')} size={{ base: 'sm', md: 'md' }}>
-              Create Game
-            </Button>
+            {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
+              <Button colorScheme="brand" onClick={() => navigate('/organizer')} size={{ base: 'sm', md: 'md' }}>
+                Create Game
+              </Button>
+            )}
             <Button variant="outline" onClick={handleLogout} size={{ base: 'sm', md: 'md' }}>
               Logout
             </Button>
@@ -178,14 +180,16 @@ export default function Lobby() {
               <Text color="gray.600" fontSize={{ base: 'md', md: 'lg' }}>
                 No games available at the moment
               </Text>
-              <Button
-                mt={4}
-                colorScheme="brand"
-                onClick={() => navigate('/organizer')}
-                size={{ base: 'sm', md: 'md' }}
-              >
-                Create a Game
-              </Button>
+              {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
+                <Button
+                  mt={4}
+                  colorScheme="brand"
+                  onClick={() => navigate('/organizer')}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  Create a Game
+                </Button>
+              )}
             </Box>
           ) : (
             <Grid templateColumns={{ base: '1fr', sm: 'repeat(auto-fill, minmax(280px, 1fr))' }} gap={{ base: 4, md: 6 }}>

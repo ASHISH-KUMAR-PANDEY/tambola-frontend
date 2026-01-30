@@ -4,6 +4,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  role?: 'PLAYER' | 'ORGANIZER';
 }
 
 export interface SignupRequest {
@@ -142,7 +143,8 @@ class ApiService {
    * Get current user
    */
   async getCurrentUser(): Promise<User> {
-    return this.request<User>('/api/v1/auth/me');
+    const response = await this.request<{ user: User }>('/api/v1/auth/me');
+    return response.user;
   }
 
   /**
