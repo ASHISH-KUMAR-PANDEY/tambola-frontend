@@ -122,7 +122,7 @@ export default function Game() {
       onGameCompleted: () => {
         toast({
           title: 'Game Completed',
-          description: 'Thank you for playing!',
+          description: 'The organizer has ended the game. Thank you for playing!',
           status: 'info',
           duration: 5000,
           isClosable: true,
