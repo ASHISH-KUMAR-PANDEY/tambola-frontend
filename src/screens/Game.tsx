@@ -23,13 +23,16 @@ import { useAuthStore } from '../stores/authStore';
 import { Ticket } from '../components/Ticket';
 import { Logo } from '../components/Logo';
 import { GameSummaryModal } from '../components/GameSummaryModal';
+import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuthStore();
+  const { trackEvent } = useTambolaTracking();
   const [showSummary, setShowSummary] = useState(false);
+  const [gameStartTime] = useState<number>(Date.now());
 
   const {
     playerId,
@@ -116,6 +119,19 @@ export default function Game() {
             category: data.category as any,
           });
 
+          // Track prize won event
+          trackEvent({
+            eventName: 'prize_won',
+            properties: {
+              game_id: gameId,
+              player_id: playerId,
+              user_name: user?.name || 'Anonymous',
+              category: data.category,
+              numbers_called_to_win: calledNumbers.length,
+              total_players: players.length,
+            },
+          });
+
           toast({
             title: 'बधाई हो!',
             description: data.message,
@@ -126,6 +142,22 @@ export default function Game() {
         }
       },
       onGameCompleted: () => {
+        // Track game completed by user
+        const gameDurationMinutes = Math.floor((Date.now() - gameStartTime) / (60 * 1000));
+        const didWin = winners.some((w) => w.playerId === playerId);
+
+        trackEvent({
+          eventName: 'game_completed_by_user',
+          properties: {
+            game_id: gameId,
+            player_id: playerId,
+            user_name: user?.name || 'Anonymous',
+            game_duration_minutes: gameDurationMinutes,
+            marked_numbers_final: getMarkedCount(),
+            did_win: didWin,
+          },
+        });
+
         toast({
           title: 'गेम पूर्ण हुआ',
           description: 'आयोजक ने गेम समाप्त कर दिया है। खेलने के लिए धन्यवाद!',

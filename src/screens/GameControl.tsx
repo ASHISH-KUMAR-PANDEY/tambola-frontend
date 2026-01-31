@@ -20,6 +20,7 @@ import { apiService } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { Logo } from '../components/Logo';
 import { GameSummaryModal } from '../components/GameSummaryModal';
+import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
 interface Winner {
   playerId: string;
@@ -31,6 +32,7 @@ export default function GameControl() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  const { trackEvent } = useTambolaTracking();
 
   const [game, setGame] = useState<any>(null);
   const [numberToCall, setNumberToCall] = useState('');
@@ -39,6 +41,7 @@ export default function GameControl() {
   const [winners, setWinners] = useState<Winner[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [gameStartTime, setGameStartTime] = useState<number | null>(null);
 
   useEffect(() => {
     if (!gameId) {
@@ -104,6 +107,11 @@ export default function GameControl() {
       setCalledNumbers(gameData.calledNumbers || []);
       setCurrentNumber(gameData.currentNumber || null);
 
+      // Set game start time if game is active
+      if (gameData.status === 'ACTIVE' && !gameStartTime) {
+        setGameStartTime(Date.now());
+      }
+
       // Load existing winners
       if (gameData.winners && gameData.winners.length > 0) {
         setWinners(gameData.winners);
@@ -163,6 +171,40 @@ export default function GameControl() {
   const handleCompleteGame = async () => {
     try {
       await apiService.updateGameStatus(gameId!, 'COMPLETED');
+
+      // Track game summary event
+      const completionTime = Date.now();
+      const totalDurationMinutes = gameStartTime
+        ? Math.floor((completionTime - gameStartTime) / (60 * 1000))
+        : 0;
+
+      // Calculate completion rate
+      const totalPlayersJoined = players.length;
+      const totalPlayersCompleted = totalPlayersJoined; // All players who joined are counted as completed
+      const completionRatePercentage = totalPlayersJoined > 0
+        ? Math.round((totalPlayersCompleted / totalPlayersJoined) * 100)
+        : 0;
+
+      trackEvent({
+        eventName: 'game_summary',
+        properties: {
+          game_id: gameId,
+          scheduled_time: game?.scheduledTime || new Date().toISOString(),
+          actual_start_time: gameStartTime ? new Date(gameStartTime).toISOString() : new Date().toISOString(),
+          completion_time: new Date(completionTime).toISOString(),
+          total_duration_minutes: totalDurationMinutes,
+          total_players_joined: totalPlayersJoined,
+          total_players_completed: totalPlayersCompleted,
+          completion_rate_percentage: completionRatePercentage,
+          winners: winners.map((w) => ({
+            player_id: w.playerId,
+            user_name: w.userName,
+            category: w.category,
+          })),
+          total_prizes_distributed: winners.length,
+        },
+      });
+
       toast({
         title: 'Game Completed',
         status: 'success',

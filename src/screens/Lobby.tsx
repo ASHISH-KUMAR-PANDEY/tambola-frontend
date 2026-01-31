@@ -27,6 +27,7 @@ import { useGameStore } from '../stores/gameStore';
 import { useUIStore } from '../stores/uiStore';
 import { Logo } from '../components/Logo';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
+import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function Lobby() {
   const { user, logout } = useAuthStore();
   const { setCurrentGame, setTicket, restoreGameState } = useGameStore();
   const { setConnected } = useUIStore();
+  const { trackEvent } = useTambolaTracking();
 
   const [games, setGames] = useState<Game[]>([]);
   const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);
@@ -76,6 +78,20 @@ export default function Lobby() {
       onGameJoined: (data) => {
         setTicket(data.playerId, data.ticket, data.gameId);
         setJoiningGameId(null);
+
+        // Track game joined event
+        const game = games.find((g) => g.id === data.gameId);
+        trackEvent({
+          eventName: 'game_joined',
+          properties: {
+            game_id: data.gameId,
+            player_id: data.playerId,
+            user_name: user?.name || 'Anonymous',
+            scheduled_time: game?.scheduledTime || new Date().toISOString(),
+            final_player_count: game?.playerCount || 0,
+          },
+        });
+
         navigate(`/game/${data.gameId}`);
       },
       onGameDeleted: (data) => {
@@ -249,6 +265,8 @@ export default function Lobby() {
 
   const handleRemindMe = (gameId: string) => {
     const updated = new Set(remindedGames);
+    const game = games.find((g) => g.id === gameId);
+
     if (updated.has(gameId)) {
       updated.delete(gameId);
       toast({
@@ -266,6 +284,24 @@ export default function Lobby() {
         duration: 3000,
         icon: <BellIcon />,
       });
+
+      // Track game interest shown
+      if (game) {
+        const now = new Date().getTime();
+        const scheduled = new Date(game.scheduledTime).getTime();
+        const minutesUntilStart = Math.max(0, Math.floor((scheduled - now) / (60 * 1000)));
+
+        trackEvent({
+          eventName: 'game_interest_shown',
+          properties: {
+            game_id: gameId,
+            scheduled_time: game.scheduledTime,
+            minutes_until_start: minutesUntilStart,
+            current_player_count: game.playerCount || 0,
+            full_house_prize: game.prizes.fullHouse || 0,
+          },
+        });
+      }
     }
     setRemindedGames(updated);
     localStorage.setItem('remindedGames', JSON.stringify(Array.from(updated)));

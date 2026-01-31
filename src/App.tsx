@@ -13,12 +13,14 @@ import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
 import { InactivityHandler } from './components/InactivityHandler';
+import { InitializeTambolaAnalytics } from './components/InitializeTambolaAnalytics';
 
 export const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <BrowserRouter>
         <InactivityHandler />
+        <InitializeTambolaAnalytics />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
