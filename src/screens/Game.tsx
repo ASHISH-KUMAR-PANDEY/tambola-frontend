@@ -14,6 +14,8 @@ import {
   Badge,
   useToast,
   Divider,
+  Center,
+  Spinner,
 } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
 import { useGameStore } from '../stores/gameStore';
@@ -30,6 +32,7 @@ export default function Game() {
   const {
     playerId,
     ticket,
+    currentGameId,
     currentNumber,
     calledNumbers,
     winners,
@@ -46,11 +49,12 @@ export default function Game() {
 
   useEffect(() => {
     if (!gameId) {
-      navigate('/lobby');
+      navigate('/lobby', { replace: true });
       return;
     }
 
-    // Join the game room (backend will return existing ticket if already joined)
+    // Always join/rejoin the game room when component mounts
+    // Backend will return existing ticket if already joined
     wsService.joinGame(gameId);
 
     // Setup WebSocket event handlers
@@ -232,16 +236,12 @@ export default function Game() {
     );
   };
 
+  // Show loading while waiting for ticket
   if (!ticket) {
     return (
-      <Container maxW="container.xl" py={8}>
-        <VStack spacing={4}>
-          <Text>कोई टिकट नहीं मिला। कृपया लॉबी से गेम में शामिल हों।</Text>
-          <Button colorScheme="brand" onClick={() => navigate('/lobby')}>
-            लॉबी पर जाएं
-          </Button>
-        </VStack>
-      </Container>
+      <Center h="100vh" bg="grey.900">
+        <Spinner size="xl" color="brand.500" thickness="4px" />
+      </Center>
     );
   }
 

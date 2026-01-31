@@ -74,7 +74,7 @@ export default function Lobby() {
         });
       },
       onGameJoined: (data) => {
-        setTicket(data.playerId, data.ticket);
+        setTicket(data.playerId, data.ticket, data.gameId);
         setJoiningGameId(null);
         navigate(`/game/${data.gameId}`);
       },
