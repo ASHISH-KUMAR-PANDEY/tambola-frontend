@@ -269,6 +269,35 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  /**
+   * Set YouTube embed
+   */
+  async setYouTubeEmbed(videoUrl: string): Promise<YouTubeEmbed> {
+    return this.request<YouTubeEmbed>('/api/v1/youtube-embed', {
+      method: 'POST',
+      body: JSON.stringify({ videoUrl }),
+    });
+  }
+
+  /**
+   * Get current YouTube embed
+   */
+  async getCurrentYouTubeEmbed(): Promise<YouTubeEmbed | null> {
+    const response = await this.request<{ embed: YouTubeEmbed | null }>(
+      '/api/v1/youtube-embed'
+    );
+    return response.embed;
+  }
+
+  /**
+   * Delete YouTube embed
+   */
+  async deleteYouTubeEmbed(): Promise<void> {
+    await this.request<void>('/api/v1/youtube-embed', {
+      method: 'DELETE',
+    });
+  }
 }
 
 export interface PromotionalBanner {
@@ -276,6 +305,13 @@ export interface PromotionalBanner {
   imageUrl: string;
   width: number;
   height: number;
+  createdAt: string;
+}
+
+export interface YouTubeEmbed {
+  id: string;
+  videoUrl: string;
+  embedId: string;
   createdAt: string;
 }
 

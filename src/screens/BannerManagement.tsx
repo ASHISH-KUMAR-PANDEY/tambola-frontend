@@ -6,16 +6,19 @@ import {
   Heading,
   VStack,
 } from '@chakra-ui/react';
-import { apiService, type PromotionalBanner } from '../services/api.service';
+import { apiService, type PromotionalBanner, type YouTubeEmbed } from '../services/api.service';
 import { Logo } from '../components/Logo';
 import { PromotionalBannerUpload } from '../components/PromotionalBannerUpload';
+import { YouTubeEmbedManagement } from '../components/YouTubeEmbedManagement';
 
 export default function BannerManagement() {
   const navigate = useNavigate();
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
+  const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
 
   useEffect(() => {
     loadCurrentBanner();
+    loadCurrentEmbed();
   }, []);
 
   const loadCurrentBanner = async () => {
@@ -24,6 +27,15 @@ export default function BannerManagement() {
       setCurrentBanner(banner);
     } catch (error) {
       console.error('Failed to load promotional banner:', error);
+    }
+  };
+
+  const loadCurrentEmbed = async () => {
+    try {
+      const embed = await apiService.getCurrentYouTubeEmbed();
+      setCurrentEmbed(embed);
+    } catch (error) {
+      console.error('Failed to load YouTube embed:', error);
     }
   };
 
@@ -59,13 +71,19 @@ export default function BannerManagement() {
           </Button>
         </Box>
 
-        <Box maxW="800px" w="100%" mx="auto">
+        <VStack spacing={6} maxW="800px" w="100%" mx="auto">
           <PromotionalBannerUpload
             currentBanner={currentBanner}
             onUploadSuccess={(banner) => setCurrentBanner(banner)}
             onDeleteSuccess={() => setCurrentBanner(null)}
           />
-        </Box>
+
+          <YouTubeEmbedManagement
+            currentEmbed={currentEmbed}
+            onSetSuccess={(embed) => setCurrentEmbed(embed)}
+            onDeleteSuccess={() => setCurrentEmbed(null)}
+          />
+        </VStack>
       </VStack>
     </Box>
   );

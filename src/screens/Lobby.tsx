@@ -17,9 +17,10 @@ import {
   useToast,
   Icon,
   Image,
+  AspectRatio,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
-import { apiService, type Game, type PromotionalBanner } from '../services/api.service';
+import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
 import { useGameStore } from '../stores/gameStore';
@@ -39,6 +40,7 @@ export default function Lobby() {
   const [isLoading, setIsLoading] = useState(true);
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
+  const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
   const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
     // Load reminded games from localStorage
     const saved = localStorage.getItem('remindedGames');
@@ -49,6 +51,7 @@ export default function Lobby() {
     loadGames();
     loadMyActiveGames();
     loadCurrentBanner();
+    loadCurrentEmbed();
 
     // Setup WebSocket event handlers
     wsService.on({
@@ -152,6 +155,15 @@ export default function Lobby() {
       setCurrentBanner(banner);
     } catch (error) {
       console.error('Failed to load promotional banner:', error);
+    }
+  };
+
+  const loadCurrentEmbed = async () => {
+    try {
+      const embed = await apiService.getCurrentYouTubeEmbed();
+      setCurrentEmbed(embed);
+    } catch (error) {
+      console.error('Failed to load YouTube embed:', error);
     }
   };
 
@@ -388,7 +400,7 @@ export default function Lobby() {
 
           {games.length === 0 ? (
             <VStack spacing={{ base: 4, md: 6 }} w="100%">
-              {currentBanner ? (
+              {currentBanner && (
                 <Box
                   w="100%"
                   maxW={{ base: '100%', md: '800px', lg: '1000px' }}
@@ -407,7 +419,31 @@ export default function Lobby() {
                     aspectRatio={16 / 9}
                   />
                 </Box>
-              ) : (
+              )}
+
+              {currentEmbed && (
+                <Box
+                  w="100%"
+                  maxW={{ base: '100%', md: '800px', lg: '1000px' }}
+                  mx="auto"
+                  borderRadius="lg"
+                  overflow="hidden"
+                  boxShadow="xl"
+                  border="2px"
+                  borderColor="brand.500"
+                >
+                  <AspectRatio ratio={16 / 9}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${currentEmbed.embedId}`}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </AspectRatio>
+                </Box>
+              )}
+
+              {!currentBanner && !currentEmbed && (
                 <Box
                   p={{ base: 4, md: 8 }}
                   bg="grey.700"
@@ -620,6 +656,28 @@ export default function Lobby() {
                 objectFit="cover"
                 aspectRatio={16 / 9}
               />
+            </Box>
+          </Box>
+        )}
+
+        {/* YouTube Video - shown when games exist */}
+        {games.length > 0 && currentEmbed && (
+          <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+            <Box
+              borderRadius="lg"
+              overflow="hidden"
+              boxShadow="xl"
+              border="2px"
+              borderColor="brand.500"
+            >
+              <AspectRatio ratio={16 / 9}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${currentEmbed.embedId}`}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </AspectRatio>
             </Box>
           </Box>
         )}
