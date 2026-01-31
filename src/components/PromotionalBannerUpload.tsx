@@ -10,7 +10,7 @@ import {
   Icon,
   Spinner,
 } from '@chakra-ui/react';
-import { DeleteIcon, UploadIcon } from '@chakra-ui/icons';
+import { DeleteIcon, AttachmentIcon } from '@chakra-ui/icons';
 import { apiService, type PromotionalBanner } from '../services/api.service';
 
 interface Props {
@@ -186,7 +186,7 @@ export function PromotionalBannerUpload({
             <Button
               colorScheme="brand"
               size={{ base: 'sm', md: 'md' }}
-              leftIcon={<UploadIcon />}
+              leftIcon={<AttachmentIcon />}
               onClick={() => fileInputRef.current?.click()}
               isLoading={isUploading}
               flex={1}
@@ -236,7 +236,7 @@ export function PromotionalBannerUpload({
               </VStack>
             ) : (
               <VStack spacing={3}>
-                <Icon as={UploadIcon} w={12} h={12} color="grey.400" />
+                <Icon as={AttachmentIcon} w={12} h={12} color="grey.400" />
                 <Text fontWeight="bold" color="grey.700">
                   Drop image here or click to upload
                 </Text>
