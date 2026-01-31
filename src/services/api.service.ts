@@ -220,6 +220,63 @@ class ApiService {
     const response = await this.request<{ games: Game[] }>('/api/v1/games/my-active');
     return response.games;
   }
+
+  /**
+   * Upload promotional banner
+   */
+  async uploadPromotionalBanner(file: File): Promise<PromotionalBanner> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/api/v1/promotional-banner/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        message: 'Failed to upload promotional banner',
+      }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get current promotional banner
+   */
+  async getCurrentPromotionalBanner(): Promise<PromotionalBanner | null> {
+    const response = await this.request<{ banner: PromotionalBanner | null }>(
+      '/api/v1/promotional-banner'
+    );
+    return response.banner;
+  }
+
+  /**
+   * Delete promotional banner
+   */
+  async deletePromotionalBanner(): Promise<void> {
+    await this.request<void>('/api/v1/promotional-banner', {
+      method: 'DELETE',
+    });
+  }
+}
+
+export interface PromotionalBanner {
+  id: string;
+  imageUrl: string;
+  width: number;
+  height: number;
+  createdAt: string;
 }
 
 // Export singleton instance

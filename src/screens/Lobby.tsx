@@ -16,9 +16,10 @@ import {
   VStack,
   useToast,
   Icon,
+  Image,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
-import { apiService, type Game } from '../services/api.service';
+import { apiService, type Game, type PromotionalBanner } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
 import { useGameStore } from '../stores/gameStore';
@@ -37,6 +38,7 @@ export default function Lobby() {
   const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
+  const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
   const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
     // Load reminded games from localStorage
     const saved = localStorage.getItem('remindedGames');
@@ -46,6 +48,7 @@ export default function Lobby() {
   useEffect(() => {
     loadGames();
     loadMyActiveGames();
+    loadCurrentBanner();
 
     // Setup WebSocket event handlers
     wsService.on({
@@ -140,6 +143,15 @@ export default function Lobby() {
     } catch (error) {
       console.error('Failed to load active games:', error);
       setMyActiveGames([]);
+    }
+  };
+
+  const loadCurrentBanner = async () => {
+    try {
+      const banner = await apiService.getCurrentPromotionalBanner();
+      setCurrentBanner(banner);
+    } catch (error) {
+      console.error('Failed to load promotional banner:', error);
     }
   };
 
@@ -360,18 +372,42 @@ export default function Lobby() {
           </Heading>
 
           {games.length === 0 ? (
-            <Box
-              p={{ base: 4, md: 8 }}
-              bg="grey.700"
-              borderRadius="md"
-              textAlign="center"
-              border="1px"
-              borderColor="grey.600"
-            >
-              <Text color="grey.300" fontSize={{ base: 'md', md: 'lg' }}>
-                No games available at the moment
-              </Text>
-            </Box>
+            <VStack spacing={{ base: 4, md: 6 }} w="100%">
+              {currentBanner ? (
+                <Box
+                  w="100%"
+                  maxW={{ base: '100%', md: '800px', lg: '1000px' }}
+                  mx="auto"
+                  borderRadius="lg"
+                  overflow="hidden"
+                  boxShadow="xl"
+                  border="2px"
+                  borderColor="brand.500"
+                >
+                  <Image
+                    src={currentBanner.imageUrl}
+                    alt="Promotional banner"
+                    w="100%"
+                    objectFit="cover"
+                    aspectRatio={16 / 9}
+                  />
+                </Box>
+              ) : (
+                <Box
+                  p={{ base: 4, md: 8 }}
+                  bg="grey.700"
+                  borderRadius="md"
+                  textAlign="center"
+                  border="1px"
+                  borderColor="grey.600"
+                  w="100%"
+                >
+                  <Text color="grey.300" fontSize={{ base: 'md', md: 'lg' }}>
+                    No games available at the moment
+                  </Text>
+                </Box>
+              )}
+            </VStack>
           ) : (
             <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }} gap={{ base: 3, md: 4 }} w="100%">
               {games.map((game) => (
@@ -551,6 +587,27 @@ export default function Lobby() {
             </Grid>
           )}
         </Box>
+
+        {/* Promotional Banner - shown when games exist */}
+        {games.length > 0 && currentBanner && (
+          <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+            <Box
+              borderRadius="lg"
+              overflow="hidden"
+              boxShadow="xl"
+              border="2px"
+              borderColor="brand.500"
+            >
+              <Image
+                src={currentBanner.imageUrl}
+                alt="Promotional banner"
+                w="100%"
+                objectFit="cover"
+                aspectRatio={16 / 9}
+              />
+            </Box>
+          </Box>
+        )}
       </VStack>
     </Box>
   );
