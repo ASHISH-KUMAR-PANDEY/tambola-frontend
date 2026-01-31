@@ -31,11 +31,11 @@ interface GameSummaryModalProps {
 }
 
 const PRIZE_CATEGORIES = [
-  { key: 'EARLY_5', label: 'अर्ली 5', labelEn: 'Early 5' },
-  { key: 'TOP_LINE', label: 'टॉप लाइन', labelEn: 'Top Line' },
-  { key: 'MIDDLE_LINE', label: 'मिडिल लाइन', labelEn: 'Middle Line' },
-  { key: 'BOTTOM_LINE', label: 'बॉटम लाइन', labelEn: 'Bottom Line' },
-  { key: 'FULL_HOUSE', label: 'फुल हाउस', labelEn: 'Full House' },
+  { key: 'EARLY_5', labelHi: 'अर्ली 5', labelEn: 'Early 5' },
+  { key: 'TOP_LINE', labelHi: 'टॉप लाइन', labelEn: 'Top Line' },
+  { key: 'MIDDLE_LINE', labelHi: 'मिडिल लाइन', labelEn: 'Middle Line' },
+  { key: 'BOTTOM_LINE', labelHi: 'बॉटम लाइन', labelEn: 'Bottom Line' },
+  { key: 'FULL_HOUSE', labelHi: 'फुल हाउस', labelEn: 'Full House' },
 ];
 
 export const GameSummaryModal = ({
@@ -69,7 +69,7 @@ export const GameSummaryModal = ({
               boxSize={{ base: 12, md: 16 }}
               color="green.500"
             />
-            <Text>गेम समाप्त!</Text>
+            <Text>{isOrganizer ? 'Game Complete!' : 'गेम समाप्त!'}</Text>
             <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="normal" color={isOrganizer ? 'grey.600' : 'grey.400'}>
               {isOrganizer ? 'Game Summary' : 'खेलने के लिए धन्यवाद'}
             </Text>
@@ -86,12 +86,12 @@ export const GameSummaryModal = ({
               color={isOrganizer ? 'brand.600' : 'brand.400'}
               mb={2}
             >
-              लीडरबोर्ड
+              {isOrganizer ? 'Leaderboard' : 'लीडरबोर्ड'}
             </Text>
 
             <Divider borderColor={isOrganizer ? 'grey.200' : 'grey.700'} />
 
-            {PRIZE_CATEGORIES.map(({ key, label, labelEn }) => {
+            {PRIZE_CATEGORIES.map(({ key, labelHi, labelEn }) => {
               const winner = getWinnerForCategory(key);
               return (
                 <Box
@@ -110,13 +110,8 @@ export const GameSummaryModal = ({
                         fontSize={{ base: 'md', md: 'lg' }}
                         color={isOrganizer ? 'grey.900' : 'white'}
                       >
-                        {label}
+                        {isOrganizer ? labelEn : labelHi}
                       </Text>
-                      {isOrganizer && (
-                        <Text fontSize="xs" color="grey.500">
-                          {labelEn}
-                        </Text>
-                      )}
                     </VStack>
 
                     {winner ? (

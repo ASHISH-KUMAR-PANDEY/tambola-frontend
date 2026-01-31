@@ -239,6 +239,17 @@ export default function Game() {
     return winners.find((w) => w.category === category);
   };
 
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      'EARLY_5': 'अर्ली 5',
+      'TOP_LINE': 'टॉप लाइन',
+      'MIDDLE_LINE': 'मिडिल लाइन',
+      'BOTTOM_LINE': 'बॉटम लाइन',
+      'FULL_HOUSE': 'फुल हाउस',
+    };
+    return labels[category] || category;
+  };
+
   const renderNumberBoard = () => {
     const numbers = Array.from({ length: 90 }, (_, i) => i + 1);
     return (
@@ -402,7 +413,7 @@ export default function Game() {
               {winners.map((winner, index) => (
                 <HStack key={index} justify="space-between" p={{ base: 2, md: 3 }} bg="green.50" borderRadius="md" spacing={2}>
                   <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="semibold" color="green.700">
-                    {winner.category.split('_').join(' ')}
+                    {getCategoryLabel(winner.category)}
                   </Text>
                   <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.600">
                     {winner.userName || 'खिलाड़ी'}
