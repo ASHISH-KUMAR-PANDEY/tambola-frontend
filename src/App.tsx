@@ -8,6 +8,7 @@ import Lobby from './screens/Lobby';
 import Game from './screens/Game';
 import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
+import BannerManagement from './screens/BannerManagement';
 import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
@@ -41,6 +42,14 @@ export const App = () => {
             element={
               <OrganizerRoute>
                 <Organizer />
+              </OrganizerRoute>
+            }
+          />
+          <Route
+            path="/banner-management"
+            element={
+              <OrganizerRoute>
+                <BannerManagement />
               </OrganizerRoute>
             }
           />

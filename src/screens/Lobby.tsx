@@ -358,11 +358,26 @@ export default function Lobby() {
         {/* Welcome Message */}
         <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">Welcome, {user?.name}!</Text>
 
-        {/* Create Game Button for Organizers - Only show if no games exist */}
-        {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && games.length === 0 && !isLoading && (
-          <Button colorScheme="brand" onClick={() => navigate('/organizer')} size={{ base: 'sm', md: 'md' }} alignSelf="center">
-            Create Game
-          </Button>
+        {/* Organizer Controls - Always show for organizers */}
+        {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
+          <HStack spacing={4} justify="center" w="100%">
+            <Button
+              colorScheme="brand"
+              onClick={() => navigate('/organizer')}
+              size={{ base: 'sm', md: 'md' }}
+              variant="solid"
+            >
+              Create Game
+            </Button>
+            <Button
+              colorScheme="purple"
+              onClick={() => navigate('/banner-management')}
+              size={{ base: 'sm', md: 'md' }}
+              variant="solid"
+            >
+              Manage Banner
+            </Button>
+          </HStack>
         )}
 
         {/* Games Section */}

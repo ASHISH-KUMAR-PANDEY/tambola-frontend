@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -13,10 +13,9 @@ import {
   NumberInput,
   NumberInputField,
 } from '@chakra-ui/react';
-import { apiService, type PromotionalBanner } from '../services/api.service';
+import { apiService } from '../services/api.service';
 import { useGameStore } from '../stores/gameStore';
 import { Logo } from '../components/Logo';
-import { PromotionalBannerUpload } from '../components/PromotionalBannerUpload';
 
 export default function Organizer() {
   const navigate = useNavigate();
@@ -24,7 +23,6 @@ export default function Organizer() {
   const { setCurrentGame } = useGameStore();
 
   const [isCreating, setIsCreating] = useState(false);
-  const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
 
   // Form state
   const [scheduledTime, setScheduledTime] = useState('');
@@ -33,20 +31,6 @@ export default function Organizer() {
   const [middleLinePrize, setMiddleLinePrize] = useState(200);
   const [bottomLinePrize, setBottomLinePrize] = useState(200);
   const [fullHousePrize, setFullHousePrize] = useState(500);
-
-  // Load current promotional banner on mount
-  useEffect(() => {
-    loadCurrentBanner();
-  }, []);
-
-  const loadCurrentBanner = async () => {
-    try {
-      const banner = await apiService.getCurrentPromotionalBanner();
-      setCurrentBanner(banner);
-    } catch (error) {
-      console.error('Failed to load promotional banner:', error);
-    }
-  };
 
   const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,13 +182,6 @@ export default function Organizer() {
                 </VStack>
               </form>
             </Box>
-
-            {/* Promotional Banner Upload */}
-            <PromotionalBannerUpload
-              currentBanner={currentBanner}
-              onUploadSuccess={(banner) => setCurrentBanner(banner)}
-              onDeleteSuccess={() => setCurrentBanner(null)}
-            />
           </Box>
     </VStack>
   </Box>
