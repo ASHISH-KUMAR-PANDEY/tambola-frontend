@@ -12,11 +12,13 @@ import BannerManagement from './screens/BannerManagement';
 import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
+import { InactivityHandler } from './components/InactivityHandler';
 
 export const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <BrowserRouter>
+        <InactivityHandler />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

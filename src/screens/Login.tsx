@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -14,6 +14,7 @@ import {
   Alert,
   AlertIcon,
   FormErrorMessage,
+  useToast,
 } from '@chakra-ui/react';
 import { useAuthStore } from '../stores/authStore';
 import { Logo } from '../components/Logo';
@@ -21,6 +22,7 @@ import { Logo } from '../components/Logo';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const [email, setEmail] = useState('');
@@ -29,6 +31,20 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState('');
 
   const from = (location.state as any)?.from?.pathname || '/lobby';
+  const inactivityMessage = (location.state as any)?.message;
+
+  // Show inactivity message if present
+  useEffect(() => {
+    if (inactivityMessage) {
+      toast({
+        title: 'सत्र समाप्त',
+        description: 'निष्क्रियता के कारण आपको लॉगआउट कर दिया गया था',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [inactivityMessage, toast]);
 
   const validateEmail = (email: string): boolean => {
     if (!email) {
