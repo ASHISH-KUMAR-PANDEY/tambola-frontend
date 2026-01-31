@@ -123,7 +123,7 @@ export default function Signup() {
             TAMBOLA
           </Heading>
           <Heading as="h2" size={{ base: 'sm', md: 'md' }} textAlign="center" color="grey.600">
-            Create your account
+            अपना अकाउंट बनाएं
           </Heading>
 
           {error && (
@@ -136,52 +136,52 @@ export default function Signup() {
           <form onSubmit={handleSubmit}>
             <Stack spacing={4}>
               <FormControl isInvalid={!!nameError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>Name</FormLabel>
+                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>नाम</FormLabel>
                 <Input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onBlur={() => validateName(name)}
-                  placeholder="Enter your name"
+                  placeholder="अपना नाम दर्ज करें"
                   size={{ base: 'md', md: 'lg' }}
                 />
                 <FormErrorMessage fontSize="xs">{nameError}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!emailError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>Email</FormLabel>
+                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>ईमेल</FormLabel>
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => validateEmail(email)}
-                  placeholder="Enter your email"
+                  placeholder="अपना ईमेल दर्ज करें"
                   size={{ base: 'md', md: 'lg' }}
                 />
                 <FormErrorMessage fontSize="xs">{emailError}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!passwordError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>Password</FormLabel>
+                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>पासवर्ड</FormLabel>
                 <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => validatePassword(password)}
-                  placeholder="Enter your password"
+                  placeholder="अपना पासवर्ड दर्ज करें"
                   size={{ base: 'md', md: 'lg' }}
                 />
                 <FormErrorMessage fontSize="xs">{passwordError}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!confirmPasswordError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>Confirm Password</FormLabel>
+                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>पासवर्ड की पुष्टि करें</FormLabel>
                 <Input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   onBlur={() => validateConfirmPassword(confirmPassword)}
-                  placeholder="Confirm your password"
+                  placeholder="अपना पासवर्ड फिर से दर्ज करें"
                   size={{ base: 'md', md: 'lg' }}
                 />
                 <FormErrorMessage fontSize="xs">{confirmPasswordError}</FormErrorMessage>
@@ -193,17 +193,17 @@ export default function Signup() {
                 size={{ base: 'md', md: 'lg' }}
                 fontSize={{ base: 'sm', md: 'md' }}
                 isLoading={isLoading}
-                loadingText="Creating account..."
+                loadingText="अकाउंट बनाया जा रहा है..."
               >
-                Sign Up
+                साइन अप करें
               </Button>
             </Stack>
           </form>
 
           <Text textAlign="center" color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>
-            Already have an account?{' '}
+            क्या आपका पहले से अकाउंट है?{' '}
             <Link as={RouterLink} to="/login" color="brand.500" fontWeight="semibold">
-              Login
+              लॉगिन करें
             </Link>
           </Text>
         </Stack>

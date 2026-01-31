@@ -67,16 +67,16 @@ export default function Game() {
       onPlayerJoined: (data) => {
         addPlayer({ playerId: data.playerId, userName: data.userName });
         toast({
-          title: 'Player Joined',
-          description: `${data.userName} joined the game`,
+          title: 'खिलाड़ी शामिल हुए',
+          description: `${data.userName} गेम में शामिल हुए`,
           status: 'info',
           duration: 3000,
         });
       },
       onGameStarted: () => {
         toast({
-          title: 'Game Started!',
-          description: 'Get ready to mark your numbers',
+          title: 'गेम शुरू हो गया!',
+          description: 'अपने नंबर मार्क करने के लिए तैयार हो जाएं',
           status: 'success',
           duration: 5000,
           isClosable: true,
@@ -93,10 +93,10 @@ export default function Game() {
 
         addWinner(data);
 
-        const userName = (data as any).userName || 'Someone';
+        const userName = (data as any).userName || 'कोई';
         toast({
-          title: `Winner: ${categoryName}!`,
-          description: `${userName} won ${categoryName}!`,
+          title: `विजेता: ${categoryName}!`,
+          description: `${userName} ने ${categoryName} जीता!`,
           status: 'success',
           duration: 10000,
           isClosable: true,
@@ -111,7 +111,7 @@ export default function Game() {
           });
 
           toast({
-            title: 'Congratulations!',
+            title: 'बधाई हो!',
             description: data.message,
             status: 'success',
             duration: 10000,
@@ -121,8 +121,8 @@ export default function Game() {
       },
       onGameCompleted: () => {
         toast({
-          title: 'Game Completed',
-          description: 'The organizer has ended the game. Thank you for playing!',
+          title: 'गेम पूर्ण हुआ',
+          description: 'आयोजक ने गेम समाप्त कर दिया है। खेलने के लिए धन्यवाद!',
           status: 'info',
           duration: 5000,
           isClosable: true,
@@ -134,8 +134,8 @@ export default function Game() {
       },
       onGameDeleted: (data) => {
         toast({
-          title: 'Game Deleted',
-          description: data.message || 'The game has been deleted by the organizer',
+          title: 'गेम डिलीट हो गया',
+          description: data.message || 'गेम आयोजक द्वारा डिलीट कर दिया गया है',
           status: 'warning',
           duration: 5000,
           isClosable: true,
@@ -147,8 +147,8 @@ export default function Game() {
         // Special handling for game not found (deleted game)
         if (error.code === 'GAME_NOT_FOUND') {
           toast({
-            title: 'Game Deleted',
-            description: 'Game has been deleted by the organizer',
+            title: 'गेम डिलीट हो गया',
+            description: 'गेम आयोजक द्वारा डिलीट कर दिया गया है',
             status: 'warning',
             duration: 5000,
           });
@@ -156,7 +156,7 @@ export default function Game() {
           navigate('/lobby');
         } else {
           toast({
-            title: 'Error',
+            title: 'त्रुटि',
             description: error.message,
             status: 'error',
             duration: 5000,
@@ -236,9 +236,9 @@ export default function Game() {
     return (
       <Container maxW="container.xl" py={8}>
         <VStack spacing={4}>
-          <Text>No ticket found. Please join a game from the lobby.</Text>
+          <Text>कोई टिकट नहीं मिला। कृपया लॉबी से गेम में शामिल हों।</Text>
           <Button colorScheme="brand" onClick={() => navigate('/lobby')}>
-            Go to Lobby
+            लॉबी पर जाएं
           </Button>
         </VStack>
       </Container>
@@ -274,14 +274,14 @@ export default function Game() {
             size={{ base: 'xs', md: 'sm' }}
             borderWidth="2px"
           >
-            Leave
+            बाहर निकलें
           </Button>
         </Box>
 
         {/* Your Ticket */}
         <Box w="100%" maxW="600px" mx="auto">
           <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
-            Your Ticket (Click numbers to mark)
+            आपका टिकट (मार्क करने के लिए नंबर पर क्लिक करें)
           </Heading>
           <Ticket ticket={ticket} showMarked={true} onNumberClick={handleNumberClick} />
         </Box>
@@ -289,13 +289,13 @@ export default function Game() {
         {/* Stats - Compact */}
         <HStack spacing={{ base: 4, md: 6 }} justify="center" w="100%">
           <HStack spacing={2}>
-            <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400">Marked:</Text>
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400">मार्क किए गए:</Text>
             <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="brand.500">
               {getMarkedCount()}/15
             </Text>
           </HStack>
           <HStack spacing={2}>
-            <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400">Called:</Text>
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400">बुलाए गए:</Text>
             <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="brand.500">
               {calledNumbers.length}/90
             </Text>
@@ -305,15 +305,15 @@ export default function Game() {
         {/* Win Categories */}
         <Box w="100%" maxW="600px" mx="auto">
           <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
-            Win Categories
+            जीत की श्रेणियां
           </Heading>
           <VStack align="stretch" spacing={{ base: 2, md: 3 }}>
             {[
-              { key: 'EARLY_5', label: 'Early 5' },
-              { key: 'TOP_LINE', label: 'Top Line', lineIndex: 0 },
-              { key: 'MIDDLE_LINE', label: 'Middle Line', lineIndex: 1 },
-              { key: 'BOTTOM_LINE', label: 'Bottom Line', lineIndex: 2 },
-              { key: 'FULL_HOUSE', label: 'Full House' },
+              { key: 'EARLY_5', label: 'अर्ली 5' },
+              { key: 'TOP_LINE', label: 'टॉप लाइन', lineIndex: 0 },
+              { key: 'MIDDLE_LINE', label: 'मिडिल लाइन', lineIndex: 1 },
+              { key: 'BOTTOM_LINE', label: 'बॉटम लाइन', lineIndex: 2 },
+              { key: 'FULL_HOUSE', label: 'फुल हाउस' },
             ].map(({ key, label, lineIndex }) => {
               const winner = getCategoryWinner(key);
               const isComplete =
@@ -327,7 +327,7 @@ export default function Game() {
                 <HStack key={key} justify="space-between" p={{ base: 3, md: 4 }} bg="white" borderRadius="md" border="1px" borderColor="grey.300" spacing={2}>
                   <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="grey.900">{label}</Text>
                   {winner ? (
-                    <Badge colorScheme="green" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>Won ✓</Badge>
+                    <Badge colorScheme="green" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>जीत लिया ✓</Badge>
                   ) : isComplete ? (
                     <Button
                       size={{ base: 'sm', md: 'md' }}
@@ -335,10 +335,10 @@ export default function Game() {
                       onClick={() => handleClaimWin(key)}
                       px={{ base: 4, md: 6 }}
                     >
-                      Claim Win
+                      जीत का दावा करें
                     </Button>
                   ) : (
-                    <Badge colorScheme="grey" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>In Progress</Badge>
+                    <Badge colorScheme="grey" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>प्रगति में</Badge>
                   )}
                 </HStack>
               );
@@ -349,7 +349,7 @@ export default function Game() {
         {/* Number Board */}
         <Box w="100%" maxW="600px" mx="auto">
           <Heading size={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
-            Number Board
+            नंबर बोर्ड
           </Heading>
           {renderNumberBoard()}
         </Box>
@@ -358,7 +358,7 @@ export default function Game() {
         {winners.length > 0 && (
           <Box w="100%" maxW="600px" mx="auto">
             <Heading size={{ base: 'xs', md: 'sm' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center">
-              Winners
+              विजेता
             </Heading>
             <VStack align="stretch" spacing={2}>
               {winners.map((winner, index) => (
@@ -367,7 +367,7 @@ export default function Game() {
                     {winner.category.split('_').join(' ')}
                   </Text>
                   <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.600">
-                    {winner.userName || 'Player'}
+                    {winner.userName || 'खिलाड़ी'}
                   </Text>
                 </HStack>
               ))}

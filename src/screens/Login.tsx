@@ -93,7 +93,7 @@ export default function Login() {
             TAMBOLA
           </Heading>
           <Heading as="h2" size={{ base: 'sm', md: 'md' }} textAlign="center" color="grey.600">
-            Login to your account
+            अपने अकाउंट में लॉगिन करें
           </Heading>
 
           {error && (
@@ -106,26 +106,26 @@ export default function Login() {
           <form onSubmit={handleSubmit}>
             <Stack spacing={4}>
               <FormControl isInvalid={!!emailError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>Email</FormLabel>
+                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>ईमेल</FormLabel>
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => validateEmail(email)}
-                  placeholder="Enter your email"
+                  placeholder="अपना ईमेल दर्ज करें"
                   size={{ base: 'md', md: 'lg' }}
                 />
                 <FormErrorMessage fontSize="xs">{emailError}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!passwordError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>Password</FormLabel>
+                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>पासवर्ड</FormLabel>
                 <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => validatePassword(password)}
-                  placeholder="Enter your password"
+                  placeholder="अपना पासवर्ड दर्ज करें"
                   size={{ base: 'md', md: 'lg' }}
                 />
                 <FormErrorMessage fontSize="xs">{passwordError}</FormErrorMessage>
@@ -137,17 +137,17 @@ export default function Login() {
                 size={{ base: 'md', md: 'lg' }}
                 fontSize={{ base: 'sm', md: 'md' }}
                 isLoading={isLoading}
-                loadingText="Logging in..."
+                loadingText="लॉगिन हो रहा है..."
               >
-                Login
+                लॉगिन करें
               </Button>
             </Stack>
           </form>
 
           <Text textAlign="center" color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>
-            Don't have an account?{' '}
+            क्या आपका अकाउंट नहीं है?{' '}
             <Link as={RouterLink} to="/signup" color="brand.500" fontWeight="semibold">
-              Sign up
+              साइन अप करें
             </Link>
           </Text>
         </Stack>

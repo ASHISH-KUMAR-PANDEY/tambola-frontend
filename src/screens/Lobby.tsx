@@ -321,7 +321,7 @@ export default function Lobby() {
           ⏱️
         </Text>
         <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="white">
-          {timeRemaining.isExpired ? 'Starting Soon' : `Starts in: ${countdownText}`}
+          {timeRemaining.isExpired ? 'जल्द शुरू होगा' : `शुरू होगा: ${countdownText}`}
         </Text>
       </HStack>
     );
@@ -368,7 +368,7 @@ export default function Lobby() {
         </Box>
 
         {/* Welcome Message */}
-        <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">Welcome, {user?.name}!</Text>
+        <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">स्वागत है, {user?.name}!</Text>
 
         {/* Organizer Controls - Always show for organizers */}
         {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
@@ -395,7 +395,7 @@ export default function Lobby() {
         {/* Games Section */}
         <Box w="100%">
           <Heading size={{ base: 'md', md: 'lg' }} mb={{ base: 3, md: 4 }} color="white" textAlign="center">
-            Available Games
+            उपलब्ध गेम्स
           </Heading>
 
           {games.length === 0 ? (
@@ -454,10 +454,125 @@ export default function Lobby() {
                   w="100%"
                 >
                   <Text color="grey.300" fontSize={{ base: 'md', md: 'lg' }}>
-                    No games available at the moment
+                    फिलहाल कोई गेम उपलब्ध नहीं है
                   </Text>
                 </Box>
               )}
+
+              {/* How to Play Section (Hindi) - No Games */}
+              <Box w="100%" maxW={{ base: '100%', md: '800px', lg: '1000px' }} mx="auto">
+                <Box
+                  p={{ base: 6, md: 8 }}
+                  bg="grey.800"
+                  borderRadius="lg"
+                  boxShadow="md"
+                  border="1px"
+                  borderColor="grey.700"
+                >
+                  <Heading size={{ base: 'md', md: 'lg' }} mb={6} color="brand.500" textAlign="center">
+                    कैसे खेलें
+                  </Heading>
+                  <VStack align="start" spacing={4} color="grey.300" fontSize={{ base: 'sm', md: 'md' }}>
+                    <HStack align="start" spacing={3}>
+                      <Text fontWeight="bold" color="brand.400" minW="30px">१.</Text>
+                      <Text>गेम शुरू होने से 30 मिनट पहले "गेम में शामिल हों" बटन पर क्लिक करें।</Text>
+                    </HStack>
+                    <HStack align="start" spacing={3}>
+                      <Text fontWeight="bold" color="brand.400" minW="30px">२.</Text>
+                      <Text>आपको एक टिकट मिलेगी जिसमें 1 से 90 तक के नंबर होंगे।</Text>
+                    </HStack>
+                    <HStack align="start" spacing={3}>
+                      <Text fontWeight="bold" color="brand.400" minW="30px">३.</Text>
+                      <Text>गेम शुरू होने पर, आयोजक एक-एक करके नंबर बुलाएंगे।</Text>
+                    </HStack>
+                    <HStack align="start" spacing={3}>
+                      <Text fontWeight="bold" color="brand.400" minW="30px">४.</Text>
+                      <Text>अगर बुलाया गया नंबर आपकी टिकट पर है, तो उस पर क्लिक करके मार्क करें।</Text>
+                    </HStack>
+                    <HStack align="start" spacing={3}>
+                      <Text fontWeight="bold" color="brand.400" minW="30px">५.</Text>
+                      <Text>जब आप कोई पैटर्न पूरा कर लें (अर्ली 5, टॉप लाइन, मिडिल लाइन, बॉटम लाइन, या फुल हाउस), तो "जीत का दावा करें" बटन दबाएं।</Text>
+                    </HStack>
+                    <HStack align="start" spacing={3}>
+                      <Text fontWeight="bold" color="brand.400" minW="30px">६.</Text>
+                      <Text>सबसे पहले दावा करने वाले को इनाम मिलेगा!</Text>
+                    </HStack>
+                    <Box mt={4} p={4} bg="grey.900" borderRadius="md" borderLeft="4px" borderColor="brand.500">
+                      <Text fontWeight="semibold" color="brand.400" mb={2}>इनाम के पैटर्न:</Text>
+                      <VStack align="start" spacing={1} fontSize="sm">
+                        <Text>• <strong>अर्ली 5:</strong> टिकट पर कोई भी 5 नंबर</Text>
+                        <Text>• <strong>टॉप लाइन:</strong> पहली लाइन के सभी नंबर</Text>
+                        <Text>• <strong>मिडिल लाइन:</strong> बीच की लाइन के सभी नंबर</Text>
+                        <Text>• <strong>बॉटम लाइन:</strong> आखिरी लाइन के सभी नंबर</Text>
+                        <Text>• <strong>फुल हाउस:</strong> टिकट के सभी नंबर</Text>
+                      </VStack>
+                    </Box>
+                  </VStack>
+                </Box>
+              </Box>
+
+              {/* Terms and Conditions Section - No Games */}
+              <Box w="100%" maxW={{ base: '100%', md: '800px', lg: '1000px' }} mx="auto">
+                <Box
+                  p={{ base: 6, md: 8 }}
+                  bg="grey.800"
+                  borderRadius="lg"
+                  boxShadow="md"
+                  border="1px"
+                  borderColor="grey.700"
+                >
+                  <Heading size={{ base: 'md', md: 'lg' }} mb={6} color="brand.500" textAlign="center">
+                    Terms & Conditions
+                  </Heading>
+                  <VStack align="start" spacing={4} color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>1. Eligibility</Text>
+                      <Text>Players must be 18 years or older to participate. By joining, you confirm that you meet this requirement and agree to these terms.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>2. Game Rules</Text>
+                      <Text>All decisions made by the organizer are final. Players must follow the game rules and mark numbers honestly. Any form of cheating or manipulation will result in immediate disqualification.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>3. Prize Distribution</Text>
+                      <Text>Prizes will be awarded as announced at the start of the game. The organizer reserves the right to verify claims before awarding prizes. Winners must claim their prizes within the specified time period.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>4. Technical Issues</Text>
+                      <Text>The organizer is not responsible for technical issues, internet connectivity problems, or device malfunctions that may affect gameplay. Players participate at their own risk.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>5. Fair Play</Text>
+                      <Text>This platform is for entertainment purposes. Multiple accounts, bots, or automated scripts are strictly prohibited. Violation will result in permanent ban.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>6. Refunds</Text>
+                      <Text>Entry fees (if applicable) are non-refundable once the game has started. Refunds may be considered only in case of game cancellation by the organizer.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>7. Privacy</Text>
+                      <Text>Your personal information will be kept confidential and used only for game-related purposes. We do not share your data with third parties without consent.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>8. Dispute Resolution</Text>
+                      <Text>Any disputes arising from the game will be resolved by the organizer. The organizer's decision in all matters relating to the game is final and binding.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>9. Modifications</Text>
+                      <Text>The organizer reserves the right to modify these terms and conditions at any time. Continued participation constitutes acceptance of any changes.</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold" color="grey.300" mb={2}>10. Liability</Text>
+                      <Text>The organizer shall not be held liable for any losses, damages, or claims arising from participation in the game. Players participate voluntarily and at their own risk.</Text>
+                    </Box>
+                    <Box mt={4} p={3} bg="grey.900" borderRadius="md" borderLeft="3px" borderColor="red.500">
+                      <Text fontSize="xs" color="grey.500">
+                        By participating in this game, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions. If you do not agree, please do not participate.
+                      </Text>
+                    </Box>
+                  </VStack>
+                </Box>
+              </Box>
             </VStack>
           ) : (
             <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }} gap={{ base: 3, md: 4 }} w="100%">
@@ -488,16 +603,16 @@ export default function Lobby() {
                       <VStack align="start" spacing={2} w="100%" flex={1}>
                         <HStack justify="space-between" w="100%">
                           <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-                            Players:
+                            खिलाड़ी:
                           </Text>
                           <Text fontWeight="bold" fontSize={{ base: 'sm', md: 'md' }} color="white">{game.playerCount || 0}</Text>
                         </HStack>
                         <HStack justify="space-between" w="100%">
                           <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-                            Full House:
+                            फुल हाउस:
                           </Text>
                           <Text fontWeight="bold" color="highlight.500" fontSize={{ base: 'sm', md: 'md' }}>
-                            {game.prizes.fullHouse || 0} pts
+                            {game.prizes.fullHouse || 0} अंक
                           </Text>
                         </HStack>
                       </VStack>
@@ -567,10 +682,10 @@ export default function Lobby() {
                               h={{ base: '44px', md: '48px' }}
                               fontSize={{ base: 'sm', md: 'md' }}
                               isLoading={joiningGameId === game.id}
-                              loadingText="Rejoining..."
+                              loadingText="फिर से शामिल हो रहे हैं..."
                               onClick={() => handleRejoinGame(game)}
                             >
-                              Rejoin Game
+                              फिर से शामिल हों
                             </Button>
                           );
                         }
@@ -589,10 +704,10 @@ export default function Lobby() {
                               h={{ base: '44px', md: '48px' }}
                               fontSize={{ base: 'sm', md: 'md' }}
                               isLoading={joiningGameId === game.id}
-                              loadingText="Joining..."
+                              loadingText="शामिल हो रहे हैं..."
                               onClick={() => handleJoinGame(game)}
                             >
-                              Watch Game
+                              गेम देखें
                             </Button>
                           );
                         }
@@ -607,10 +722,10 @@ export default function Lobby() {
                               h={{ base: '44px', md: '48px' }}
                               fontSize={{ base: 'sm', md: 'md' }}
                               isLoading={joiningGameId === game.id}
-                              loadingText="Joining..."
+                              loadingText="शामिल हो रहे हैं..."
                               onClick={() => handleJoinGame(game)}
                             >
-                              Join Game
+                              गेम में शामिल हों
                             </Button>
                           );
                         }
@@ -627,7 +742,7 @@ export default function Lobby() {
                             leftIcon={<BellIcon />}
                             onClick={() => handleRemindMe(game.id)}
                           >
-                            {isReminded ? 'Reminder Set' : 'Remind Me'}
+                            {isReminded ? 'रिमाइंडर सेट' : 'मुझे याद दिलाएं'}
                           </Button>
                         );
                       })()}
@@ -681,6 +796,121 @@ export default function Lobby() {
             </Box>
           </Box>
         )}
+
+        {/* How to Play Section (Hindi) */}
+        <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mt={8}>
+          <Box
+            p={{ base: 6, md: 8 }}
+            bg="grey.800"
+            borderRadius="lg"
+            boxShadow="md"
+            border="1px"
+            borderColor="grey.700"
+          >
+            <Heading size={{ base: 'md', md: 'lg' }} mb={6} color="brand.500" textAlign="center">
+              कैसे खेलें (How to Play)
+            </Heading>
+            <VStack align="start" spacing={4} color="grey.300" fontSize={{ base: 'sm', md: 'md' }}>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">१.</Text>
+                <Text>गेम शुरू होने से 30 मिनट पहले "Join Game" बटन पर क्लिक करें।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">२.</Text>
+                <Text>आपको एक टिकट मिलेगी जिसमें 1 से 90 तक के नंबर होंगे।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">३.</Text>
+                <Text>गेम शुरू होने पर, organizer एक-एक करके नंबर बुलाएंगे।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">४.</Text>
+                <Text>अगर बुलाया गया नंबर आपकी टिकट पर है, तो उस पर क्लिक करके mark करें।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">५.</Text>
+                <Text>जब आप कोई pattern पूरा कर लें (Early 5, Top Line, Middle Line, Bottom Line, या Full House), तो "Claim Prize" बटन दबाएं।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">६.</Text>
+                <Text>सबसे पहले claim करने वाले को इनाम मिलेगा!</Text>
+              </HStack>
+              <Box mt={4} p={4} bg="grey.900" borderRadius="md" borderLeft="4px" borderColor="brand.500">
+                <Text fontWeight="semibold" color="brand.400" mb={2}>Prize Patterns:</Text>
+                <VStack align="start" spacing={1} fontSize="sm">
+                  <Text>• <strong>Early 5:</strong> टिकट पर कोई भी 5 नंबर</Text>
+                  <Text>• <strong>Top Line:</strong> पहली लाइन के सभी नंबर</Text>
+                  <Text>• <strong>Middle Line:</strong> बीच की लाइन के सभी नंबर</Text>
+                  <Text>• <strong>Bottom Line:</strong> आखिरी लाइन के सभी नंबर</Text>
+                  <Text>• <strong>Full House:</strong> टिकट के सभी नंबर</Text>
+                </VStack>
+              </Box>
+            </VStack>
+          </Box>
+        </Box>
+
+        {/* Terms and Conditions Section */}
+        <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mb={8}>
+          <Box
+            p={{ base: 6, md: 8 }}
+            bg="grey.800"
+            borderRadius="lg"
+            boxShadow="md"
+            border="1px"
+            borderColor="grey.700"
+          >
+            <Heading size={{ base: 'md', md: 'lg' }} mb={6} color="brand.500" textAlign="center">
+              Terms & Conditions
+            </Heading>
+            <VStack align="start" spacing={4} color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>1. Eligibility</Text>
+                <Text>Players must be 18 years or older to participate. By joining, you confirm that you meet this requirement and agree to these terms.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>2. Game Rules</Text>
+                <Text>All decisions made by the organizer are final. Players must follow the game rules and mark numbers honestly. Any form of cheating or manipulation will result in immediate disqualification.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>3. Prize Distribution</Text>
+                <Text>Prizes will be awarded as announced at the start of the game. The organizer reserves the right to verify claims before awarding prizes. Winners must claim their prizes within the specified time period.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>4. Technical Issues</Text>
+                <Text>The organizer is not responsible for technical issues, internet connectivity problems, or device malfunctions that may affect gameplay. Players participate at their own risk.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>5. Fair Play</Text>
+                <Text>This platform is for entertainment purposes. Multiple accounts, bots, or automated scripts are strictly prohibited. Violation will result in permanent ban.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>6. Refunds</Text>
+                <Text>Entry fees (if applicable) are non-refundable once the game has started. Refunds may be considered only in case of game cancellation by the organizer.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>7. Privacy</Text>
+                <Text>Your personal information will be kept confidential and used only for game-related purposes. We do not share your data with third parties without consent.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>8. Dispute Resolution</Text>
+                <Text>Any disputes arising from the game will be resolved by the organizer. The organizer's decision in all matters relating to the game is final and binding.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>9. Modifications</Text>
+                <Text>The organizer reserves the right to modify these terms and conditions at any time. Continued participation constitutes acceptance of any changes.</Text>
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="grey.300" mb={2}>10. Liability</Text>
+                <Text>The organizer shall not be held liable for any losses, damages, or claims arising from participation in the game. Players participate voluntarily and at their own risk.</Text>
+              </Box>
+              <Box mt={4} p={3} bg="grey.900" borderRadius="md" borderLeft="3px" borderColor="red.500">
+                <Text fontSize="xs" color="grey.500">
+                  By participating in this game, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions. If you do not agree, please do not participate.
+                </Text>
+              </Box>
+            </VStack>
+          </Box>
+        </Box>
       </VStack>
     </Box>
   );
