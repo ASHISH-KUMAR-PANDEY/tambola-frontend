@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -22,12 +22,14 @@ import { useGameStore } from '../stores/gameStore';
 import { useAuthStore } from '../stores/authStore';
 import { Ticket } from '../components/Ticket';
 import { Logo } from '../components/Logo';
+import { GameSummaryModal } from '../components/GameSummaryModal';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuthStore();
+  const [showSummary, setShowSummary] = useState(false);
 
   const {
     playerId,
@@ -128,13 +130,11 @@ export default function Game() {
           title: 'गेम पूर्ण हुआ',
           description: 'आयोजक ने गेम समाप्त कर दिया है। खेलने के लिए धन्यवाद!',
           status: 'info',
-          duration: 5000,
+          duration: 3000,
           isClosable: true,
         });
-        setTimeout(() => {
-          clearGame();
-          navigate('/lobby');
-        }, 3000);
+        // Show summary modal
+        setShowSummary(true);
       },
       onGameDeleted: (data) => {
         toast({
@@ -181,6 +181,12 @@ export default function Game() {
     if (gameId) {
       wsService.leaveGame(gameId);
     }
+    clearGame();
+    navigate('/lobby');
+  };
+
+  const handleCloseSummary = () => {
+    setShowSummary(false);
     clearGame();
     navigate('/lobby');
   };
@@ -375,6 +381,14 @@ export default function Game() {
           </Box>
         )}
       </VStack>
+
+      {/* Game Summary Modal */}
+      <GameSummaryModal
+        isOpen={showSummary}
+        onClose={handleCloseSummary}
+        winners={winners}
+        isOrganizer={false}
+      />
     </Box>
   );
 }

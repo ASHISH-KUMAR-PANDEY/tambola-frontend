@@ -19,6 +19,7 @@ import {
 import { apiService } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { Logo } from '../components/Logo';
+import { GameSummaryModal } from '../components/GameSummaryModal';
 
 interface Winner {
   playerId: string;
@@ -37,6 +38,7 @@ export default function GameControl() {
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
   const [winners, setWinners] = useState<Winner[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     if (!gameId) {
@@ -163,11 +165,11 @@ export default function GameControl() {
       await apiService.updateGameStatus(gameId!, 'COMPLETED');
       toast({
         title: 'Game Completed',
-        description: 'Returning to lobby...',
         status: 'success',
         duration: 2000,
       });
-      navigate('/lobby');
+      // Show summary modal
+      setShowSummary(true);
     } catch (error) {
       toast({
         title: 'Error',
@@ -176,6 +178,11 @@ export default function GameControl() {
         duration: 5000,
       });
     }
+  };
+
+  const handleCloseSummary = () => {
+    setShowSummary(false);
+    navigate('/lobby');
   };
 
   const getWinnerForCategory = (category: string) => {
@@ -383,6 +390,14 @@ export default function GameControl() {
           </GridItem>
         </Grid>
       </VStack>
+
+      {/* Game Summary Modal */}
+      <GameSummaryModal
+        isOpen={showSummary}
+        onClose={handleCloseSummary}
+        winners={winners}
+        isOrganizer={true}
+      />
     </Box>
   );
 }
