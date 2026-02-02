@@ -67,24 +67,32 @@ export type GameEventHandlers = {
 
 class WebSocketService {
   private socket: Socket | null = null;
-  private token: string | null = null;
+  private userId: string | null = null;
   private handlers: GameEventHandlers = {};
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
 
   /**
-   * Connect to WebSocket server with JWT authentication
+   * Connect to WebSocket server with userId authentication
    */
-  connect(token: string): void {
-    if (this.socket?.connected) {
-      console.warn('WebSocket already connected');
+  connect(userId: string): void {
+    // If already connected with the same userId, skip
+    if (this.socket?.connected && this.userId === userId) {
+      console.log('[WebSocket] Already connected with userId:', userId);
       return;
     }
 
-    this.token = token;
+    // If connecting with different userId, disconnect first
+    if (this.socket && this.userId !== userId) {
+      console.log('[WebSocket] Switching userId, disconnecting first');
+      this.disconnect();
+    }
+
+    console.log('[WebSocket] Initiating connection for userId:', userId);
+    this.userId = userId;
 
     this.socket = io(WS_URL, {
-      auth: { token },
+      auth: { userId },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -92,6 +100,7 @@ class WebSocketService {
     });
 
     this.setupEventListeners();
+    console.log('[WebSocket] Socket instance created, waiting for connection...');
   }
 
   /**
@@ -103,7 +112,7 @@ class WebSocketService {
       this.socket.disconnect();
       this.socket = null;
     }
-    this.token = null;
+    this.userId = null;
     this.handlers = {};
     this.reconnectAttempts = 0;
   }
@@ -126,10 +135,19 @@ class WebSocketService {
    * Join a game
    */
   joinGame(gameId: string): void {
-    if (!this.socket?.connected) {
-      console.error('WebSocket not connected');
+    if (!this.socket) {
+      console.error('[WebSocket] Socket not initialized. Cannot join game.');
       return;
     }
+    if (!this.socket.connected) {
+      console.error('[WebSocket] Socket not connected. Status:', {
+        connected: this.socket.connected,
+        disconnected: this.socket.disconnected,
+        userId: this.userId,
+      });
+      return;
+    }
+    console.log('[WebSocket] Emitting game:join for gameId:', gameId);
     this.socket.emit('game:join', { gameId });
   }
 
@@ -202,21 +220,22 @@ class WebSocketService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      console.log('[WebSocket] Connected successfully! Socket ID:', this.socket?.id);
       this.reconnectAttempts = 0;
       this.handlers.onConnected?.();
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+      console.log('[WebSocket] Disconnected. Reason:', reason);
       this.handlers.onDisconnected?.();
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      console.error('[WebSocket] Connection error:', error.message);
       this.reconnectAttempts++;
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.error('[WebSocket] Max reconnection attempts reached');
         this.handlers.onError?.({
           code: 'CONNECTION_FAILED',
           message: 'Failed to connect to game server. Please check your connection.',

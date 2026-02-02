@@ -15,13 +15,14 @@ interface AuthState {
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  setUser: (user: User) => void;
   clearError: () => void;
   updateActivity: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -39,8 +40,8 @@ export const useAuthStore = create<AuthState>()(
             lastActivity: Date.now(),
           });
 
-          // Connect to WebSocket with token
-          wsService.connect(response.token);
+          // Connect to WebSocket with userId
+          wsService.connect(response.user.id);
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Login failed',
@@ -61,8 +62,8 @@ export const useAuthStore = create<AuthState>()(
             lastActivity: Date.now(),
           });
 
-          // Connect to WebSocket with token
-          wsService.connect(response.token);
+          // Connect to WebSocket with userId
+          wsService.connect(response.user.id);
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Signup failed',
@@ -75,6 +76,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         apiService.logout();
         wsService.disconnect();
+        localStorage.removeItem('app_user_id');
         set({
           user: null,
           isAuthenticated: false,
@@ -82,7 +84,49 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
+      setUser: (user: User) => {
+        set({
+          user,
+          isAuthenticated: true,
+          lastActivity: Date.now(),
+        });
+      },
+
       loadUser: async () => {
+        const appUserId = localStorage.getItem('app_user_id');
+        const { user, isAuthenticated } = get();
+
+        // If user came from mobile app and already authenticated, skip
+        if (appUserId && user && isAuthenticated) {
+          set({ isLoading: false });
+          // Only connect if not already connected
+          if (!wsService.isConnected()) {
+            console.log('[AuthStore] Reconnecting WebSocket for mobile app user');
+            wsService.connect(appUserId);
+          }
+          return;
+        }
+
+        // If has appUserId but not authenticated yet, set up user
+        if (appUserId) {
+          set({
+            user: {
+              id: appUserId,
+              email: `user_${appUserId}@app.com`,
+              name: `User ${appUserId}`,
+            },
+            isAuthenticated: true,
+            isLoading: false,
+            lastActivity: Date.now(),
+          });
+          // Only connect if not already connected
+          if (!wsService.isConnected()) {
+            console.log('[AuthStore] Connecting WebSocket for mobile app user');
+            wsService.connect(appUserId);
+          }
+          return;
+        }
+
         const token = apiService.getToken();
         if (!token) {
           set({ isAuthenticated: false, isLoading: false });
@@ -99,8 +143,8 @@ export const useAuthStore = create<AuthState>()(
             lastActivity: Date.now(),
           });
 
-          // Connect to WebSocket with existing token
-          wsService.connect(token);
+          // Connect to WebSocket with userId
+          wsService.connect(user.id);
         } catch (error) {
           apiService.clearToken();
           set({

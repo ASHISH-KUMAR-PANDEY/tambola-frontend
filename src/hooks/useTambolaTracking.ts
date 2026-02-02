@@ -11,6 +11,11 @@ const getDeviceId = (): string => {
   return localStorage.getItem(DEVICE_ID_KEY) || 'unknown';
 };
 
+const getAppUserId = (): string | null => {
+  // Get userId from localStorage (stored during auto-login from mobile app)
+  return localStorage.getItem('app_user_id');
+};
+
 const getAppendedPlatformEventName = (eventName: string): string => {
   return `${eventName}_WEB`;
 };
@@ -42,10 +47,13 @@ export const useTambolaTracking = () => {
   const { playerId, currentGameId } = useGameStore();
 
   const trackEvent = ({ eventName, properties = {} }: TrackEventParams) => {
+    const appUserId = getAppUserId();
+
     // Enrich properties with common data
     const enrichedProperties = {
       ...properties,
       user_id: user?.id || 'anonymous',
+      app_user_id: appUserId, // Mobile app userId if available
       user_email: user?.email || null,
       device_id: getDeviceId(),
       platform: 'WEB',

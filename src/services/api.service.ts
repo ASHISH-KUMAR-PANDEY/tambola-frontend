@@ -93,8 +93,8 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers: HeadersInit = {
-      ...options.headers,
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string>),
     };
 
     // Only set Content-Type for requests with a body
@@ -146,6 +146,18 @@ class ApiService {
     const response = await this.request<AuthResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+    this.setToken(response.token);
+    return response;
+  }
+
+  /**
+   * Validate user by userId (for mobile app auto-login)
+   */
+  async validateUser(userId: string): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/api/v1/auth/validate-user', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
     });
     this.setToken(response.token);
     return response;
@@ -217,7 +229,9 @@ class ApiService {
    * Get player's active games (can rejoin)
    */
   async getMyActiveGames(): Promise<Game[]> {
-    const response = await this.request<{ games: Game[] }>('/api/v1/games/my-active');
+    const appUserId = localStorage.getItem('app_user_id');
+    const query = appUserId ? `?userId=${appUserId}` : '';
+    const response = await this.request<{ games: Game[] }>(`/api/v1/games/my-active${query}`);
     return response.games;
   }
 
