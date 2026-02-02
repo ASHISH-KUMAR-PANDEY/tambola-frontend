@@ -42,7 +42,8 @@ export interface StateSyncPayload {
   calledNumbers: number[];
   currentNumber?: number;
   players: Array<{ playerId: string; userName: string }>;
-  winners: Array<{ playerId: string; category: string }>;
+  winners: Array<{ playerId: string; category: string; userName?: string }>;
+  markedNumbers?: number[];
 }
 
 export interface GameDeletedPayload {

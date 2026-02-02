@@ -28,14 +28,16 @@ interface GameSummaryModalProps {
   onClose: () => void;
   winners: Winner[];
   isOrganizer?: boolean;
+  playerName?: string;
+  currentPlayerId?: string;
 }
 
 const PRIZE_CATEGORIES = [
-  { key: 'EARLY_5', labelHi: 'अर्ली 5', labelEn: 'Early 5' },
-  { key: 'TOP_LINE', labelHi: 'टॉप लाइन', labelEn: 'Top Line' },
-  { key: 'MIDDLE_LINE', labelHi: 'मिडिल लाइन', labelEn: 'Middle Line' },
-  { key: 'BOTTOM_LINE', labelHi: 'बॉटम लाइन', labelEn: 'Bottom Line' },
-  { key: 'FULL_HOUSE', labelHi: 'फुल हाउस', labelEn: 'Full House' },
+  { key: 'EARLY_5', labelHi: 'पहले पांच', labelEn: 'Early 5' },
+  { key: 'TOP_LINE', labelHi: 'ऊपर वाली लाइन', labelEn: 'Top Line' },
+  { key: 'MIDDLE_LINE', labelHi: 'बीच वाली लाइन', labelEn: 'Middle Line' },
+  { key: 'BOTTOM_LINE', labelHi: 'नीचे वाली लाइन', labelEn: 'Bottom Line' },
+  { key: 'FULL_HOUSE', labelHi: 'सारे नंबर', labelEn: 'Full House' },
 ];
 
 export const GameSummaryModal = ({
@@ -43,9 +45,19 @@ export const GameSummaryModal = ({
   onClose,
   winners,
   isOrganizer = false,
+  playerName,
+  currentPlayerId,
 }: GameSummaryModalProps) => {
   const getWinnerForCategory = (category: string) => {
     return winners.find((w) => w.category === category);
+  };
+
+  const getDisplayName = (winner: Winner) => {
+    // If playerName is provided and it's the current player's win, use their entered name
+    if (playerName && currentPlayerId && winner.playerId === currentPlayerId) {
+      return playerName;
+    }
+    return winner.userName || 'Player';
   };
 
   return (
@@ -119,7 +131,7 @@ export const GameSummaryModal = ({
                         <HStack spacing={2}>
                           <Icon as={CheckCircleIcon} color="green.500" boxSize={5} />
                           <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
-                            {winner.userName || 'Player'}
+                            {getDisplayName(winner)}
                           </Badge>
                         </HStack>
                       </VStack>

@@ -36,6 +36,7 @@ export default function Game() {
   const [showSummary, setShowSummary] = useState(false);
   const [gameStartTime] = useState<number>(Date.now());
   const [liveStream, setLiveStream] = useState<YouTubeLiveStream | null>(null);
+  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('playerName') || '');
 
   const {
     playerId,
@@ -75,19 +76,33 @@ export default function Game() {
       return;
     }
 
-    // Always join/rejoin the game room when component mounts
-    // Backend will return existing ticket if already joined
-    wsService.joinGame(gameId);
+    console.log('[Game] Component mounted, gameId:', gameId, 'WS connected:', wsService.isConnected());
 
-    // Setup WebSocket event handlers
+    // Setup WebSocket event handlers FIRST before joining
+    // This ensures handlers are ready to receive stateSync event
     wsService.on({
+      onConnected: () => {
+        console.log('[Game] WebSocket connected, joining game:', gameId);
+        // Join game when WebSocket connects/reconnects
+        wsService.joinGame(gameId);
+      },
       onStateSync: (data) => {
         // Sync game state when rejoining
+        console.log('[Game] onStateSync received:', {
+          calledNumbersCount: data.calledNumbers.length,
+          currentNumber: data.currentNumber,
+          playersCount: data.players.length,
+          winnersCount: data.winners.length,
+          winners: data.winners,
+          markedNumbersCount: data.markedNumbers?.length || 0,
+        });
+
         syncGameState(
           data.calledNumbers,
           data.currentNumber || null,
           data.players,
-          data.winners as any
+          data.winners as any,
+          data.markedNumbers || []
         );
       },
       onPlayerJoined: (data) => {
@@ -112,10 +127,7 @@ export default function Game() {
         addCalledNumber(data.number);
       },
       onWinner: (data) => {
-        const categoryName = data.category
-          .split('_')
-          .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-          .join(' ');
+        const categoryName = getCategoryLabel(data.category);
 
         addWinner(data);
 
@@ -218,6 +230,15 @@ export default function Game() {
       },
     });
 
+    // If WebSocket is already connected, join immediately
+    // Otherwise, onConnected handler above will join when connection is ready
+    if (wsService.isConnected()) {
+      console.log('[Game] WebSocket already connected, joining game immediately');
+      wsService.joinGame(gameId);
+    } else {
+      console.log('[Game] WebSocket not connected yet, waiting for connection...');
+    }
+
     return () => {
       if (gameId) {
         wsService.leaveGame(gameId);
@@ -258,11 +279,11 @@ export default function Game() {
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
-      'EARLY_5': 'अर्ली 5',
-      'TOP_LINE': 'टॉप लाइन',
-      'MIDDLE_LINE': 'मिडिल लाइन',
-      'BOTTOM_LINE': 'बॉटम लाइन',
-      'FULL_HOUSE': 'फुल हाउस',
+      'EARLY_5': 'पहले पांच',
+      'TOP_LINE': 'ऊपर वाली लाइन',
+      'MIDDLE_LINE': 'बीच वाली लाइन',
+      'BOTTOM_LINE': 'नीचे वाली लाइन',
+      'FULL_HOUSE': 'सारे नंबर',
     };
     return labels[category] || category;
   };
@@ -393,13 +414,14 @@ export default function Game() {
           </Heading>
           <VStack align="stretch" spacing={{ base: 2, md: 3 }}>
             {[
-              { key: 'EARLY_5', label: 'अर्ली 5' },
-              { key: 'TOP_LINE', label: 'टॉप लाइन', lineIndex: 0 },
-              { key: 'MIDDLE_LINE', label: 'मिडिल लाइन', lineIndex: 1 },
-              { key: 'BOTTOM_LINE', label: 'बॉटम लाइन', lineIndex: 2 },
-              { key: 'FULL_HOUSE', label: 'फुल हाउस' },
+              { key: 'EARLY_5', label: 'पहले पांच' },
+              { key: 'TOP_LINE', label: 'ऊपर वाली लाइन', lineIndex: 0 },
+              { key: 'MIDDLE_LINE', label: 'बीच वाली लाइन', lineIndex: 1 },
+              { key: 'BOTTOM_LINE', label: 'नीचे वाली लाइन', lineIndex: 2 },
+              { key: 'FULL_HOUSE', label: 'सारे नंबर' },
             ].map(({ key, label, lineIndex }) => {
               const winner = getCategoryWinner(key);
+              const isMyWin = winner && winner.playerId === playerId;
               const isComplete =
                 lineIndex !== undefined
                   ? checkLineComplete(lineIndex)
@@ -411,7 +433,9 @@ export default function Game() {
                 <HStack key={key} justify="space-between" p={{ base: 3, md: 4 }} bg="white" borderRadius="md" border="1px" borderColor="grey.300" spacing={2}>
                   <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="grey.900">{label}</Text>
                   {winner ? (
-                    <Badge colorScheme="green" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>जीत लिया ✓</Badge>
+                    <Badge colorScheme={isMyWin ? "green" : "red"} fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>
+                      {isMyWin ? 'आपने जीता ✓' : 'किसी और ने जीता'}
+                    </Badge>
                   ) : isComplete ? (
                     <Button
                       size={{ base: 'sm', md: 'md' }}
@@ -466,6 +490,8 @@ export default function Game() {
         onClose={handleCloseSummary}
         winners={winners}
         isOrganizer={false}
+        playerName={playerName}
+        currentPlayerId={playerId}
       />
     </Box>
   );

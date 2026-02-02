@@ -20,14 +20,35 @@ interface AuthState {
   updateActivity: () => void;
 }
 
+// Check if mobile app user exists before creating store
+const appUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+const nowTimestamp = Date.now();
+
+// If mobile app user exists, clear any old auth session to prevent conflicts
+if (appUserId && typeof window !== 'undefined') {
+  const existingAuth = localStorage.getItem('auth-storage');
+  if (existingAuth) {
+    const parsed = JSON.parse(existingAuth);
+    // If persisted user doesn't match app_user_id, clear it
+    if (!parsed.state?.user || parsed.state.user.id !== appUserId) {
+      console.log('[AuthStore] Clearing old auth session for mobile app user');
+      localStorage.removeItem('auth-storage');
+    }
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user: null,
-      isAuthenticated: false,
+      user: appUserId ? {
+        id: appUserId,
+        email: `user_${appUserId}@app.com`,
+        name: `User ${appUserId}`,
+      } : null,
+      isAuthenticated: !!appUserId,
       isLoading: false,
       error: null,
-      lastActivity: Date.now(),
+      lastActivity: nowTimestamp,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -76,7 +97,9 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         apiService.logout();
         wsService.disconnect();
-        localStorage.removeItem('app_user_id');
+        // DON'T remove app_user_id - mobile app controls this
+        // Only clear for regular users (those with JWT tokens)
+        sessionStorage.removeItem('playerName'); // Clear player name on logout
         set({
           user: null,
           isAuthenticated: false,
@@ -94,35 +117,39 @@ export const useAuthStore = create<AuthState>()(
 
       loadUser: async () => {
         const appUserId = localStorage.getItem('app_user_id');
-        const { user, isAuthenticated } = get();
+        const { user } = get();
 
-        // If user came from mobile app and already authenticated, skip
-        if (appUserId && user && isAuthenticated) {
-          set({ isLoading: false });
-          // Only connect if not already connected
-          if (!wsService.isConnected()) {
-            console.log('[AuthStore] Reconnecting WebSocket for mobile app user');
-            wsService.connect(appUserId);
-          }
-          return;
-        }
-
-        // If has appUserId but not authenticated yet, set up user
+        // If app_user_id exists, always prioritize mobile app user
         if (appUserId) {
-          set({
-            user: {
-              id: appUserId,
-              email: `user_${appUserId}@app.com`,
-              name: `User ${appUserId}`,
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            lastActivity: Date.now(),
-          });
-          // Only connect if not already connected
-          if (!wsService.isConnected()) {
-            console.log('[AuthStore] Connecting WebSocket for mobile app user');
-            wsService.connect(appUserId);
+          // Clear any JWT token (mobile app users don't use JWT)
+          apiService.clearToken();
+
+          // If existing user doesn't match app_user_id, clear and set up mobile user
+          if (!user || user.id !== appUserId) {
+            console.log('[AuthStore] Setting up mobile app user:', appUserId);
+            const freshTimestamp = Date.now();
+            set({
+              user: {
+                id: appUserId,
+                email: `user_${appUserId}@app.com`,
+                name: `User ${appUserId}`,
+              },
+              isAuthenticated: true,
+              isLoading: false,
+              lastActivity: freshTimestamp,
+            });
+            // Only connect if not already connected
+            if (!wsService.isConnected()) {
+              console.log('[AuthStore] Connecting WebSocket for mobile app user');
+              wsService.connect(appUserId);
+            }
+          } else {
+            // Already set up correctly, but refresh activity timestamp
+            set({ isLoading: false, lastActivity: Date.now() });
+            if (!wsService.isConnected()) {
+              console.log('[AuthStore] Reconnecting WebSocket for mobile app user');
+              wsService.connect(appUserId);
+            }
           }
           return;
         }
@@ -166,6 +193,28 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
         lastActivity: state.lastActivity,
       }),
+      // Custom merge to handle mobile app user priority
+      merge: (persistedState: any, currentState: any) => {
+        const currentAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+
+        // If app_user_id exists, ALWAYS use mobile app user (ignore persisted state)
+        if (currentAppUserId) {
+          console.log('[AuthStore] Mobile app user detected, using fresh mobile user state');
+          return {
+            ...currentState,
+            user: {
+              id: currentAppUserId,
+              email: `user_${currentAppUserId}@app.com`,
+              name: `User ${currentAppUserId}`,
+            },
+            isAuthenticated: true,
+            lastActivity: Date.now(),
+          };
+        }
+
+        // No app_user_id, use persisted state normally
+        return { ...currentState, ...persistedState };
+      },
     }
   )
 );

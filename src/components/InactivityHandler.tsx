@@ -13,9 +13,12 @@ export const InactivityHandler = () => {
   const { isAuthenticated, logout, updateActivity, lastActivity } = useAuthStore();
   const navigate = useNavigate();
 
+  // Check if mobile app user (they shouldn't be auto-logged out)
+  const isMobileAppUser = typeof window !== 'undefined' && !!localStorage.getItem('app_user_id');
+
   // Handle inactivity logout
   const handleInactive = () => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isMobileAppUser) {
       console.log('Logging out due to inactivity');
       logout();
       navigate('/login', { state: { message: 'You were logged out due to inactivity' } });
@@ -24,6 +27,11 @@ export const InactivityHandler = () => {
 
   // Check if session expired during page reload
   useEffect(() => {
+    // Skip inactivity check for mobile app users
+    if (isMobileAppUser) {
+      return;
+    }
+
     if (isAuthenticated && lastActivity) {
       const timeSinceLastActivity = Date.now() - lastActivity;
       if (timeSinceLastActivity >= INACTIVITY_TIMEOUT) {
@@ -33,16 +41,16 @@ export const InactivityHandler = () => {
     }
   }, []); // Run only on mount
 
-  // Set up inactivity tracking
+  // Set up inactivity tracking (skip for mobile app users)
   const { resetTimer } = useInactivityTimeout({
     onInactive: handleInactive,
     timeout: INACTIVITY_TIMEOUT,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isMobileAppUser,
   });
 
-  // Update activity timestamp in store when user is active
+  // Update activity timestamp in store when user is active (skip for mobile app users)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isMobileAppUser) return;
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 

@@ -18,6 +18,15 @@ import {
   Icon,
   Image,
   AspectRatio,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
 import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed } from '../services/api.service';
@@ -48,8 +57,34 @@ export default function Lobby() {
     const saved = localStorage.getItem('remindedGames');
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [tempName, setTempName] = useState('');
 
   useEffect(() => {
+    // Only show name modal for players, not organizers
+    // Check user role to determine if they're an organizer
+    console.log('[Lobby] User role:', user?.role, 'User:', user);
+
+    if (user?.role === 'ORGANIZER') {
+      // This is an organizer, skip name modal
+      console.log('[Lobby] User is organizer, skipping name modal');
+      setShowNameModal(false);
+    } else {
+      // This is a player (role is 'PLAYER' or undefined), check if name exists in sessionStorage
+      const savedName = sessionStorage.getItem('playerName');
+      console.log('[Lobby] User is player, saved name:', savedName);
+
+      if (savedName) {
+        setPlayerName(savedName);
+        setShowNameModal(false);
+        console.log('[Lobby] Using saved name, no modal');
+      } else {
+        setShowNameModal(true);
+        console.log('[Lobby] No saved name, showing modal');
+      }
+    }
+
     loadGames();
     loadMyActiveGames();
     loadCurrentBanner();
@@ -263,6 +298,15 @@ export default function Lobby() {
     navigate('/login');
   };
 
+  const handleNameSubmit = () => {
+    if (tempName.trim()) {
+      const name = tempName.trim();
+      setPlayerName(name);
+      sessionStorage.setItem('playerName', name);
+      setShowNameModal(false);
+    }
+  };
+
   const handleRemindMe = (gameId: string) => {
     const updated = new Set(remindedGames);
     const game = games.find((g) => g.id === gameId);
@@ -404,7 +448,9 @@ export default function Lobby() {
         </Box>
 
         {/* Welcome Message */}
-        <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">स्वागत है, {user?.name}!</Text>
+        <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">
+          स्वागत है, {playerName || user?.name}!
+        </Text>
 
         {/* Organizer Controls - Always show for organizers */}
         {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
@@ -533,7 +579,7 @@ export default function Lobby() {
                         </HStack>
                         <HStack justify="space-between" w="100%">
                           <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-                            फुल हाउस:
+                            सारे नंबर:
                           </Text>
                           <Text fontWeight="bold" color="highlight.500" fontSize={{ base: 'sm', md: 'md' }}>
                             {game.prizes.fullHouse || 0} अंक
@@ -753,7 +799,7 @@ export default function Lobby() {
               </HStack>
               <HStack align="start" spacing={3}>
                 <Text fontWeight="bold" color="brand.400" minW="30px">5.</Text>
-                <Text>जब आप कोई पैटर्न पूरा कर लें (अर्ली 5, टॉप लाइन, मिडिल लाइन, बॉटम लाइन, या फुल हाउस), तो "जीत का दावा करें" बटन दबाएं।</Text>
+                <Text>जब आप कोई पैटर्न पूरा कर लें (पहले पांच, ऊपर वाली लाइन, बीच वाली लाइन, नीचे वाली लाइन, या सारे नंबर), तो "जीत का दावा करें" बटन दबाएं।</Text>
               </HStack>
               <HStack align="start" spacing={3}>
                 <Text fontWeight="bold" color="brand.400" minW="30px">6.</Text>
@@ -762,11 +808,11 @@ export default function Lobby() {
               <Box mt={4} p={4} bg="grey.900" borderRadius="md" borderLeft="4px" borderColor="brand.500">
                 <Text fontWeight="semibold" color="brand.400" mb={2}>इनाम के पैटर्न:</Text>
                 <VStack align="start" spacing={1} fontSize="sm">
-                  <Text>• <strong>अर्ली 5:</strong> टिकट पर कोई भी 5 नंबर</Text>
-                  <Text>• <strong>टॉप लाइन:</strong> पहली लाइन के सभी नंबर</Text>
-                  <Text>• <strong>मिडिल लाइन:</strong> बीच की लाइन के सभी नंबर</Text>
-                  <Text>• <strong>बॉटम लाइन:</strong> आखिरी लाइन के सभी नंबर</Text>
-                  <Text>• <strong>फुल हाउस:</strong> टिकट के सभी नंबर</Text>
+                  <Text>• <strong>पहले पांच:</strong> टिकट पर कोई भी 5 नंबर</Text>
+                  <Text>• <strong>ऊपर वाली लाइन:</strong> पहली लाइन के सभी नंबर</Text>
+                  <Text>• <strong>बीच वाली लाइन:</strong> बीच की लाइन के सभी नंबर</Text>
+                  <Text>• <strong>नीचे वाली लाइन:</strong> आखिरी लाइन के सभी नंबर</Text>
+                  <Text>• <strong>सारे नंबर:</strong> टिकट के सभी नंबर</Text>
                 </VStack>
               </Box>
             </VStack>
@@ -836,6 +882,41 @@ export default function Lobby() {
           </Box>
         </Box>
       </VStack>
+
+      {/* Name Input Modal */}
+      <Modal isOpen={showNameModal} onClose={() => {}} closeOnOverlayClick={false} isCentered>
+        <ModalOverlay />
+        <ModalContent mx={4}>
+          <ModalHeader color="grey.900">अपना नाम बताएं</ModalHeader>
+          <ModalBody>
+            <FormControl>
+              <FormLabel color="grey.700">नाम</FormLabel>
+              <Input
+                placeholder="अपना नाम यहां लिखें"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleNameSubmit();
+                  }
+                }}
+                autoFocus
+                color="grey.900"
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              colorScheme="brand"
+              onClick={handleNameSubmit}
+              isDisabled={!tempName.trim()}
+              w="100%"
+            >
+              जारी रखें
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

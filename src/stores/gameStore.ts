@@ -30,7 +30,7 @@ interface GameState {
   setCurrentGame: (game: Game | null) => void;
   setTicket: (playerId: string, ticket: number[][], gameId: string) => void;
   restoreGameState: (playerId: string, ticket: number[][], markedNumbers: number[], calledNumbers: number[]) => void;
-  syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[]) => void;
+  syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[]) => void;
   addCalledNumber: (number: number) => void;
   addPlayer: (player: Player) => void;
   addWinner: (winner: Winner) => void;
@@ -75,15 +75,31 @@ export const useGameStore = create<GameState>()(
         });
       },
 
-      syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[]) => {
+      syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[]) => {
         // Sync game state when rejoining (called numbers, players, winners)
-        // Don't override ticket or markedNumbers
-        set({
+        // If markedNumbers provided from backend, restore them
+        console.log('[GameStore] syncGameState called with:', {
+          calledNumbersCount: calledNumbers.length,
+          currentNumber,
+          playersCount: players.length,
+          winnersCount: winners.length,
+          winners: winners,
+          markedNumbersCount: markedNumbers?.length || 0,
+        });
+
+        const updates: any = {
           calledNumbers,
           currentNumber,
           players,
           winners,
-        });
+        };
+
+        if (markedNumbers) {
+          updates.markedNumbers = new Set(markedNumbers);
+          console.log('[GameStore] Restoring markedNumbers:', markedNumbers.length);
+        }
+
+        set(updates);
       },
 
       addCalledNumber: (number: number) => {
