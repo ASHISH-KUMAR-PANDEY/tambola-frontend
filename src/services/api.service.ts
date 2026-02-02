@@ -312,6 +312,35 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  /**
+   * Set YouTube live stream
+   */
+  async setYouTubeLiveStream(videoUrl: string): Promise<YouTubeLiveStream> {
+    return this.request<YouTubeLiveStream>('/api/v1/youtube-livestream', {
+      method: 'POST',
+      body: JSON.stringify({ videoUrl }),
+    });
+  }
+
+  /**
+   * Get current YouTube live stream
+   */
+  async getCurrentYouTubeLiveStream(): Promise<YouTubeLiveStream | null> {
+    const response = await this.request<{ stream: YouTubeLiveStream | null }>(
+      '/api/v1/youtube-livestream'
+    );
+    return response.stream;
+  }
+
+  /**
+   * Delete YouTube live stream
+   */
+  async deleteYouTubeLiveStream(): Promise<void> {
+    await this.request<void>('/api/v1/youtube-livestream', {
+      method: 'DELETE',
+    });
+  }
 }
 
 export interface PromotionalBanner {
@@ -323,6 +352,13 @@ export interface PromotionalBanner {
 }
 
 export interface YouTubeEmbed {
+  id: string;
+  videoUrl: string;
+  embedId: string;
+  createdAt: string;
+}
+
+export interface YouTubeLiveStream {
   id: string;
   videoUrl: string;
   embedId: string;

@@ -6,19 +6,22 @@ import {
   Heading,
   VStack,
 } from '@chakra-ui/react';
-import { apiService, type PromotionalBanner, type YouTubeEmbed } from '../services/api.service';
+import { apiService, type PromotionalBanner, type YouTubeEmbed, type YouTubeLiveStream } from '../services/api.service';
 import { Logo } from '../components/Logo';
 import { PromotionalBannerUpload } from '../components/PromotionalBannerUpload';
 import { YouTubeEmbedManagement } from '../components/YouTubeEmbedManagement';
+import { YouTubeLiveStreamManagement } from '../components/YouTubeLiveStreamManagement';
 
 export default function BannerManagement() {
   const navigate = useNavigate();
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
   const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
+  const [currentLiveStream, setCurrentLiveStream] = useState<YouTubeLiveStream | null>(null);
 
   useEffect(() => {
     loadCurrentBanner();
     loadCurrentEmbed();
+    loadCurrentLiveStream();
   }, []);
 
   const loadCurrentBanner = async () => {
@@ -36,6 +39,15 @@ export default function BannerManagement() {
       setCurrentEmbed(embed);
     } catch (error) {
       console.error('Failed to load YouTube embed:', error);
+    }
+  };
+
+  const loadCurrentLiveStream = async () => {
+    try {
+      const stream = await apiService.getCurrentYouTubeLiveStream();
+      setCurrentLiveStream(stream);
+    } catch (error) {
+      console.error('Failed to load YouTube live stream:', error);
     }
   };
 
@@ -82,6 +94,12 @@ export default function BannerManagement() {
             currentEmbed={currentEmbed}
             onSetSuccess={(embed) => setCurrentEmbed(embed)}
             onDeleteSuccess={() => setCurrentEmbed(null)}
+          />
+
+          <YouTubeLiveStreamManagement
+            currentStream={currentLiveStream}
+            onSetSuccess={(stream) => setCurrentLiveStream(stream)}
+            onDeleteSuccess={() => setCurrentLiveStream(null)}
           />
         </VStack>
       </VStack>

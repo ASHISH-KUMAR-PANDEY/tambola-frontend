@@ -16,8 +16,10 @@ import {
   Divider,
   Center,
   Spinner,
+  AspectRatio,
 } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
+import { apiService, type YouTubeLiveStream } from '../services/api.service';
 import { useGameStore } from '../stores/gameStore';
 import { useAuthStore } from '../stores/authStore';
 import { Ticket } from '../components/Ticket';
@@ -33,6 +35,7 @@ export default function Game() {
   const { trackEvent } = useTambolaTracking();
   const [showSummary, setShowSummary] = useState(false);
   const [gameStartTime] = useState<number>(Date.now());
+  const [liveStream, setLiveStream] = useState<YouTubeLiveStream | null>(null);
 
   const {
     playerId,
@@ -51,6 +54,20 @@ export default function Game() {
     checkFullHouse,
     clearGame,
   } = useGameStore();
+
+  useEffect(() => {
+    // Load live stream
+    const loadLiveStream = async () => {
+      try {
+        const stream = await apiService.getCurrentYouTubeLiveStream();
+        setLiveStream(stream);
+      } catch (error) {
+        console.error('Failed to load live stream:', error);
+      }
+    };
+
+    loadLiveStream();
+  }, []);
 
   useEffect(() => {
     if (!gameId) {
@@ -326,6 +343,24 @@ export default function Game() {
             बाहर निकलें
           </Button>
         </Box>
+
+        {/* YouTube Live Stream */}
+        {liveStream && (
+          <Box w="100%" maxW="600px" mx="auto">
+            <AspectRatio ratio={16 / 9}>
+              <iframe
+                src={`https://www.youtube.com/embed/${liveStream.embedId}?autoplay=1&mute=0`}
+                title="YouTube live stream"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  border: '2px solid #E53E3E',
+                  borderRadius: '8px',
+                }}
+              />
+            </AspectRatio>
+          </Box>
+        )}
 
         {/* Your Ticket */}
         <Box w="100%" maxW="600px" mx="auto">
