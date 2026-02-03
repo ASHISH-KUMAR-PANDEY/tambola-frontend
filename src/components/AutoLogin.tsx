@@ -7,16 +7,31 @@ import { useAuthStore } from '../stores/authStore';
 export const AutoLogin = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
+  const { setUser, isAuthenticated, loadUser } = useAuthStore();
   const [status, setStatus] = useState('Initializing...');
 
   useEffect(() => {
     const handleAutoLogin = async () => {
       const userId = searchParams.get('userId');
 
-      // If no userId in query params, redirect to login
+      // If no userId in query params, check for existing auth session
       if (!userId) {
-        navigate('/login', { replace: true });
+        // Try to restore existing session
+        await loadUser();
+
+        // Check if user is authenticated after loading
+        const authState = useAuthStore.getState();
+        if (authState.isAuthenticated && authState.user) {
+          // User has existing session, redirect based on role
+          if (authState.user.role === 'ORGANIZER') {
+            navigate('/organizer', { replace: true });
+          } else {
+            navigate('/lobby', { replace: true });
+          }
+        } else {
+          // No existing session, go to login
+          navigate('/login', { replace: true });
+        }
         return;
       }
 
