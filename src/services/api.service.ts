@@ -236,7 +236,54 @@ class ApiService {
   }
 
   /**
-   * Upload promotional banner
+   * Get presigned URL for direct S3 upload
+   */
+  async getPresignedUploadUrl(fileName: string, fileSize: number, mimeType: string): Promise<{
+    presignedUrl: string;
+    s3Key: string;
+    publicUrl: string;
+    expiresIn: number;
+  }> {
+    return this.request<{
+      presignedUrl: string;
+      s3Key: string;
+      publicUrl: string;
+      expiresIn: number;
+    }>('/api/v1/promotional-banner/presigned-url', {
+      method: 'POST',
+      body: JSON.stringify({ fileName, fileSize, mimeType }),
+    });
+  }
+
+  /**
+   * Upload file directly to S3 using presigned URL
+   */
+  async uploadToS3(presignedUrl: string, file: File): Promise<void> {
+    const response = await fetch(presignedUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type,
+      },
+      body: file,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload to S3: ${response.status}`);
+    }
+  }
+
+  /**
+   * Validate uploaded banner and save metadata
+   */
+  async validateUploadedBanner(s3Key: string, publicUrl: string, fileSize: number): Promise<PromotionalBanner> {
+    return this.request<PromotionalBanner>('/api/v1/promotional-banner/validate', {
+      method: 'POST',
+      body: JSON.stringify({ s3Key, publicUrl, fileSize }),
+    });
+  }
+
+  /**
+   * Upload promotional banner (legacy method - uses backend proxy)
    */
   async uploadPromotionalBanner(file: File): Promise<PromotionalBanner> {
     const token = this.getToken();
@@ -263,6 +310,24 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+  /**
+   * Upload promotional banner using presigned S3 URL (recommended)
+   */
+  async uploadPromotionalBannerDirect(file: File): Promise<PromotionalBanner> {
+    // Step 1: Get presigned URL
+    const { presignedUrl, s3Key, publicUrl } = await this.getPresignedUploadUrl(
+      file.name,
+      file.size,
+      file.type
+    );
+
+    // Step 2: Upload directly to S3
+    await this.uploadToS3(presignedUrl, file);
+
+    // Step 3: Validate and save metadata
+    return this.validateUploadedBanner(s3Key, publicUrl, file.size);
   }
 
   /**

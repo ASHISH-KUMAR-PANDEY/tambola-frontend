@@ -82,7 +82,8 @@ export function PromotionalBannerUpload({
 
     setIsUploading(true);
     try {
-      const banner = await apiService.uploadPromotionalBanner(file);
+      // Use direct S3 upload via presigned URL (bypasses backend timeout)
+      const banner = await apiService.uploadPromotionalBannerDirect(file);
       toast({
         title: 'Banner Uploaded',
         description: 'Promotional banner uploaded successfully',
