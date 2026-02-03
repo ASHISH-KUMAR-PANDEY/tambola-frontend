@@ -16,22 +16,41 @@ export const AutoLogin = () => {
 
       // If no userId in query params, check for existing auth session
       if (!userId) {
-        // Try to restore existing session
-        await loadUser();
+        // Check if there's a token in localStorage
+        const token = localStorage.getItem('auth_token');
+        const authStorage = localStorage.getItem('auth-storage');
 
-        // Check if user is authenticated after loading
-        const authState = useAuthStore.getState();
-        if (authState.isAuthenticated && authState.user) {
-          // User has existing session, redirect based on role
-          if (authState.user.role === 'ORGANIZER') {
-            navigate('/organizer', { replace: true });
-          } else {
-            navigate('/lobby', { replace: true });
+        console.log('[AutoLogin] No userId, checking existing session...');
+        console.log('[AutoLogin] Token exists:', !!token);
+        console.log('[AutoLogin] Auth storage exists:', !!authStorage);
+
+        if (token || authStorage) {
+          // There's an existing session, try to restore it
+          setStatus('Restoring session...');
+          await loadUser();
+
+          // Wait a bit for state to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Check if user is authenticated after loading
+          const authState = useAuthStore.getState();
+          console.log('[AutoLogin] Auth state after loadUser:', authState.isAuthenticated, authState.user?.role);
+
+          if (authState.isAuthenticated && authState.user) {
+            // User has existing session, redirect based on role
+            console.log('[AutoLogin] Session restored, redirecting...');
+            if (authState.user.role === 'ORGANIZER') {
+              navigate('/organizer', { replace: true });
+            } else {
+              navigate('/lobby', { replace: true });
+            }
+            return;
           }
-        } else {
-          // No existing session, go to login
-          navigate('/login', { replace: true });
         }
+
+        // No existing session or session restore failed, go to login
+        console.log('[AutoLogin] No valid session, redirecting to login');
+        navigate('/login', { replace: true });
         return;
       }
 
