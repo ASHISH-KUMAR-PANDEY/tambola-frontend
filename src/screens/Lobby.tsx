@@ -221,7 +221,7 @@ export default function Lobby() {
   const handleJoinGame = async (game: Game) => {
     setJoiningGameId(game.id);
     setCurrentGame(game);
-    wsService.joinGame(game.id);
+    wsService.joinGame(game.id, playerName);
   };
 
   const handleRejoinGame = async (game: Game) => {

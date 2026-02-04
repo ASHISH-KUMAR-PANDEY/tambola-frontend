@@ -135,7 +135,7 @@ class WebSocketService {
   /**
    * Join a game
    */
-  joinGame(gameId: string): void {
+  joinGame(gameId: string, playerName?: string): void {
     if (!this.socket) {
       console.error('[WebSocket] Socket not initialized. Cannot join game.');
       return;
@@ -148,8 +148,8 @@ class WebSocketService {
       });
       return;
     }
-    console.log('[WebSocket] Emitting game:join for gameId:', gameId);
-    this.socket.emit('game:join', { gameId });
+    console.log('[WebSocket] Emitting game:join for gameId:', gameId, 'playerName:', playerName);
+    this.socket.emit('game:join', { gameId, userName: playerName });
   }
 
   /**

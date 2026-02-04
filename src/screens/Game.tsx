@@ -84,7 +84,7 @@ export default function Game() {
       onConnected: () => {
         console.log('[Game] WebSocket connected, joining game:', gameId);
         // Join game when WebSocket connects/reconnects
-        wsService.joinGame(gameId);
+        wsService.joinGame(gameId, playerName);
       },
       onStateSync: (data) => {
         // Sync game state when rejoining
@@ -234,7 +234,7 @@ export default function Game() {
     // Otherwise, onConnected handler above will join when connection is ready
     if (wsService.isConnected()) {
       console.log('[Game] WebSocket already connected, joining game immediately');
-      wsService.joinGame(gameId);
+      wsService.joinGame(gameId, playerName);
     } else {
       console.log('[Game] WebSocket not connected yet, waiting for connection...');
     }
