@@ -28,8 +28,6 @@ interface GameSummaryModalProps {
   onClose: () => void;
   winners: Winner[];
   isOrganizer?: boolean;
-  playerName?: string;
-  currentPlayerId?: string;
 }
 
 const PRIZE_CATEGORIES = [
@@ -45,18 +43,14 @@ export const GameSummaryModal = ({
   onClose,
   winners,
   isOrganizer = false,
-  playerName,
-  currentPlayerId,
 }: GameSummaryModalProps) => {
   const getWinnerForCategory = (category: string) => {
     return winners.find((w) => w.category === category);
   };
 
   const getDisplayName = (winner: Winner) => {
-    // If playerName is provided and it's the current player's win, use their entered name
-    if (playerName && currentPlayerId && winner.playerId === currentPlayerId) {
-      return playerName;
-    }
+    // Always use userName from backend (which now has the correct player name)
+    // Backend sends the name entered by the player, so all users see the same name
     return winner.userName || 'Player';
   };
 

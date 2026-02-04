@@ -490,8 +490,6 @@ export default function Game() {
         onClose={handleCloseSummary}
         winners={winners}
         isOrganizer={false}
-        playerName={playerName}
-        currentPlayerId={playerId}
       />
     </Box>
   );
