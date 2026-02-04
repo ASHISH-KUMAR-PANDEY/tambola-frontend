@@ -885,12 +885,16 @@ export default function Lobby() {
 
       {/* Name Input Modal */}
       <Modal isOpen={showNameModal} onClose={() => {}} closeOnOverlayClick={false} isCentered>
-        <ModalOverlay />
-        <ModalContent mx={4}>
-          <ModalHeader color="grey.900">अपना नाम बताएं</ModalHeader>
-          <ModalBody>
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent mx={4} bg="grey.700" borderColor="grey.600" borderWidth="1px">
+          <ModalHeader color="white" fontSize="xl" fontWeight="bold">
+            अपना नाम बताएं
+          </ModalHeader>
+          <ModalBody pb={6}>
             <FormControl>
-              <FormLabel color="grey.700">नाम</FormLabel>
+              <FormLabel color="grey.300" fontSize="sm" fontWeight="medium">
+                नाम
+              </FormLabel>
               <Input
                 placeholder="अपना नाम यहां लिखें"
                 value={tempName}
@@ -901,7 +905,16 @@ export default function Lobby() {
                   }
                 }}
                 autoFocus
-                color="grey.900"
+                color="white"
+                bg="grey.600"
+                borderColor="grey.500"
+                _placeholder={{ color: 'grey.400' }}
+                _hover={{ borderColor: 'grey.400' }}
+                _focus={{
+                  borderColor: 'brand.500',
+                  boxShadow: '0 0 0 1px #258D58'
+                }}
+                fontSize="md"
               />
             </FormControl>
           </ModalBody>
@@ -911,6 +924,7 @@ export default function Lobby() {
               onClick={handleNameSubmit}
               isDisabled={!tempName.trim()}
               w="100%"
+              size="lg"
             >
               जारी रखें
             </Button>
