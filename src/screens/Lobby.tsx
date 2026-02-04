@@ -58,7 +58,7 @@ export default function Lobby() {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
   const [showNameModal, setShowNameModal] = useState(false);
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('playerName') || '');
   const [tempName, setTempName] = useState('');
 
   useEffect(() => {
@@ -219,6 +219,7 @@ export default function Lobby() {
   };
 
   const handleJoinGame = async (game: Game) => {
+    console.log('[Lobby] handleJoinGame called with playerName:', playerName, 'type:', typeof playerName, 'length:', playerName?.length);
     setJoiningGameId(game.id);
     setCurrentGame(game);
     wsService.joinGame(game.id, playerName);
