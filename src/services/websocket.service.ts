@@ -148,8 +148,14 @@ class WebSocketService {
       });
       return;
     }
-    console.log('[WebSocket] Emitting game:join for gameId:', gameId, 'playerName:', playerName);
+    console.log('[WebSocket] ===== EMIT game:join =====');
+    console.log('[WebSocket] gameId:', gameId);
+    console.log('[WebSocket] playerName param:', playerName);
+    console.log('[WebSocket] playerName type:', typeof playerName);
+    console.log('[WebSocket] playerName length:', playerName?.length);
+    console.log('[WebSocket] Payload:', JSON.stringify({ gameId, userName: playerName }));
     this.socket.emit('game:join', { gameId, userName: playerName });
+    console.log('[WebSocket] ✓ Event emitted');
   }
 
   /**

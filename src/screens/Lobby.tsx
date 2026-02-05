@@ -64,24 +64,29 @@ export default function Lobby() {
   useEffect(() => {
     // Only show name modal for players, not organizers
     // Check user role to determine if they're an organizer
-    console.log('[Lobby] User role:', user?.role, 'User:', user);
+    console.log('[Lobby] ===== NAME MODAL CHECK =====');
+    console.log('[Lobby] User role:', user?.role);
+    console.log('[Lobby] User:', user);
+    console.log('[Lobby] playerName state:', playerName);
+    console.log('[Lobby] sessionStorage playerName:', sessionStorage.getItem('playerName'));
 
     if (user?.role === 'ORGANIZER') {
       // This is an organizer, skip name modal
-      console.log('[Lobby] User is organizer, skipping name modal');
+      console.log('[Lobby] ✓ User is ORGANIZER, skipping name modal');
       setShowNameModal(false);
     } else {
       // This is a player (role is 'PLAYER' or undefined), check if name exists in sessionStorage
       const savedName = sessionStorage.getItem('playerName');
-      console.log('[Lobby] User is player, saved name:', savedName);
+      console.log('[Lobby] User is PLAYER or undefined role');
+      console.log('[Lobby] Saved name from sessionStorage:', savedName);
 
       if (savedName) {
         setPlayerName(savedName);
         setShowNameModal(false);
-        console.log('[Lobby] Using saved name, no modal');
+        console.log('[Lobby] ✓ Using saved name:', savedName);
       } else {
         setShowNameModal(true);
-        console.log('[Lobby] No saved name, showing modal');
+        console.log('[Lobby] ✗ NO SAVED NAME - Showing modal');
       }
     }
 
@@ -219,7 +224,14 @@ export default function Lobby() {
   };
 
   const handleJoinGame = async (game: Game) => {
-    console.log('[Lobby] handleJoinGame called with playerName:', playerName, 'type:', typeof playerName, 'length:', playerName?.length);
+    console.log('[Lobby] ===== JOIN GAME =====');
+    console.log('[Lobby] Game ID:', game.id);
+    console.log('[Lobby] playerName state:', playerName);
+    console.log('[Lobby] playerName type:', typeof playerName);
+    console.log('[Lobby] playerName length:', playerName?.length);
+    console.log('[Lobby] playerName empty?:', playerName === '');
+    console.log('[Lobby] sessionStorage playerName:', sessionStorage.getItem('playerName'));
+    console.log('[Lobby] ➡️  Sending to backend: gameId=' + game.id + ', userName=' + playerName);
     setJoiningGameId(game.id);
     setCurrentGame(game);
     wsService.joinGame(game.id, playerName);
@@ -300,11 +312,18 @@ export default function Lobby() {
   };
 
   const handleNameSubmit = () => {
+    console.log('[Lobby] ===== NAME SUBMIT =====');
+    console.log('[Lobby] tempName:', tempName);
     if (tempName.trim()) {
       const name = tempName.trim();
+      console.log('[Lobby] ✓ Saving name:', name);
       setPlayerName(name);
       sessionStorage.setItem('playerName', name);
       setShowNameModal(false);
+      console.log('[Lobby] ✓ Name saved to state and sessionStorage');
+      console.log('[Lobby] Verify - sessionStorage value:', sessionStorage.getItem('playerName'));
+    } else {
+      console.log('[Lobby] ✗ Empty name, not saving');
     }
   };
 
