@@ -24,6 +24,7 @@ import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
 interface Winner {
   playerId: string;
+  userId?: string;
   category: string;
   userName?: string;
 }
@@ -198,6 +199,7 @@ export default function GameControl() {
           completion_rate_percentage: completionRatePercentage,
           winners: winners.map((w) => ({
             player_id: w.playerId,
+            app_user_id: w.userId,  // Mobile app userId
             user_name: w.userName,
             category: w.category,
           })),
