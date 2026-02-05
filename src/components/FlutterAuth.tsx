@@ -1,181 +1,67 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Center, Spinner, Text, VStack, Box, Icon } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
-import { useAuthStore } from '../stores/authStore';
-
-// Extend window interface for Flutter bridge
-declare global {
-  interface Window {
-    Flutter?: {
-      postMessage: (type: string, data: any) => void;
-      onMessage: (callback: (message: any) => void) => void;
-    };
-  }
-}
-
-interface FlutterAuthMessage {
-  type: string;
-  data: {
-    token?: string;
-    userId?: string;
-    timestamp?: string;
-  };
-}
 
 export const FlutterAuth = () => {
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
-  const [status, setStatus] = useState('⏳ Initializing...');
+  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState('🔐 Processing authentication...');
   const [isError, setIsError] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     console.log('[FlutterAuth] Component mounted');
 
-    // Wait for Flutter bridge to be injected
-    function waitForFlutter(callback: () => void, maxAttempts = 50) {
-      let attempts = 0;
+    const processAuth = () => {
+      try {
+        // Get token from query params
+        const token = searchParams.get('token');
+        console.log('[FlutterAuth] Token received:', token ? 'YES' : 'NO');
 
-      const checkFlutter = setInterval(() => {
-        console.log(`[FlutterAuth] Checking for Flutter bridge... Attempt ${attempts + 1}/${maxAttempts}`);
-
-        if (typeof window.Flutter !== 'undefined' && window.Flutter.postMessage) {
-          clearInterval(checkFlutter);
-          console.log('[FlutterAuth] ✅ Flutter bridge available!');
-          callback();
-        } else if (++attempts >= maxAttempts) {
-          clearInterval(checkFlutter);
-          console.error('[FlutterAuth] ❌ Timeout waiting for Flutter bridge');
-          setIsError(true);
-          setStatus('❌ Flutter connection timeout');
-
-          // Fallback to login after timeout
-          setTimeout(() => {
-            console.log('[FlutterAuth] Redirecting to login...');
-            navigate('/login', { replace: true });
-          }, 2000);
+        if (!token) {
+          throw new Error('No token provided in query params');
         }
-      }, 100); // Check every 100ms
-    }
 
-    // Initialize communication with Flutter
-    waitForFlutter(() => {
-      console.log('[FlutterAuth] Starting Flutter communication...');
-      setStatus('🔗 Connected to Flutter');
+        // Decode base64 token
+        console.log('[FlutterAuth] Decoding base64 token...');
+        const decoded = atob(token);
+        console.log('[FlutterAuth] Decoded:', decoded);
 
-      const Flutter = window.Flutter!;
+        // Parse JSON
+        const payload = JSON.parse(decoded);
+        console.log('[FlutterAuth] Parsed payload:', payload);
 
-      // Register listener for messages from Flutter
-      Flutter.onMessage(async (message: FlutterAuthMessage) => {
-        console.log('[FlutterAuth] 📥 Message received from Flutter:', message);
+        // Extract userId
+        const userId = payload.userId || payload.id || payload.user_id;
 
-        // Handle authentication message
-        if (message.type === 'auth') {
-          setStatus('🔐 Authenticating...');
-
-          try {
-            const { token, userId } = message.data;
-
-            // Option 1: Direct userId (if Flutter sends userId directly)
-            if (userId && !token) {
-              console.log('[FlutterAuth] Using direct userId:', userId);
-              await handleDirectUserId(userId);
-              return;
-            }
-
-            // Option 2: Token-based authentication (more secure)
-            if (token) {
-              console.log('[FlutterAuth] Validating token with backend...');
-              await handleTokenAuth(token);
-              return;
-            }
-
-            // No valid auth data
-            throw new Error('No valid authentication data received');
-
-          } catch (error) {
-            console.error('[FlutterAuth] ❌ Authentication error:', error);
-            setIsError(true);
-            setStatus('❌ Authentication failed');
-
-            setTimeout(() => {
-              navigate('/login', { replace: true });
-            }, 2000);
-          }
+        if (!userId) {
+          throw new Error('No userId found in token payload');
         }
-      });
 
-      // Tell Flutter we're ready to receive auth data
-      console.log('[FlutterAuth] 📤 Sending ready signal to Flutter...');
-      Flutter.postMessage('ready', {
-        status: 'initialized',
-        timestamp: new Date().toISOString(),
-        platform: 'WEB',
-      });
+        console.log('[FlutterAuth] ✅ userId extracted:', userId);
+        setStatus('✅ Authentication successful!');
 
-      setStatus('📱 Waiting for authentication...');
-    });
+        // Redirect to existing AutoLogin with userId
+        console.log('[FlutterAuth] Redirecting to AutoLogin...');
+        setTimeout(() => {
+          navigate(`/?userId=${userId}`, { replace: true });
+        }, 500);
 
-    // Cleanup
-    return () => {
-      console.log('[FlutterAuth] Component unmounting');
-    };
-  }, [navigate]);
+      } catch (error: any) {
+        console.error('[FlutterAuth] ❌ Error processing auth:', error);
+        setIsError(true);
+        setStatus(error.message || 'Authentication failed');
 
-  // Handle direct userId authentication (simpler, current flow)
-  const handleDirectUserId = async (userId: string) => {
-    console.log('[FlutterAuth] Storing userId and triggering AutoLogin...');
-
-    // Store userId for AutoLogin component
-    localStorage.setItem('app_user_id', userId);
-
-    // Set minimal user object
-    setUser({
-      id: userId,
-      email: `user_${userId}@app.com`,
-      name: `User ${userId}`,
-    });
-
-    setIsSuccess(true);
-    setStatus('✅ Success! Redirecting...');
-
-    // Small delay to show success message
-    setTimeout(() => {
-      console.log('[FlutterAuth] Navigating to root for AutoLogin...');
-      navigate('/', { replace: true });
-    }, 500);
-  };
-
-  // Handle token-based authentication (more secure)
-  const handleTokenAuth = async (token: string) => {
-    console.log('[FlutterAuth] Validating token with backend...');
-
-    try {
-      const response = await fetch('/api/v1/auth/mobile-verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Token validation failed');
+        // Fallback to login after error
+        setTimeout(() => {
+          console.log('[FlutterAuth] Redirecting to login...');
+          navigate('/login', { replace: true });
+        }, 2000);
       }
+    };
 
-      const { userId } = await response.json();
-      console.log('[FlutterAuth] ✅ Token validated, userId:', userId);
-
-      // Use the validated userId
-      await handleDirectUserId(userId);
-
-    } catch (error) {
-      console.error('[FlutterAuth] Token validation error:', error);
-      throw error;
-    }
-  };
+    processAuth();
+  }, [searchParams, navigate]);
 
   return (
     <Center h="100vh" bg="gray.900">
@@ -183,8 +69,6 @@ export const FlutterAuth = () => {
         <Box position="relative">
           {isError ? (
             <Icon as={WarningIcon} boxSize={16} color="red.500" />
-          ) : isSuccess ? (
-            <Icon as={CheckCircleIcon} boxSize={16} color="green.500" />
           ) : (
             <Spinner size="xl" color="brand.500" thickness="4px" speed="0.8s" />
           )}
@@ -197,7 +81,7 @@ export const FlutterAuth = () => {
             fontWeight="bold"
             textAlign="center"
           >
-            {isError ? 'Connection Failed' : isSuccess ? 'Authentication Successful' : 'Connecting to App'}
+            {isError ? 'Authentication Failed' : 'Authenticating...'}
           </Text>
           <Text
             color="gray.400"
@@ -221,10 +105,13 @@ export const FlutterAuth = () => {
             maxW="400px"
           >
             <Text color="gray.500" fontSize="xs" fontFamily="mono">
-              Flutter Bridge: {typeof window.Flutter !== 'undefined' ? '✅ Available' : '❌ Not Found'}
+              Token received: {searchParams.get('token') ? '✅ Yes' : '❌ No'}
             </Text>
             <Text color="gray.500" fontSize="xs" fontFamily="mono" mt={1}>
               Environment: {import.meta.env.MODE}
+            </Text>
+            <Text color="gray.500" fontSize="xs" fontFamily="mono" mt={1}>
+              Route: /flutter-auth
             </Text>
           </Box>
         )}
