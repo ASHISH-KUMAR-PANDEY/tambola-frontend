@@ -15,6 +15,7 @@ import { OrganizerRoute } from './components/OrganizerRoute';
 import { InactivityHandler } from './components/InactivityHandler';
 import { InitializeTambolaAnalytics } from './components/InitializeTambolaAnalytics';
 import { AutoLogin } from './components/AutoLogin';
+import { FlutterAuth } from './components/FlutterAuth';
 
 export const App = () => {
   return (
@@ -24,6 +25,7 @@ export const App = () => {
         <InitializeTambolaAnalytics />
         <Routes>
           <Route path="/" element={<AutoLogin />} />
+          <Route path="/flutter-auth" element={<FlutterAuth />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

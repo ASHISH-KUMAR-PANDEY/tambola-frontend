@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambola Flutter Bridge Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 20px;
+      margin: 0;
+      background: linear-gradient(135deg, #258D58 0%, #1a6b41 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+    .logo {
+      text-align: center;
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      font-weight: 500;
+      color: #666;
+    }
+    .info-value {
+      font-weight: 600;
+      color: #333;
+      font-family: 'Courier New', monospace;
+    }
+    .status {
+      text-align: center;
+      padding: 16px;
+      border-radius: 12px;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .status.waiting {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+    }
+    input:focus {
+      outline: none;
+      border-color: #258D58;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #258D58;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:active {
+      background: #1a6b41;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      margin-top: 8px;
+    }
+    .btn-secondary:active {
+      background: #545b62;
+    }
+    .code {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      word-break: break-all;
+      margin-top: 8px;
+      border: 1px solid #e0e0e0;
+    }
+    .logs {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+    .log-entry {
+      margin-bottom: 4px;
+      padding: 2px 0;
+    }
+    .log-time {
+      color: #6a9955;
+    }
+    .log-info {
+      color: #4ec9b0;
+    }
+    .log-warn {
+      color: #ce9178;
+    }
+    .log-error {
+      color: #f48771;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🎲</div>
+    <h1>Tambola Flutter Bridge</h1>
+
+    <!-- Status -->
+    <div id="status" class="status waiting">
+      ⏳ Waiting for Flutter bridge...
+    </div>
+
+    <!-- Bridge Info Card -->
+    <div class="card">
+      <div class="section-title">📡 Bridge Status</div>
+      <div class="info-row">
+        <span class="info-label">Flutter Available:</span>
+        <span class="info-value" id="flutterAvailable">❌ No</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Ready Signal Sent:</span>
+        <span class="info-value" id="readySent">❌ No</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Auth Received:</span>
+        <span class="info-value" id="authReceived">❌ No</span>
+      </div>
+    </div>
+
+    <!-- Send Auth Card -->
+    <div class="card">
+      <div class="section-title">🔐 Send Authentication (Test)</div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+        Simulate Flutter sending auth data to WebView:
+      </p>
+      <input
+        type="text"
+        id="testUserId"
+        placeholder="Enter userId (e.g., 6613f03fedbbc63091d2f77f)"
+        autocomplete="off"
+      >
+      <button onclick="sendTestAuth()" id="sendAuthBtn" disabled>
+        Send Auth to WebView
+      </button>
+      <button onclick="openTambolaGame()" class="btn-secondary">
+        Open Tambola Game
+      </button>
+    </div>
+
+    <!-- Debug Logs -->
+    <div class="card">
+      <div class="section-title">📋 Debug Logs</div>
+      <div id="logs" class="logs"></div>
+      <button onclick="clearLogs()" class="btn-secondary" style="margin-top: 12px;">
+        Clear Logs
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const logs = [];
+
+    function addLog(type, message) {
+      const time = new Date().toLocaleTimeString();
+      const logEntry = `[${time}] ${message}`;
+
+      logs.push({ type, message: logEntry });
+
+      const logsDiv = document.getElementById('logs');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+      logsDiv.appendChild(entry);
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+
+      console.log(`[${type.toUpperCase()}]`, message);
+    }
+
+    function clearLogs() {
+      document.getElementById('logs').innerHTML = '';
+      logs.length = 0;
+      addLog('info', 'Logs cleared');
+    }
+
+    function updateStatus(message, type = 'waiting') {
+      const statusDiv = document.getElementById('status');
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+    }
+
+    function updateInfo(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    // Initialize
+    addLog('info', '🚀 Page loaded, initializing...');
+
+    // Wait for Flutter bridge
+    function waitForFlutter(callback, maxAttempts = 50) {
+      let attempts = 0;
+
+      const checkFlutter = setInterval(() => {
+        attempts++;
+        addLog('info', `⏳ Checking for Flutter bridge... Attempt ${attempts}/${maxAttempts}`);
+
+        if (typeof Flutter !== 'undefined' && Flutter.postMessage) {
+          clearInterval(checkFlutter);
+          addLog('info', '✅ Flutter bridge available!');
+          updateInfo('flutterAvailable', '✅ Yes');
+          document.getElementById('sendAuthBtn').disabled = false;
+          callback();
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkFlutter);
+          addLog('error', '❌ Timeout waiting for Flutter bridge');
+          updateStatus('❌ Flutter bridge timeout', 'error');
+        }
+      }, 100);
+    }
+
+    // Initialize Flutter communication
+    waitForFlutter(function() {
+      addLog('info', '📤 Sending ready signal to Flutter...');
+
+      // Register message listener
+      Flutter.onMessage(function(message) {
+        addLog('info', `📥 Message received: ${JSON.stringify(message)}`);
+
+        if (message.type === 'auth') {
+          addLog('info', '🔐 Auth message received!');
+          updateInfo('authReceived', '✅ Yes');
+          updateStatus('✅ Auth received!', 'success');
+
+          const { token, userId } = message.data;
+          addLog('info', `UserId: ${userId || 'N/A'}`);
+          addLog('info', `Token: ${token ? token.substring(0, 20) + '...' : 'N/A'}`);
+        }
+      });
+
+      // Send ready signal
+      Flutter.postMessage('ready', {
+        status: 'initialized',
+        timestamp: new Date().toISOString(),
+        platform: 'WEB'
+      });
+
+      updateInfo('readySent', '✅ Yes');
+      updateStatus('✅ Ready! Waiting for auth...', 'success');
+      addLog('info', '✅ Ready signal sent, waiting for auth...');
+    });
+
+    // Test functions
+    function sendTestAuth() {
+      const userId = document.getElementById('testUserId').value.trim();
+
+      if (!userId) {
+        alert('Please enter a userId');
+        return;
+      }
+
+      addLog('info', `🧪 Sending test auth with userId: ${userId}`);
+
+      // Simulate Flutter sending auth
+      if (typeof Flutter !== 'undefined' && Flutter.onMessage) {
+        // Trigger the onMessage callback
+        const testMessage = {
+          type: 'auth',
+          data: {
+            userId: userId,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        addLog('info', `Simulating Flutter message: ${JSON.stringify(testMessage)}`);
+
+        // You would normally receive this from Flutter
+        // For testing, we manually trigger it
+        window.dispatchEvent(new CustomEvent('flutter-message', { detail: testMessage }));
+      }
+    }
+
+    function openTambolaGame() {
+      const userId = document.getElementById('testUserId').value.trim() || '6613f03fedbbc63091d2f77f';
+      const url = `https://main.d262mxsv2xemak.amplifyapp.com/flutter-auth`;
+
+      addLog('info', `🎮 Opening Tambola game at: ${url}`);
+      addLog('warn', `Note: You should implement this in Flutter WebViewController`);
+
+      window.location.href = url;
+    }
+
+    // Log all console messages
+    const originalConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error
+    };
+
+    console.log = function(...args) {
+      originalConsole.log.apply(console, args);
+    };
+
+    console.warn = function(...args) {
+      originalConsole.warn.apply(console, args);
+    };
+
+    console.error = function(...args) {
+      originalConsole.error.apply(console, args);
+    };
+  </script>
+</body>
+</html>
