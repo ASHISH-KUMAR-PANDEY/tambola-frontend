@@ -322,6 +322,14 @@ export default function Lobby() {
       setShowNameModal(false);
       console.log('[Lobby] ✓ Name saved to state and sessionStorage');
       console.log('[Lobby] Verify - sessionStorage value:', sessionStorage.getItem('playerName'));
+
+      // Track player registration event
+      trackEvent({
+        eventName: 'player_registered',
+        properties: {
+          user_name: name,
+        },
+      });
     } else {
       console.log('[Lobby] ✗ Empty name, not saving');
     }
