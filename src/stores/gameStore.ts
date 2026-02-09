@@ -165,11 +165,6 @@ export const useGameStore = create<GameState>()(
       },
 
       clearGame: () => {
-        // CRITICAL: Remove localStorage FIRST before calling set()
-        // to prevent persist middleware from saving the cleared state
-        localStorage.removeItem('game-storage');
-        console.log('[GameStore] localStorage cleared');
-
         set({
           currentGame: null,
           currentGameId: null,
@@ -181,12 +176,7 @@ export const useGameStore = create<GameState>()(
           winners: [],
           markedNumbers: new Set(),
         });
-
-        // Double-check: Remove again after set in case persist saved
-        setTimeout(() => {
-          localStorage.removeItem('game-storage');
-          console.log('[GameStore] localStorage cleared again (after set)');
-        }, 100);
+        // No need to clear localStorage since winners aren't persisted
       },
 
       isNumberMarked: (number: number) => {
@@ -227,51 +217,27 @@ export const useGameStore = create<GameState>()(
         playerId: state.playerId,
         ticket: state.ticket,
         markedNumbers: Array.from(state.markedNumbers),
-        // Only persist game state if we have an active game
-        // This prevents persisting empty arrays when leaving game
-        winners: state.currentGameId ? state.winners : [],
-        calledNumbers: state.currentGameId ? state.calledNumbers : [],
-        currentNumber: state.currentGameId ? state.currentNumber : null,
+        // DON'T persist winners, calledNumbers, currentNumber
+        // These come from backend stateSync on rejoin
+        // Persisting them breaks rejoin flow
       }),
       // Custom storage to handle Set serialization
       storage: {
         getItem: (name) => {
           const str = localStorage.getItem(name);
-          if (!str) {
-            console.log('[GameStore Persist] No localStorage data found');
-            return null;
-          }
+          if (!str) return null;
           const data = JSON.parse(str);
-          console.log('[GameStore Persist] Loading from localStorage:', {
-            hasWinners: !!data.state?.winners,
-            winnersCount: data.state?.winners?.length || 0,
-            hasCurrentGameId: !!data.state?.currentGameId,
-            winners: data.state?.winners,
-          });
-          // CRITICAL: Preserve ALL fields, not just markedNumbers
-          const result = {
+          return {
             state: {
-              ...data.state,  // Keep everything: winners, calledNumbers, etc.
+              ...data.state,
               markedNumbers: new Set(data.state.markedNumbers || []),
             },
           };
-          console.log('[GameStore Persist] Returning to Zustand:', {
-            winnersCount: result.state.winners?.length || 0,
-            winners: result.state.winners,
-          });
-          return result;
         },
         setItem: (name, value) => {
-          console.log('[GameStore Persist] Saving to localStorage:', {
-            hasWinners: !!value.state?.winners,
-            winnersCount: value.state?.winners?.length || 0,
-            hasCurrentGameId: !!value.state?.currentGameId,
-            winners: value.state?.winners,
-          });
-          // CRITICAL: Save ALL fields, not just markedNumbers
           const str = JSON.stringify({
             state: {
-              ...value.state,  // Keep everything: winners, calledNumbers, etc.
+              ...value.state,
               markedNumbers: Array.from(value.state.markedNumbers),
             },
           });
