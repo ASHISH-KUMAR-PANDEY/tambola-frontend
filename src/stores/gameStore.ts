@@ -165,6 +165,11 @@ export const useGameStore = create<GameState>()(
       },
 
       clearGame: () => {
+        // CRITICAL: Remove localStorage FIRST before calling set()
+        // to prevent persist middleware from saving the cleared state
+        localStorage.removeItem('game-storage');
+        console.log('[GameStore] localStorage cleared');
+
         set({
           currentGame: null,
           currentGameId: null,
@@ -176,10 +181,12 @@ export const useGameStore = create<GameState>()(
           winners: [],
           markedNumbers: new Set(),
         });
-        // CRITICAL: Clear localStorage to prevent stale winners from being restored on rejoin
-        // This fixes the bug where leaving and rejoining would show empty winners
-        // even though backend sends correct winners in stateSync
-        localStorage.removeItem('game-storage');
+
+        // Double-check: Remove again after set in case persist saved
+        setTimeout(() => {
+          localStorage.removeItem('game-storage');
+          console.log('[GameStore] localStorage cleared again (after set)');
+        }, 100);
       },
 
       isNumberMarked: (number: number) => {
@@ -220,9 +227,11 @@ export const useGameStore = create<GameState>()(
         playerId: state.playerId,
         ticket: state.ticket,
         markedNumbers: Array.from(state.markedNumbers),
-        winners: state.winners,  // CRITICAL: Include winners for hard refresh restoration
-        calledNumbers: state.calledNumbers,  // Also include called numbers
-        currentNumber: state.currentNumber,  // And current number
+        // Only persist game state if we have an active game
+        // This prevents persisting empty arrays when leaving game
+        winners: state.currentGameId ? state.winners : [],
+        calledNumbers: state.currentGameId ? state.calledNumbers : [],
+        currentNumber: state.currentGameId ? state.currentNumber : null,
       }),
       // Custom storage to handle Set serialization
       storage: {
