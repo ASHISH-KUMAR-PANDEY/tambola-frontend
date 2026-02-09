@@ -28,6 +28,7 @@ import { Ticket } from '../components/Ticket';
 import { Logo } from '../components/Logo';
 import { GameSummaryModal } from '../components/GameSummaryModal';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
+import { frontendLogger } from '../utils/logger';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -64,11 +65,16 @@ export default function Game() {
   useEffect(() => {
     // Load live stream
     const loadLiveStream = async () => {
+      frontendLogger.markStart('loadLiveStream');
       try {
         const stream = await apiService.getCurrentYouTubeLiveStream();
+        const duration = frontendLogger.markEnd('loadLiveStream');
+
+        frontendLogger.apiCall('/api/v1/youtube-livestream', 'GET', duration, 200);
         setLiveStream(stream);
       } catch (error) {
-        console.error('Failed to load live stream:', error);
+        const duration = frontendLogger.markEnd('loadLiveStream');
+        frontendLogger.error('LIVESTREAM_LOAD', error as Error, { duration_ms: duration });
       }
     };
 
@@ -81,27 +87,36 @@ export default function Game() {
       return;
     }
 
-    console.log('[Game] Component mounted, gameId:', gameId, 'WS connected:', wsService.isConnected());
+    frontendLogger.playerAction('GAME_COMPONENT_MOUNTED', {
+      gameId,
+      playerId,
+      wsConnected: wsService.isConnected(),
+      playerName
+    });
 
     // Setup WebSocket event handlers FIRST before joining
     // This ensures handlers are ready to receive stateSync event
     wsService.on({
       onConnected: () => {
-        console.log('[Game] WebSocket connected, joining game:', gameId);
+        frontendLogger.websocketConnected(wsService.getSocketId() || 'unknown');
+        frontendLogger.playerJoinGame(gameId);
+
         // Join game when WebSocket connects/reconnects
         wsService.joinGame(gameId, playerName);
       },
       onStateSync: (data) => {
         // Sync game state when rejoining (optimized payload)
-        console.log('[Game] onStateSync received (optimized):', {
+        const isOptimized = !!data.playerCount;
+
+        frontendLogger.playerGameStateSync({
+          gameId,
+          playerId,
           calledNumbersCount: data.calledNumbers.length,
           currentNumber: data.currentNumber,
           playersCount: data.playerCount || data.players.length,
-          playersArrayLength: data.players.length,
           winnersCount: data.winners.length,
-          winners: data.winners,
           markedNumbersCount: data.markedNumbers?.length || 0,
-          note: data.playerCount ? 'Using optimized playerCount (not full list)' : 'Full player list received',
+          optimized: isOptimized
         });
 
         // If playerCount provided (optimized), use empty players array
@@ -115,6 +130,12 @@ export default function Game() {
         );
       },
       onPlayerJoined: (data) => {
+        frontendLogger.playerAction('PLAYER_JOINED_EVENT', {
+          gameId,
+          newPlayerId: data.playerId,
+          newPlayerName: data.userName
+        });
+
         addPlayer({ playerId: data.playerId, userName: data.userName });
         toast({
           title: 'खिलाड़ी शामिल हुए',
@@ -124,6 +145,8 @@ export default function Game() {
         });
       },
       onGameStarted: () => {
+        frontendLogger.playerAction('GAME_STARTED_EVENT', { gameId, playerId });
+
         toast({
           title: 'गेम शुरू हो गया!',
           description: 'अपने नंबर मार्क करने के लिए तैयार हो जाएं',
@@ -133,14 +156,29 @@ export default function Game() {
         });
       },
       onNumberCalled: (data) => {
+        frontendLogger.playerAction('NUMBER_CALLED_EVENT', {
+          gameId,
+          playerId,
+          number: data.number,
+          totalCalled: calledNumbers.length + 1
+        });
+
         addCalledNumber(data.number);
       },
       onWinner: (data) => {
         const categoryName = getCategoryLabel(data.category);
+        const userName = (data as any).userName || 'कोई';
+
+        frontendLogger.playerAction('WINNER_ANNOUNCED', {
+          gameId,
+          playerId: data.playerId,
+          category: data.category,
+          winnerName: userName,
+          isMe: data.playerId === playerId
+        });
 
         addWinner(data);
 
-        const userName = (data as any).userName || 'कोई';
         toast({
           title: `विजेता: ${categoryName}!`,
           description: `${userName} ने ${categoryName} जीता!`,
@@ -150,6 +188,12 @@ export default function Game() {
         });
       },
       onWinClaimed: (data) => {
+        frontendLogger.playerWinClaimResult(
+          data.category,
+          data.success,
+          data.message || (data.success ? 'Win claimed successfully' : 'Win claim failed')
+        );
+
         if (data.success && playerId) {
           // Add ourselves to winners list to update UI
           addWinner({
@@ -184,6 +228,14 @@ export default function Game() {
         const gameDurationMinutes = Math.floor((Date.now() - gameStartTime) / (60 * 1000));
         const didWin = winners.some((w) => w.playerId === playerId);
 
+        frontendLogger.playerAction('GAME_COMPLETED', {
+          gameId,
+          playerId,
+          duration_minutes: gameDurationMinutes,
+          marked_numbers: getMarkedCount(),
+          did_win: didWin
+        });
+
         trackEvent({
           eventName: 'game_completed_by_user',
           properties: {
@@ -207,6 +259,12 @@ export default function Game() {
         setShowSummary(true);
       },
       onGameDeleted: (data) => {
+        frontendLogger.playerAction('GAME_DELETED_EVENT', {
+          gameId,
+          playerId,
+          message: data.message
+        });
+
         toast({
           title: 'गेम डिलीट हो गया',
           description: data.message || 'गेम आयोजक द्वारा डिलीट कर दिया गया है',
@@ -218,6 +276,12 @@ export default function Game() {
         navigate('/lobby');
       },
       onError: (error) => {
+        frontendLogger.error('GAME_WEBSOCKET_ERROR', new Error(error.message), {
+          gameId,
+          playerId,
+          errorCode: error.code
+        });
+
         // Special handling for game not found (deleted game)
         if (error.code === 'GAME_NOT_FOUND') {
           toast({
@@ -242,14 +306,15 @@ export default function Game() {
     // If WebSocket is already connected, join immediately
     // Otherwise, onConnected handler above will join when connection is ready
     if (wsService.isConnected()) {
-      console.log('[Game] WebSocket already connected, joining game immediately');
+      frontendLogger.playerJoinGame(gameId);
       wsService.joinGame(gameId, playerName);
     } else {
-      console.log('[Game] WebSocket not connected yet, waiting for connection...');
+      frontendLogger.websocketConnecting(wsService.getUrl());
     }
 
     return () => {
       if (gameId) {
+        frontendLogger.playerLeaveGame(gameId, playerId || 'unknown');
         wsService.leaveGame(gameId);
       }
       wsService.off();
@@ -262,16 +327,16 @@ export default function Game() {
       try {
         if ('wakeLock' in navigator) {
           wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-          console.log('[WakeLock] Screen wake lock acquired');
+          frontendLogger.playerAction('WAKE_LOCK_ACQUIRED', { gameId, playerId });
 
           wakeLockRef.current.addEventListener('release', () => {
-            console.log('[WakeLock] Screen wake lock released');
+            frontendLogger.playerAction('WAKE_LOCK_RELEASED', { gameId, playerId });
           });
         } else {
-          console.log('[WakeLock] Wake Lock API not supported');
+          frontendLogger.playerAction('WAKE_LOCK_NOT_SUPPORTED', { gameId, playerId });
         }
       } catch (error) {
-        console.error('[WakeLock] Failed to acquire wake lock:', error);
+        frontendLogger.error('WAKE_LOCK_ACQUIRE', error as Error, { gameId, playerId });
       }
     };
 
@@ -280,7 +345,7 @@ export default function Game() {
     return () => {
       if (wakeLockRef.current) {
         wakeLockRef.current.release().catch((error: any) => {
-          console.error('[WakeLock] Failed to release wake lock:', error);
+          frontendLogger.error('WAKE_LOCK_RELEASE', error, { gameId, playerId });
         });
       }
     };
@@ -290,11 +355,16 @@ export default function Game() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[Visibility] App returned to foreground');
+        frontendLogger.playerAction('APP_FOREGROUNDED', {
+          gameId,
+          playerId,
+          wsConnected: wsService.isConnected()
+        });
 
         // If WebSocket disconnected while backgrounded, reconnect
         if (!wsService.isConnected() && gameId) {
-          console.log('[Visibility] WebSocket disconnected, reconnecting...');
+          frontendLogger.playerAction('RECONNECTING_AFTER_BACKGROUND', { gameId, playerId });
+
           toast({
             title: 'पुनः कनेक्ट हो रहा है...',
             description: 'गेम से दोबारा जुड़ रहे हैं',
@@ -314,9 +384,13 @@ export default function Game() {
                 state.winners || [],
                 state.markedNumbers || []
               );
-              console.log('[Visibility] Restored game state from localStorage');
+              frontendLogger.playerAction('STATE_RESTORED_FROM_LOCALSTORAGE', {
+                gameId,
+                playerId,
+                calledNumbers: state.calledNumbers?.length || 0
+              });
             } catch (error) {
-              console.error('[Visibility] Failed to restore state from localStorage:', error);
+              frontendLogger.error('STATE_RESTORE_FROM_LOCALSTORAGE', error as Error, { gameId, playerId });
             }
           }
 
@@ -329,14 +403,18 @@ export default function Game() {
           (navigator as any).wakeLock.request('screen')
             .then((wakeLock: any) => {
               wakeLockRef.current = wakeLock;
-              console.log('[Visibility] Wake lock re-acquired after foreground');
+              frontendLogger.playerAction('WAKE_LOCK_REACQUIRED', { gameId, playerId });
             })
             .catch((error: any) => {
-              console.error('[Visibility] Failed to re-acquire wake lock:', error);
+              frontendLogger.error('WAKE_LOCK_REACQUIRE', error, { gameId, playerId });
             });
         }
       } else {
-        console.log('[Visibility] App moved to background');
+        frontendLogger.playerAction('APP_BACKGROUNDED', {
+          gameId,
+          playerId,
+          wsConnected: wsService.isConnected()
+        });
       }
     };
 
@@ -371,6 +449,8 @@ export default function Game() {
   }, [gameId, currentGameId, playerId, calledNumbers, currentNumber, players, winners, getMarkedCount]);
 
   const handleLeaveGame = () => {
+    frontendLogger.playerLeaveGame(gameId || 'unknown', playerId || 'unknown');
+
     if (gameId) {
       wsService.leaveGame(gameId);
     }
@@ -379,6 +459,8 @@ export default function Game() {
   };
 
   const handleCloseSummary = () => {
+    frontendLogger.playerAction('CLOSE_SUMMARY_MODAL', { gameId, playerId });
+
     setShowSummary(false);
     clearGame();
     navigate('/lobby');
@@ -386,12 +468,16 @@ export default function Game() {
 
   const handleClaimWin = (category: string) => {
     if (!gameId) return;
+
+    frontendLogger.playerClaimWin(gameId, category);
     wsService.claimWin(gameId, category);
   };
 
   const handleNumberClick = (number: number) => {
     // Number successfully marked in frontend state, now sync to backend
     if (gameId && playerId) {
+      const totalMarked = getMarkedCount();
+      frontendLogger.playerMarkNumber(gameId, number, totalMarked);
       wsService.markNumber(gameId, playerId, number);
     }
   };

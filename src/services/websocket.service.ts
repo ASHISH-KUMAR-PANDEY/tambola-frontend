@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { frontendLogger } from '../utils/logger';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
 
@@ -80,17 +81,18 @@ class WebSocketService {
   connect(userId: string): void {
     // If already connected with the same userId, skip
     if (this.socket?.connected && this.userId === userId) {
-      console.log('[WebSocket] Already connected with userId:', userId);
+      frontendLogger.websocketEvent('ALREADY_CONNECTED', { userId });
       return;
     }
 
     // If connecting with different userId, disconnect first
     if (this.socket && this.userId !== userId) {
-      console.log('[WebSocket] Switching userId, disconnecting first');
+      frontendLogger.websocketEvent('SWITCHING_USER', { oldUserId: this.userId, newUserId: userId });
       this.disconnect();
     }
 
-    console.log('[WebSocket] Initiating connection for userId:', userId);
+    frontendLogger.websocketConnecting(WS_URL);
+    frontendLogger.websocketEvent('CONNECT_INITIATED', { userId, url: WS_URL });
     this.userId = userId;
 
     this.socket = io(WS_URL, {
@@ -106,7 +108,6 @@ class WebSocketService {
     });
 
     this.setupEventListeners();
-    console.log('[WebSocket] Socket instance created, waiting for connection...');
   }
 
   /**
@@ -114,6 +115,12 @@ class WebSocketService {
    */
   disconnect(): void {
     if (this.socket) {
+      frontendLogger.websocketEvent('DISCONNECT_INITIATED', {
+        userId: this.userId,
+        socketId: this.socket.id,
+        wasConnected: this.socket.connected
+      });
+
       this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
@@ -142,25 +149,32 @@ class WebSocketService {
    */
   joinGame(gameId: string, playerName?: string): void {
     if (!this.socket) {
-      console.error('[WebSocket] Socket not initialized. Cannot join game.');
-      return;
-    }
-    if (!this.socket.connected) {
-      console.error('[WebSocket] Socket not connected. Status:', {
-        connected: this.socket.connected,
-        disconnected: this.socket.disconnected,
-        userId: this.userId,
+      frontendLogger.error('WEBSOCKET_JOIN_GAME', new Error('Socket not initialized'), {
+        gameId,
+        playerName,
+        userId: this.userId
       });
       return;
     }
-    console.log('[WebSocket] ===== EMIT game:join =====');
-    console.log('[WebSocket] gameId:', gameId);
-    console.log('[WebSocket] playerName param:', playerName);
-    console.log('[WebSocket] playerName type:', typeof playerName);
-    console.log('[WebSocket] playerName length:', playerName?.length);
-    console.log('[WebSocket] Payload:', JSON.stringify({ gameId, userName: playerName }));
+    if (!this.socket.connected) {
+      frontendLogger.error('WEBSOCKET_JOIN_GAME', new Error('Socket not connected'), {
+        gameId,
+        playerName,
+        userId: this.userId,
+        connected: this.socket.connected,
+        disconnected: this.socket.disconnected
+      });
+      return;
+    }
+
+    frontendLogger.websocketEvent('game:join', {
+      gameId,
+      playerName,
+      userId: this.userId,
+      socketId: this.socket.id
+    });
+
     this.socket.emit('game:join', { gameId, userName: playerName });
-    console.log('[WebSocket] ✓ Event emitted');
   }
 
   /**
@@ -168,9 +182,14 @@ class WebSocketService {
    */
   leaveGame(gameId: string): void {
     if (!this.socket?.connected) {
-      console.error('WebSocket not connected');
+      frontendLogger.error('WEBSOCKET_LEAVE_GAME', new Error('WebSocket not connected'), {
+        gameId,
+        userId: this.userId
+      });
       return;
     }
+
+    frontendLogger.websocketEvent('game:leave', { gameId, userId: this.userId, socketId: this.socket.id });
     this.socket.emit('game:leave', { gameId });
   }
 
@@ -179,9 +198,14 @@ class WebSocketService {
    */
   startGame(gameId: string): void {
     if (!this.socket?.connected) {
-      console.error('WebSocket not connected');
+      frontendLogger.error('WEBSOCKET_START_GAME', new Error('WebSocket not connected'), {
+        gameId,
+        userId: this.userId
+      });
       return;
     }
+
+    frontendLogger.websocketEvent('game:start', { gameId, userId: this.userId, socketId: this.socket.id });
     this.socket.emit('game:start', { gameId });
   }
 
@@ -192,12 +216,29 @@ class WebSocketService {
   callNumber(gameId: string, number: number): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
-        reject(new Error('WebSocket not connected'));
+        const error = new Error('WebSocket not connected');
+        frontendLogger.error('WEBSOCKET_CALL_NUMBER', error, { gameId, number, userId: this.userId });
+        reject(error);
         return;
       }
 
+      const startTime = Date.now();
+      frontendLogger.websocketEvent('game:callNumber', {
+        gameId,
+        number,
+        userId: this.userId,
+        socketId: this.socket.id
+      });
+
       const timeout = setTimeout(() => {
-        reject(new Error('Timeout waiting for confirmation'));
+        const duration = Date.now() - startTime;
+        const error = new Error('Timeout waiting for confirmation');
+        frontendLogger.error('WEBSOCKET_CALL_NUMBER_TIMEOUT', error, {
+          gameId,
+          number,
+          duration_ms: duration
+        });
+        reject(error);
       }, 5000); // 5 second timeout
 
       // Emit with acknowledgment callback
@@ -206,11 +247,19 @@ class WebSocketService {
         { gameId, number },
         (response: { success: boolean; error?: string }) => {
           clearTimeout(timeout);
+          const duration = Date.now() - startTime;
 
           if (response && response.success) {
+            frontendLogger.performance('callNumber', duration, { gameId, number, success: true });
             resolve();
           } else {
-            reject(new Error(response?.error || 'Failed to call number'));
+            const errorMsg = response?.error || 'Failed to call number';
+            frontendLogger.error('WEBSOCKET_CALL_NUMBER_FAILED', new Error(errorMsg), {
+              gameId,
+              number,
+              duration_ms: duration
+            });
+            reject(new Error(errorMsg));
           }
         }
       );
@@ -222,9 +271,23 @@ class WebSocketService {
    */
   markNumber(gameId: string, playerId: string, number: number): void {
     if (!this.socket?.connected) {
-      console.error('WebSocket not connected');
+      frontendLogger.error('WEBSOCKET_MARK_NUMBER', new Error('WebSocket not connected'), {
+        gameId,
+        playerId,
+        number,
+        userId: this.userId
+      });
       return;
     }
+
+    frontendLogger.websocketEvent('game:markNumber', {
+      gameId,
+      playerId,
+      number,
+      userId: this.userId,
+      socketId: this.socket.id
+    });
+
     this.socket.emit('game:markNumber', { gameId, playerId, number });
   }
 
@@ -233,9 +296,21 @@ class WebSocketService {
    */
   claimWin(gameId: string, category: string): void {
     if (!this.socket?.connected) {
-      console.error('WebSocket not connected');
+      frontendLogger.error('WEBSOCKET_CLAIM_WIN', new Error('WebSocket not connected'), {
+        gameId,
+        category,
+        userId: this.userId
+      });
       return;
     }
+
+    frontendLogger.websocketEvent('game:claimWin', {
+      gameId,
+      category,
+      userId: this.userId,
+      socketId: this.socket.id
+    });
+
     this.socket.emit('game:claimWin', { gameId, category });
   }
 
@@ -247,28 +322,62 @@ class WebSocketService {
   }
 
   /**
+   * Get socket ID (for logging)
+   */
+  getSocketId(): string | undefined {
+    return this.socket?.id;
+  }
+
+  /**
+   * Get WebSocket URL (for logging)
+   */
+  getUrl(): string {
+    return WS_URL;
+  }
+
+  /**
    * Setup internal event listeners
    */
   private setupEventListeners(): void {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('[WebSocket] Connected successfully! Socket ID:', this.socket?.id);
+      const socketId = this.socket?.id || 'unknown';
+      frontendLogger.websocketConnected(socketId);
+      frontendLogger.websocketEvent('CONNECT_SUCCESS', {
+        socketId,
+        userId: this.userId,
+        reconnectAttempts: this.reconnectAttempts
+      });
+
       this.reconnectAttempts = 0;
       this.handlers.onConnected?.();
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('[WebSocket] Disconnected. Reason:', reason);
+      frontendLogger.websocketDisconnected(reason);
+      frontendLogger.websocketEvent('DISCONNECT', {
+        reason,
+        socketId: this.socket?.id,
+        userId: this.userId
+      });
+
       this.handlers.onDisconnected?.();
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[WebSocket] Connection error:', error.message);
       this.reconnectAttempts++;
 
+      frontendLogger.websocketError(error);
+      frontendLogger.measureReconnects(this.reconnectAttempts, error.message);
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error('[WebSocket] Max reconnection attempts reached');
+        frontendLogger.criticalError(error, {
+          context: 'Max WebSocket reconnection attempts reached',
+          userId: this.userId,
+          reconnectAttempts: this.reconnectAttempts
+        });
+
         this.handlers.onError?.({
           code: 'CONNECTION_FAILED',
           message: 'Failed to connect to game server. Please check your connection.',
@@ -278,52 +387,97 @@ class WebSocketService {
 
     // Game event listeners
     this.socket.on('game:joined', (data: GameJoinedPayload) => {
-      console.log('Game joined:', data);
+      frontendLogger.websocketEvent('game:joined (received)', {
+        gameId: data.gameId,
+        playerId: data.playerId,
+        userId: this.userId
+      });
       this.handlers.onGameJoined?.(data);
     });
 
     this.socket.on('game:stateSync', (data: StateSyncPayload) => {
-      console.log('Game state sync:', data);
+      frontendLogger.websocketEvent('game:stateSync (received)', {
+        calledNumbers: data.calledNumbers.length,
+        currentNumber: data.currentNumber,
+        playersCount: data.playerCount || data.players.length,
+        winnersCount: data.winners.length,
+        userId: this.userId
+      });
       this.handlers.onStateSync?.(data);
     });
 
     this.socket.on('game:playerJoined', (data: PlayerJoinedPayload) => {
-      console.log('Player joined:', data);
+      frontendLogger.websocketEvent('game:playerJoined (received)', {
+        playerId: data.playerId,
+        userName: data.userName,
+        userId: this.userId
+      });
       this.handlers.onPlayerJoined?.(data);
     });
 
     this.socket.on('game:started', (data: { gameId: string }) => {
-      console.log('Game started:', data);
+      frontendLogger.websocketEvent('game:started (received)', {
+        gameId: data.gameId,
+        userId: this.userId
+      });
       this.handlers.onGameStarted?.(data);
     });
 
     this.socket.on('game:numberCalled', (data: NumberCalledPayload) => {
-      console.log('Number called:', data);
+      frontendLogger.websocketEvent('game:numberCalled (received)', {
+        number: data.number,
+        userId: this.userId
+      });
       this.handlers.onNumberCalled?.(data);
     });
 
     this.socket.on('game:winner', (data: WinnerPayload) => {
-      console.log('Winner:', data);
+      frontendLogger.websocketEvent('game:winner (received)', {
+        playerId: data.playerId,
+        category: data.category,
+        userName: data.userName,
+        userId: this.userId
+      });
       this.handlers.onWinner?.(data);
     });
 
     this.socket.on('game:winClaimed', (data: WinClaimedPayload) => {
-      console.log('Win claimed:', data);
+      frontendLogger.websocketEvent('game:winClaimed (received)', {
+        category: data.category,
+        success: data.success,
+        message: data.message,
+        userId: this.userId
+      });
       this.handlers.onWinClaimed?.(data);
     });
 
     this.socket.on('game:completed', (data: GameCompletedPayload) => {
-      console.log('Game completed:', data);
+      frontendLogger.websocketEvent('game:completed (received)', {
+        gameId: data.gameId,
+        userId: this.userId
+      });
       this.handlers.onGameCompleted?.(data);
     });
 
     this.socket.on('game:deleted', (data: GameDeletedPayload) => {
-      console.log('Game deleted:', data);
+      frontendLogger.websocketEvent('game:deleted (received)', {
+        gameId: data.gameId,
+        message: data.message,
+        userId: this.userId
+      });
       this.handlers.onGameDeleted?.(data);
     });
 
     this.socket.on('error', (data: ErrorPayload) => {
-      console.error('Game error:', data);
+      frontendLogger.websocketEvent('error (received)', {
+        code: data.code,
+        message: data.message,
+        userId: this.userId
+      });
+      frontendLogger.error('WEBSOCKET_GAME_ERROR', new Error(data.message), {
+        code: data.code,
+        userId: this.userId
+      });
       this.handlers.onError?.(data);
     });
   }

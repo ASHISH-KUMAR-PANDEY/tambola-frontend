@@ -21,6 +21,7 @@ import { wsService } from '../services/websocket.service';
 import { Logo } from '../components/Logo';
 import { GameSummaryModal } from '../components/GameSummaryModal';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
+import { frontendLogger } from '../utils/logger';
 
 interface Winner {
   playerId: string;
@@ -160,8 +161,14 @@ export default function GameControl() {
   }, [gameId]);
 
   const loadGameData = async () => {
+    frontendLogger.organizerLoadStart();
     try {
+      const startTime = Date.now();
       const gameData = await apiService.getGame(gameId!);
+      const duration = Date.now() - startTime;
+
+      frontendLogger.apiCall(`/api/v1/games/${gameId}`, 'GET', duration, 200);
+
       setGame(gameData);
       setCalledNumbers(gameData.calledNumbers || []);
       setCurrentNumber(gameData.currentNumber || null);
@@ -175,8 +182,15 @@ export default function GameControl() {
       if (gameData.winners && gameData.winners.length > 0) {
         setWinners(gameData.winners);
       }
+
+      frontendLogger.organizerLoadComplete({
+        status: gameData.status,
+        players: players.length,
+        calledNumbers: gameData.calledNumbers?.length || 0,
+        winners: gameData.winners?.length || 0,
+      });
     } catch (error) {
-      console.error('Failed to load game:', error);
+      frontendLogger.error('ORGANIZER_LOAD', error as Error, { gameId });
       toast({
         title: 'Error',
         description: 'Failed to load game data',
@@ -227,12 +241,16 @@ export default function GameControl() {
     setIsCallingNumber(true);
     setLastCalledNumber(number);
 
+    frontendLogger.organizerCallNumber(gameId!, number);
+
     try {
       // Wait for backend acknowledgment
       await wsService.callNumber(gameId!, number);
 
       // Success - clear input ONLY after confirmation
       setNumberToCall('');
+
+      frontendLogger.organizerCallNumberSuccess(number);
 
       // Show success toast ONLY after confirmation
       toast({
@@ -244,6 +262,9 @@ export default function GameControl() {
     } catch (error) {
       // Error - show to organizer
       const errorMessage = error instanceof Error ? error.message : 'Failed to call number';
+
+      frontendLogger.organizerCallNumberError(number, errorMessage);
+
       toast({
         title: 'Failed to Call Number',
         description: errorMessage,
