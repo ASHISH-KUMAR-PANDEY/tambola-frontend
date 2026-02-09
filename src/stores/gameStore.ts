@@ -78,14 +78,13 @@ export const useGameStore = create<GameState>()(
       syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[]) => {
         // Sync game state when rejoining (called numbers, players, winners)
         // If markedNumbers provided from backend, restore them
-        console.log('[GameStore] syncGameState called with:', {
-          calledNumbersCount: calledNumbers.length,
-          currentNumber,
-          playersCount: players.length,
-          winnersCount: winners.length,
-          winners: winners,
-          markedNumbersCount: markedNumbers?.length || 0,
-        });
+        console.log('[GameStore] ===== syncGameState called =====');
+        console.log('[GameStore] calledNumbers:', calledNumbers.length, 'numbers');
+        console.log('[GameStore] currentNumber:', currentNumber);
+        console.log('[GameStore] players:', players.length, 'players');
+        console.log('[GameStore] winners:', winners.length, 'winners');
+        console.log('[GameStore] winners array:', JSON.stringify(winners));
+        console.log('[GameStore] markedNumbers:', markedNumbers?.length || 0, 'numbers');
 
         const updates: any = {
           calledNumbers,
@@ -96,10 +95,12 @@ export const useGameStore = create<GameState>()(
 
         if (markedNumbers) {
           updates.markedNumbers = new Set(markedNumbers);
-          console.log('[GameStore] Restoring markedNumbers:', markedNumbers.length);
+          console.log('[GameStore] Restoring markedNumbers:', markedNumbers.length, 'numbers');
         }
 
         set(updates);
+        console.log('[GameStore] State updated, winners in store:', get().winners.length);
+        console.log('[GameStore] ===== syncGameState complete =====');
       },
 
       addCalledNumber: (number: number) => {
@@ -215,6 +216,9 @@ export const useGameStore = create<GameState>()(
         playerId: state.playerId,
         ticket: state.ticket,
         markedNumbers: Array.from(state.markedNumbers),
+        winners: state.winners,  // CRITICAL: Include winners for hard refresh restoration
+        calledNumbers: state.calledNumbers,  // Also include called numbers
+        currentNumber: state.currentNumber,  // And current number
       }),
       // Custom storage to handle Set serialization
       storage: {
