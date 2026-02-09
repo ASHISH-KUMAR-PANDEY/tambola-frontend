@@ -176,6 +176,10 @@ export const useGameStore = create<GameState>()(
           winners: [],
           markedNumbers: new Set(),
         });
+        // CRITICAL: Clear localStorage to prevent stale winners from being restored on rejoin
+        // This fixes the bug where leaving and rejoining would show empty winners
+        // even though backend sends correct winners in stateSync
+        localStorage.removeItem('game-storage');
       },
 
       isNumberMarked: (number: number) => {
