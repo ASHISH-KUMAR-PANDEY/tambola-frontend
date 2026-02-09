@@ -42,6 +42,7 @@ export interface StateSyncPayload {
   calledNumbers: number[];
   currentNumber?: number;
   players: Array<{ playerId: string; userName: string }>;
+  playerCount?: number; // Optimized: send count instead of full list for players
   winners: Array<{ playerId: string; category: string; userName?: string }>;
   markedNumbers?: number[];
 }
@@ -71,7 +72,7 @@ class WebSocketService {
   private userId: string | null = null;
   private handlers: GameEventHandlers = {};
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 20; // Increased from 5 for mobile network instability
 
   /**
    * Connect to WebSocket server with userId authentication
@@ -95,9 +96,14 @@ class WebSocketService {
     this.socket = io(WS_URL, {
       auth: { userId },
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelay: 500,           // Start reconnecting faster (was 1000ms)
+      reconnectionDelayMax: 3000,       // Cap at 3s (was 5000ms)
       reconnectionAttempts: this.maxReconnectAttempts,
+      transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling
+      upgrade: true,                     // Upgrade polling to WebSocket when possible
+      pingTimeout: 20000,                // Wait 20s for pong (was 5s default) - mobile-friendly
+      pingInterval: 15000,               // Send ping every 15s (was 25s default)
+      timeout: 10000,                    // Connection timeout 10s (was 20s default)
     });
 
     this.setupEventListeners();
@@ -182,13 +188,34 @@ class WebSocketService {
 
   /**
    * Call a specific number (organizer only)
+   * Returns a Promise that resolves when backend confirms or rejects after timeout
    */
-  callNumber(gameId: string, number: number): void {
-    if (!this.socket?.connected) {
-      console.error('WebSocket not connected');
-      return;
-    }
-    this.socket.emit('game:callNumber', { gameId, number });
+  callNumber(gameId: string, number: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket?.connected) {
+        reject(new Error('WebSocket not connected'));
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        reject(new Error('Timeout waiting for confirmation'));
+      }, 5000); // 5 second timeout
+
+      // Emit with acknowledgment callback
+      this.socket.emit(
+        'game:callNumber',
+        { gameId, number },
+        (response: { success: boolean; error?: string }) => {
+          clearTimeout(timeout);
+
+          if (response && response.success) {
+            resolve();
+          } else {
+            reject(new Error(response?.error || 'Failed to call number'));
+          }
+        }
+      );
+    });
   }
 
   /**

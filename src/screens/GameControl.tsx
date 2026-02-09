@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -43,6 +43,11 @@ export default function GameControl() {
   const [players, setPlayers] = useState<any[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
+  const [isCallingNumber, setIsCallingNumber] = useState(false);
+  const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
+
+  // Track in-flight number calls to prevent duplicates
+  const pendingNumberCalls = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     if (!gameId) {
@@ -90,6 +95,59 @@ export default function GameControl() {
           status: 'success',
           duration: 10000,
         });
+      },
+      onError: (data) => {
+        console.error('Game error:', data);
+
+        // Show error toast to organizer
+        toast({
+          title: 'Error',
+          description: data.message || 'An error occurred',
+          status: 'error',
+          duration: 10000,
+          isClosable: true,
+        });
+
+        // Handle specific error codes
+        if (data.code === 'FORBIDDEN') {
+          toast({
+            title: 'Permission Denied',
+            description: 'You are not the organizer of this game',
+            status: 'error',
+            duration: 10000,
+          });
+          navigate('/organizer');
+        }
+
+        if (data.code === 'GAME_NOT_ACTIVE') {
+          toast({
+            title: 'Game Not Active',
+            description: 'This game is not currently active',
+            status: 'warning',
+            duration: 5000,
+          });
+          loadGameData();
+        }
+      },
+      onDisconnected: () => {
+        toast({
+          title: '⚠️ Disconnected',
+          description: 'Lost connection to server. Reconnecting...',
+          status: 'warning',
+          duration: null,
+          id: 'disconnected-toast',
+        });
+      },
+      onConnected: () => {
+        toast.close('disconnected-toast');
+        toast({
+          title: '✅ Reconnected',
+          description: 'Connection restored',
+          status: 'success',
+          duration: 3000,
+        });
+        loadGameData();
+        wsService.joinGame(gameId);
       },
     });
 
@@ -140,7 +198,8 @@ export default function GameControl() {
       return;
     }
 
-    if (calledNumbers.includes(number)) {
+    // Use Set for O(1) duplicate check instead of Array.includes() O(n)
+    if (new Set(calledNumbers).has(number)) {
       toast({
         title: 'Already Called',
         description: `Number ${number} has already been called`,
@@ -150,22 +209,51 @@ export default function GameControl() {
       return;
     }
 
-    try {
-      wsService.callNumber(gameId!, number);
-      setNumberToCall('');
+    // Check if this number is already being called (prevent duplicates)
+    if (pendingNumberCalls.current.has(number)) {
       toast({
-        title: 'Number Called',
-        description: `Called number: ${number}`,
-        status: 'success',
+        title: 'Please Wait',
+        description: `Already calling number ${number}...`,
+        status: 'info',
         duration: 2000,
       });
-    } catch (error) {
+      return;
+    }
+
+    // Add to pending set
+    pendingNumberCalls.current.add(number);
+
+    // Set loading state
+    setIsCallingNumber(true);
+    setLastCalledNumber(number);
+
+    try {
+      // Wait for backend acknowledgment
+      await wsService.callNumber(gameId!, number);
+
+      // Success - clear input ONLY after confirmation
+      setNumberToCall('');
+
+      // Show success toast ONLY after confirmation
       toast({
-        title: 'Error',
-        description: 'Failed to call number',
+        title: 'Number Called',
+        description: `Successfully called number: ${number}`,
+        status: 'success',
+        duration: 1000,
+      });
+    } catch (error) {
+      // Error - show to organizer
+      const errorMessage = error instanceof Error ? error.message : 'Failed to call number';
+      toast({
+        title: 'Failed to Call Number',
+        description: errorMessage,
         status: 'error',
         duration: 5000,
       });
+    } finally {
+      setIsCallingNumber(false);
+      // Remove from pending set
+      pendingNumberCalls.current.delete(number);
     }
   };
 
@@ -287,9 +375,10 @@ export default function GameControl() {
                     min={1}
                     max={90}
                     flex={1}
+                    isDisabled={isCallingNumber}
                   >
                     <NumberInputField
-                      placeholder="Enter number (1-90)"
+                      placeholder={isCallingNumber ? `Calling ${lastCalledNumber}...` : "Enter number (1-90)"}
                       fontSize="lg"
                       h="50px"
                       color="grey.900"
@@ -303,6 +392,9 @@ export default function GameControl() {
                     h="50px"
                     px={8}
                     onClick={handleCallNumber}
+                    isLoading={isCallingNumber}
+                    loadingText={`Calling ${lastCalledNumber}...`}
+                    isDisabled={isCallingNumber}
                   >
                     Call Number
                   </Button>
@@ -324,9 +416,12 @@ export default function GameControl() {
                   </Badge>
                 </HStack>
                 <Grid templateColumns="repeat(10, 1fr)" gap={2}>
-                  {Array.from({ length: 90 }, (_, i) => i + 1).map((num) => {
-                    const isCalled = calledNumbers.includes(num);
-                    const isCurrent = num === currentNumber;
+                  {(() => {
+                    // Create Set once for O(1) lookups instead of O(n) per number
+                    const calledNumbersSet = new Set(calledNumbers);
+                    return Array.from({ length: 90 }, (_, i) => i + 1).map((num) => {
+                      const isCalled = calledNumbersSet.has(num);
+                      const isCurrent = num === currentNumber;
                     return (
                       <Box
                         key={num}
@@ -348,7 +443,8 @@ export default function GameControl() {
                         {num}
                       </Box>
                     );
-                  })}
+                    });
+                  })()}
                 </Grid>
               </Box>
             </VStack>

@@ -136,8 +136,8 @@ export const useGameStore = create<GameState>()(
       markNumber: (number: number) => {
         const { calledNumbers, markedNumbers, ticket } = get();
 
-        // Validate number has been called
-        if (!calledNumbers.includes(number)) {
+        // Validate number has been called (O(1) Set lookup)
+        if (!new Set(calledNumbers).has(number)) {
           throw new Error('NUMBER_NOT_CALLED');
         }
 

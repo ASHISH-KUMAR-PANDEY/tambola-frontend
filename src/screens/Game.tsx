@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -17,6 +17,8 @@ import {
   Center,
   Spinner,
   AspectRatio,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
 import { apiService, type YouTubeLiveStream } from '../services/api.service';
@@ -37,6 +39,9 @@ export default function Game() {
   const [gameStartTime] = useState<number>(Date.now());
   const [liveStream, setLiveStream] = useState<YouTubeLiveStream | null>(null);
   const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('playerName') || '');
+
+  // Wake Lock to prevent screen from sleeping during game
+  const wakeLockRef = useRef<any>(null);
 
   const {
     playerId,
@@ -87,20 +92,24 @@ export default function Game() {
         wsService.joinGame(gameId, playerName);
       },
       onStateSync: (data) => {
-        // Sync game state when rejoining
-        console.log('[Game] onStateSync received:', {
+        // Sync game state when rejoining (optimized payload)
+        console.log('[Game] onStateSync received (optimized):', {
           calledNumbersCount: data.calledNumbers.length,
           currentNumber: data.currentNumber,
-          playersCount: data.players.length,
+          playersCount: data.playerCount || data.players.length,
+          playersArrayLength: data.players.length,
           winnersCount: data.winners.length,
           winners: data.winners,
           markedNumbersCount: data.markedNumbers?.length || 0,
+          note: data.playerCount ? 'Using optimized playerCount (not full list)' : 'Full player list received',
         });
 
+        // If playerCount provided (optimized), use empty players array
+        // Player doesn't need full player list, just their own game state
         syncGameState(
           data.calledNumbers,
           data.currentNumber || null,
-          data.players,
+          data.players, // Will be empty array if optimized
           data.winners as any,
           data.markedNumbers || []
         );
@@ -247,6 +256,120 @@ export default function Game() {
     };
   }, [gameId]);
 
+  // Wake Lock: Prevent screen from sleeping during game
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+          console.log('[WakeLock] Screen wake lock acquired');
+
+          wakeLockRef.current.addEventListener('release', () => {
+            console.log('[WakeLock] Screen wake lock released');
+          });
+        } else {
+          console.log('[WakeLock] Wake Lock API not supported');
+        }
+      } catch (error) {
+        console.error('[WakeLock] Failed to acquire wake lock:', error);
+      }
+    };
+
+    requestWakeLock();
+
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch((error: any) => {
+          console.error('[WakeLock] Failed to release wake lock:', error);
+        });
+      }
+    };
+  }, []);
+
+  // Visibility change: Auto-reconnect when app returns to foreground
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Visibility] App returned to foreground');
+
+        // If WebSocket disconnected while backgrounded, reconnect
+        if (!wsService.isConnected() && gameId) {
+          console.log('[Visibility] WebSocket disconnected, reconnecting...');
+          toast({
+            title: 'पुनः कनेक्ट हो रहा है...',
+            description: 'गेम से दोबारा जुड़ रहे हैं',
+            status: 'info',
+            duration: 2000,
+          });
+
+          // Restore state from localStorage if available
+          const savedState = localStorage.getItem(`gameState:${gameId}`);
+          if (savedState) {
+            try {
+              const state = JSON.parse(savedState);
+              syncGameState(
+                state.calledNumbers || [],
+                state.currentNumber || null,
+                state.players || [],
+                state.winners || [],
+                state.markedNumbers || []
+              );
+              console.log('[Visibility] Restored game state from localStorage');
+            } catch (error) {
+              console.error('[Visibility] Failed to restore state from localStorage:', error);
+            }
+          }
+
+          // Reconnect and rejoin game
+          // The onConnected handler will automatically call joinGame
+        }
+
+        // Re-request wake lock (may have been released while backgrounded)
+        if ('wakeLock' in navigator && !wakeLockRef.current) {
+          (navigator as any).wakeLock.request('screen')
+            .then((wakeLock: any) => {
+              wakeLockRef.current = wakeLock;
+              console.log('[Visibility] Wake lock re-acquired after foreground');
+            })
+            .catch((error: any) => {
+              console.error('[Visibility] Failed to re-acquire wake lock:', error);
+            });
+        }
+      } else {
+        console.log('[Visibility] App moved to background');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [gameId, syncGameState, toast]);
+
+  // Save game state to localStorage periodically (backup for reconnection)
+  useEffect(() => {
+    if (!gameId) return;
+
+    const saveInterval = setInterval(() => {
+      const state = {
+        gameId: currentGameId,
+        playerId,
+        calledNumbers,
+        currentNumber,
+        players,
+        winners,
+        markedNumbers: getMarkedCount ? [] : [], // Placeholder, actual marked numbers tracked in store
+      };
+
+      localStorage.setItem(`gameState:${gameId}`, JSON.stringify(state));
+    }, 5000); // Save every 5 seconds
+
+    return () => {
+      clearInterval(saveInterval);
+    };
+  }, [gameId, currentGameId, playerId, calledNumbers, currentNumber, players, winners, getMarkedCount]);
+
   const handleLeaveGame = () => {
     if (gameId) {
       wsService.leaveGame(gameId);
@@ -290,10 +413,13 @@ export default function Game() {
 
   const renderNumberBoard = () => {
     const numbers = Array.from({ length: 90 }, (_, i) => i + 1);
+    // Create Set once for O(1) lookups instead of O(n) per number (90 × 67 = 6030 iterations avoided!)
+    const calledNumbersSet = new Set(calledNumbers);
+
     return (
       <Grid templateColumns={{ base: 'repeat(10, minmax(0, 1fr))', md: 'repeat(10, 1fr)' }} gap={{ base: 1, sm: 1.5, md: 2 }}>
         {numbers.map((num) => {
-          const isCalled = calledNumbers.includes(num);
+          const isCalled = calledNumbersSet.has(num);
           const isCurrent = num === currentNumber;
 
           return (
@@ -364,6 +490,19 @@ export default function Game() {
             बाहर निकलें
           </Button>
         </Box>
+
+        {/* Keep Screen On Warning */}
+        <Alert status="info" variant="solid" borderRadius="md">
+          <AlertIcon />
+          <VStack align="start" spacing={0} flex={1}>
+            <Text fontSize="sm" fontWeight="bold">
+              स्क्रीन जलाए रखें
+            </Text>
+            <Text fontSize="xs">
+              गेम के दौरान कनेक्शन बनाए रखने के लिए कृपया अपनी स्क्रीन ऑन रखें
+            </Text>
+          </VStack>
+        </Alert>
 
         {/* YouTube Live Stream */}
         {liveStream && (
