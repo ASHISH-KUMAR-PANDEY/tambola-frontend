@@ -172,6 +172,10 @@ class FrontendLogger {
     this.playerAction('LEAVE_GAME', { gameId });
   }
 
+  playerGameStateSync(data: any) {
+    this.playerAction('GAME_STATE_SYNC', data);
+  }
+
   // ========== USER INTERACTIONS ==========
 
   userInteraction(action: string, data: Record<string, any> = {}) {
