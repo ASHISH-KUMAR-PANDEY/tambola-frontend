@@ -237,19 +237,41 @@ export const useGameStore = create<GameState>()(
       storage: {
         getItem: (name) => {
           const str = localStorage.getItem(name);
-          if (!str) return null;
+          if (!str) {
+            console.log('[GameStore Persist] No localStorage data found');
+            return null;
+          }
           const data = JSON.parse(str);
-          return {
+          console.log('[GameStore Persist] Loading from localStorage:', {
+            hasWinners: !!data.state?.winners,
+            winnersCount: data.state?.winners?.length || 0,
+            hasCurrentGameId: !!data.state?.currentGameId,
+            winners: data.state?.winners,
+          });
+          // CRITICAL: Preserve ALL fields, not just markedNumbers
+          const result = {
             state: {
-              ...data.state,
+              ...data.state,  // Keep everything: winners, calledNumbers, etc.
               markedNumbers: new Set(data.state.markedNumbers || []),
             },
           };
+          console.log('[GameStore Persist] Returning to Zustand:', {
+            winnersCount: result.state.winners?.length || 0,
+            winners: result.state.winners,
+          });
+          return result;
         },
         setItem: (name, value) => {
+          console.log('[GameStore Persist] Saving to localStorage:', {
+            hasWinners: !!value.state?.winners,
+            winnersCount: value.state?.winners?.length || 0,
+            hasCurrentGameId: !!value.state?.currentGameId,
+            winners: value.state?.winners,
+          });
+          // CRITICAL: Save ALL fields, not just markedNumbers
           const str = JSON.stringify({
             state: {
-              ...value.state,
+              ...value.state,  // Keep everything: winners, calledNumbers, etc.
               markedNumbers: Array.from(value.state.markedNumbers),
             },
           });
