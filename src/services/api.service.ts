@@ -399,6 +399,48 @@ class ApiService {
   }
 
   /**
+   * Create registration card
+   */
+  async createRegistrationCard(message: string, targetDateTime: string): Promise<RegistrationCard> {
+    return this.request<RegistrationCard>('/api/v1/registration-card', {
+      method: 'POST',
+      body: JSON.stringify({ message, targetDateTime }),
+    });
+  }
+
+  /**
+   * Get active registration card
+   */
+  async getActiveRegistrationCard(): Promise<RegistrationCard | null> {
+    const response = await this.request<{ card: RegistrationCard | null }>(
+      '/api/v1/registration-card'
+    );
+    return response.card;
+  }
+
+  /**
+   * Update registration card
+   */
+  async updateRegistrationCard(
+    id: string,
+    data: { message?: string; targetDateTime?: string; isActive?: boolean }
+  ): Promise<RegistrationCard> {
+    return this.request<RegistrationCard>(`/api/v1/registration-card/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete registration card
+   */
+  async deleteRegistrationCard(id: string): Promise<void> {
+    await this.request<void>(`/api/v1/registration-card/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Delete YouTube live stream
    */
   async deleteYouTubeLiveStream(): Promise<void> {
@@ -427,6 +469,14 @@ export interface YouTubeLiveStream {
   id: string;
   videoUrl: string;
   embedId: string;
+  createdAt: string;
+}
+
+export interface RegistrationCard {
+  id: string;
+  message: string;
+  targetDateTime: string;
+  isActive: boolean;
   createdAt: string;
 }
 

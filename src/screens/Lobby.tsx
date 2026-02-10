@@ -29,12 +29,13 @@ import {
   FormLabel,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
-import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed } from '../services/api.service';
+import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
 import { useGameStore } from '../stores/gameStore';
 import { useUIStore } from '../stores/uiStore';
 import { Logo } from '../components/Logo';
+import { RegistrationCard } from '../components/RegistrationCard';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
@@ -52,6 +53,7 @@ export default function Lobby() {
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
   const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
+  const [currentRegistrationCard, setCurrentRegistrationCard] = useState<RegistrationCardType | null>(null);
   const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
     // Load reminded games from localStorage
     const saved = localStorage.getItem('remindedGames');
@@ -94,6 +96,7 @@ export default function Lobby() {
     loadMyActiveGames();
     loadCurrentBanner();
     loadCurrentEmbed();
+    loadActiveRegistrationCard();
 
     // Setup WebSocket event handlers
     wsService.on({
@@ -220,6 +223,15 @@ export default function Lobby() {
       setCurrentEmbed(embed);
     } catch (error) {
       console.error('Failed to load YouTube embed:', error);
+    }
+  };
+
+  const loadActiveRegistrationCard = async () => {
+    try {
+      const card = await apiService.getActiveRegistrationCard();
+      setCurrentRegistrationCard(card);
+    } catch (error) {
+      console.error('Failed to load registration card:', error);
     }
   };
 
@@ -513,6 +525,10 @@ export default function Lobby() {
 
           {games.length === 0 ? (
             <VStack spacing={{ base: 4, md: 6 }} w="100%">
+              {currentRegistrationCard && (
+                <RegistrationCard card={currentRegistrationCard} />
+              )}
+
               {currentBanner && (
                 <Box
                   w="100%"
@@ -751,6 +767,11 @@ export default function Lobby() {
             </Grid>
           )}
         </Box>
+
+        {/* Registration Card - shown when games exist */}
+        {games.length > 0 && currentRegistrationCard && (
+          <RegistrationCard card={currentRegistrationCard} />
+        )}
 
         {/* Promotional Banner - shown when games exist */}
         {games.length > 0 && currentBanner && (
