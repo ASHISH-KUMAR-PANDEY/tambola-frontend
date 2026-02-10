@@ -13,7 +13,9 @@ const getDeviceId = (): string => {
 
 const getAppUserId = (): string | null => {
   // Get userId from localStorage (stored during auto-login from mobile app)
-  return localStorage.getItem('app_user_id');
+  const rawAppUserId = localStorage.getItem('app_user_id');
+  // Filter out invalid userId values like "lobby"
+  return rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
 };
 
 const getAppendedPlatformEventName = (eventName: string): string => {

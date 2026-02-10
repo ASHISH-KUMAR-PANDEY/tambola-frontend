@@ -21,7 +21,9 @@ interface AuthState {
 }
 
 // Check if mobile app user exists before creating store
-const appUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+const rawAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+// Filter out invalid userId values like "lobby"
+const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
 const nowTimestamp = Date.now();
 
 // If mobile app user exists, clear any old auth session to prevent conflicts
@@ -116,7 +118,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       loadUser: async () => {
-        const appUserId = localStorage.getItem('app_user_id');
+        const rawAppUserId = localStorage.getItem('app_user_id');
+        // Filter out invalid userId values like "lobby"
+        const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
         const { user } = get();
 
         // If app_user_id exists, always prioritize mobile app user
@@ -195,7 +199,9 @@ export const useAuthStore = create<AuthState>()(
       }),
       // Custom merge to handle mobile app user priority
       merge: (persistedState: any, currentState: any) => {
-        const currentAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+        const rawAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+        // Filter out invalid userId values like "lobby"
+        const currentAppUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
 
         // If app_user_id exists, ALWAYS use mobile app user (ignore persisted state)
         if (currentAppUserId) {

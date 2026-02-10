@@ -14,7 +14,9 @@ export const InactivityHandler = () => {
   const navigate = useNavigate();
 
   // Check if mobile app user (they shouldn't be auto-logged out)
-  const isMobileAppUser = typeof window !== 'undefined' && !!localStorage.getItem('app_user_id');
+  const rawAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
+  // Filter out invalid userId values like "lobby"
+  const isMobileAppUser = rawAppUserId && rawAppUserId !== 'lobby' ? true : false;
 
   // Handle inactivity logout
   const handleInactive = () => {

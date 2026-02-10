@@ -229,7 +229,9 @@ class ApiService {
    * Get player's active games (can rejoin)
    */
   async getMyActiveGames(): Promise<Game[]> {
-    const appUserId = localStorage.getItem('app_user_id');
+    const rawAppUserId = localStorage.getItem('app_user_id');
+    // Filter out invalid userId values like "lobby"
+    const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
     const query = appUserId ? `?userId=${appUserId}` : '';
     const response = await this.request<{ games: Game[] }>(`/api/v1/games/my-active${query}`);
     return response.games;

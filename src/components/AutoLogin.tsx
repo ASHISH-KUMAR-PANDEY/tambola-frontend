@@ -15,8 +15,8 @@ export const AutoLogin = () => {
       try {
         const userId = searchParams.get('userId');
 
-        // If no userId in query params, check for existing auth session
-        if (!userId) {
+        // If no userId in query params or userId is "lobby" (invalid), check for existing auth session
+        if (!userId || userId === 'lobby') {
           // Check if there's a token in localStorage
           const token = localStorage.getItem('auth_token');
           const authStorage = localStorage.getItem('auth-storage');
