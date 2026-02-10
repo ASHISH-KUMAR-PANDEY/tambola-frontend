@@ -13,7 +13,29 @@ export const AutoLogin = () => {
   useEffect(() => {
     const handleAutoLogin = async () => {
       try {
-        const userId = searchParams.get('userId');
+        // Try to get userId from query params first (standard way: /?userId=123)
+        let userId = searchParams.get('userId');
+
+        // If not found in query params, try to parse from URL path (encoded way: /%3FuserId=123)
+        if (!userId) {
+          const pathname = window.location.pathname; // e.g., "/%3FuserId=123"
+          const decodedPath = decodeURIComponent(pathname); // e.g., "/?userId=123"
+
+          console.log('[AutoLogin] No userId in query params, checking path...');
+          console.log('[AutoLogin] pathname:', pathname);
+          console.log('[AutoLogin] decodedPath:', decodedPath);
+
+          // Extract userId from decoded path
+          const match = decodedPath.match(/[?&]userId=([^&]+)/);
+          if (match) {
+            userId = match[1];
+            console.log('[AutoLogin] ✅ Found userId in encoded path:', userId);
+          } else {
+            console.log('[AutoLogin] ✗ No userId found in path either');
+          }
+        } else {
+          console.log('[AutoLogin] ✅ Found userId in query params:', userId);
+        }
 
         // If no userId in query params or userId is "lobby" (invalid), check for existing auth session
         if (!userId || userId === 'lobby') {
