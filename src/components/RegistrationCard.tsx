@@ -21,23 +21,23 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
   const handleSetReminder = () => {
     if (reminderSet) return; // Already set, do nothing
 
-    // Get userId from URL query params
-    const params = new URLSearchParams(window.location.search);
-    const userId = params.get('app_user_id') || params.get('userId');
+    // Get userId from localStorage (stored by AutoLogin after initial auth)
+    const rawUserId = localStorage.getItem('app_user_id');
+    const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
 
     console.log('[RegistrationCard] handleSetReminder called');
     console.log('[RegistrationCard] URL:', window.location.href);
-    console.log('[RegistrationCard] userId from URL:', userId);
-    console.log('[RegistrationCard] userId type:', typeof userId);
-    console.log('[RegistrationCard] userId is valid?:', userId && userId !== 'lobby');
+    console.log('[RegistrationCard] app_user_id from localStorage:', rawUserId);
+    console.log('[RegistrationCard] userId after filtering:', userId);
+    console.log('[RegistrationCard] userId is valid?:', !!userId);
 
     // Get player name from sessionStorage
     const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
     console.log('[RegistrationCard] playerName:', playerName);
 
-    // Track event in RudderStack only if userId is valid (not "lobby")
-    if (userId && userId !== 'lobby') {
-      console.log('[RegistrationCard] Tracking event registration_reminder_set');
+    // Track event in RudderStack only if userId is valid
+    if (userId) {
+      console.log('[RegistrationCard] Tracking event registration_reminder_set with userId:', userId);
       trackEvent({
         eventName: 'registration_reminder_set',
         properties: {
@@ -51,7 +51,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       });
       console.log('[RegistrationCard] Event tracked successfully');
     } else {
-      console.warn('[RegistrationCard] Event NOT tracked - userId invalid:', userId);
+      console.warn('[RegistrationCard] Event NOT tracked - userId not found in localStorage');
     }
 
     // Mark reminder as set
