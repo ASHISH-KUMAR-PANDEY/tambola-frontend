@@ -59,41 +59,47 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       border="2px"
       borderColor="brand.500"
     >
-      <VStack spacing={{ base: 4, md: 6 }} align="stretch">
-        {/* Message */}
+      <VStack spacing={{ base: 4, md: 5 }} align="stretch">
+        {/* Message - Primary Focus */}
         <Text
-          fontSize={{ base: 'lg', md: 'xl' }}
+          fontSize={{ base: '2xl', md: '3xl' }}
           fontWeight="bold"
           color="white"
           textAlign="center"
+          lineHeight="1.3"
         >
           {card.message}
         </Text>
 
-        {/* Countdown Timer */}
-        <Box
-          p={4}
-          bg={timeRemaining.isExpired ? 'orange.500' : 'brand.500'}
-          borderRadius="md"
-          textAlign="center"
-        >
-          <HStack justify="center" spacing={2}>
-            <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold" color="white">
-              ⏱️
-            </Text>
-            <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold" color="white">
-              {timeRemaining.isExpired ? 'Time has passed!' : `Time remaining: ${countdownText}`}
-            </Text>
-          </HStack>
-        </Box>
+        {/* Countdown Timer - Subtle, Not CTA */}
+        <HStack justify="center" spacing={2} py={2}>
+          <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
+            ⏱️
+          </Text>
+          <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
+            {timeRemaining.isExpired ? 'Time has passed!' : `Time remaining: ${countdownText}`}
+          </Text>
+        </HStack>
 
         {/* Set Reminder Button */}
         <Button
-          colorScheme={reminderSet ? 'green' : 'brand'}
+          colorScheme="green"
+          bg={reminderSet ? 'green.500' : 'brand.500'}
           size={{ base: 'md', md: 'lg' }}
           onClick={handleSetReminder}
           isDisabled={reminderSet}
           w="100%"
+          _disabled={{
+            bg: 'green.500',
+            color: 'white',
+            opacity: 1,
+            cursor: 'not-allowed'
+          }}
+          _hover={reminderSet ? {
+            bg: 'green.500'
+          } : {
+            bg: 'brand.600'
+          }}
         >
           {reminderSet ? 'Reminder Set ✓' : 'Set Reminder'}
         </Button>
