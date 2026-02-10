@@ -25,40 +25,27 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
     const rawUserId = localStorage.getItem('app_user_id');
     const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
 
-    console.log('[RegistrationCard] handleSetReminder called');
-    console.log('[RegistrationCard] URL:', window.location.href);
-    console.log('[RegistrationCard] app_user_id from localStorage:', rawUserId);
-    console.log('[RegistrationCard] userId after filtering:', userId);
-    console.log('[RegistrationCard] userId is valid?:', !!userId);
-
     // Get player name from sessionStorage
     const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
-    console.log('[RegistrationCard] playerName:', playerName);
 
     // Track event in RudderStack only if userId is valid
     if (userId) {
-      console.log('[RegistrationCard] Tracking event registration_reminder_set with userId:', userId);
       trackEvent({
         eventName: 'registration_reminder_set',
         properties: {
           card_id: card.id,
-          user_id: userId,
-          player_name: playerName,
+          user_name: playerName,
           target_date_time: card.targetDateTime,
           message: card.message,
-          timestamp: new Date().toISOString(),
+          // user_id, timestamp, app_user_id, device_id, platform are auto-added by useTambolaTracking
         },
       });
-      console.log('[RegistrationCard] Event tracked successfully');
-    } else {
-      console.warn('[RegistrationCard] Event NOT tracked - userId not found in localStorage');
     }
 
     // Mark reminder as set
     setReminderSet(true);
     const key = `reminder_${card.id}`;
     localStorage.setItem(key, 'true');
-    console.log('[RegistrationCard] Reminder marked as set in localStorage');
   };
 
   return (
