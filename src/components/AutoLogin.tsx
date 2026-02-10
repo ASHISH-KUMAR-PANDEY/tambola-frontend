@@ -16,25 +16,32 @@ export const AutoLogin = () => {
         // Try to get userId from query params first (standard way: /?userId=123)
         let userId = searchParams.get('userId');
 
-        // If not found in query params, try to parse from URL path (encoded way: /%3FuserId=123)
+        // If not found in query params, try to parse from URL path
         if (!userId) {
-          const pathname = window.location.pathname; // e.g., "/%3FuserId=123"
-          const decodedPath = decodeURIComponent(pathname); // e.g., "/?userId=123"
+          const pathname = window.location.pathname;
+          const decodedPath = decodeURIComponent(pathname);
 
           console.log('[AutoLogin] No userId in query params, checking path...');
           console.log('[AutoLogin] pathname:', pathname);
           console.log('[AutoLogin] decodedPath:', decodedPath);
 
-          // Extract userId from decoded path
-          const match = decodedPath.match(/[?&]userId=([^&]+)/);
+          // Try format 2: /%3FuserId=123 (decoded to /?userId=123)
+          let match = decodedPath.match(/[?&]userId=([^&]+)/);
           if (match) {
             userId = match[1];
-            console.log('[AutoLogin] ✅ Found userId in encoded path:', userId);
+            console.log('[AutoLogin] ✅ Found userId in encoded path (format 2):', userId);
           } else {
-            console.log('[AutoLogin] ✗ No userId found in path either');
+            // Try format 3: /userId=123 (no ? at all)
+            match = pathname.match(/\/userId=([^&/]+)/);
+            if (match) {
+              userId = match[1];
+              console.log('[AutoLogin] ✅ Found userId in direct path (format 3):', userId);
+            } else {
+              console.log('[AutoLogin] ✗ No userId found in path');
+            }
           }
         } else {
-          console.log('[AutoLogin] ✅ Found userId in query params:', userId);
+          console.log('[AutoLogin] ✅ Found userId in query params (format 1):', userId);
         }
 
         // If no userId in query params or userId is "lobby" (invalid), check for existing auth session
