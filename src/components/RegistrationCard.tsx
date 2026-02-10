@@ -109,7 +109,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             bg: 'brand.600'
           }}
         >
-          {reminderSet ? 'Reminder Set' : 'Set Reminder'}
+          {reminderSet ? 'रिमाइंडर सेट किया' : 'रिमाइंडर सेट करें'}
         </Button>
       </VStack>
     </Box>
