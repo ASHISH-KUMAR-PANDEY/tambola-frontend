@@ -1,36 +1,26 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
-  Button,
   Container,
-  FormControl,
-  FormLabel,
-  Input,
   Stack,
   Heading,
-  Text,
-  Link,
-  Alert,
-  AlertIcon,
-  FormErrorMessage,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
   useToast,
 } from '@chakra-ui/react';
-import { useAuthStore } from '../stores/authStore';
 import { Logo } from '../components/Logo';
+import { MobileOTPLogin } from '../components/auth/MobileOTPLogin';
+import { EmailPasswordLogin } from '../components/auth/EmailPasswordLogin';
 
 export default function Login() {
-  const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const [tabIndex, setTabIndex] = useState(0); // 0 = Mobile (default), 1 = Email
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-
-  const from = (location.state as any)?.from?.pathname || '/lobby';
   const inactivityMessage = (location.state as any)?.message;
 
   // Show inactivity message if present
@@ -45,51 +35,6 @@ export default function Login() {
       });
     }
   }, [inactivityMessage, toast]);
-
-  const validateEmail = (email: string): boolean => {
-    if (!email) {
-      setEmailError('Email is required');
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('Invalid email format');
-      return false;
-    }
-    setEmailError('');
-    return true;
-  };
-
-  const validatePassword = (password: string): boolean => {
-    if (!password) {
-      setPasswordError('Password is required');
-      return false;
-    }
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      return false;
-    }
-    setPasswordError('');
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
-
-    const emailValid = validateEmail(email);
-    const passwordValid = validatePassword(password);
-
-    if (!emailValid || !passwordValid) {
-      return;
-    }
-
-    try {
-      await login(email, password);
-      navigate(from, { replace: true });
-    } catch (err) {
-      // Error is handled by store
-    }
-  };
 
   return (
     <Container maxW="md" py={{ base: 8, md: 12, lg: 20 }} px={{ base: 4, md: 6 }}>
@@ -112,60 +57,39 @@ export default function Login() {
             अपने अकाउंट में लॉगिन करें
           </Heading>
 
-          {error && (
-            <Alert status="error" borderRadius="md">
-              <AlertIcon />
-              {error}
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              <FormControl isInvalid={!!emailError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>ईमेल</FormLabel>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => validateEmail(email)}
-                  placeholder="अपना ईमेल दर्ज करें"
-                  size={{ base: 'md', md: 'lg' }}
-                />
-                <FormErrorMessage fontSize="xs">{emailError}</FormErrorMessage>
-              </FormControl>
-
-              <FormControl isInvalid={!!passwordError}>
-                <FormLabel fontSize={{ base: 'sm', md: 'md' }}>पासवर्ड</FormLabel>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => validatePassword(password)}
-                  placeholder="अपना पासवर्ड दर्ज करें"
-                  size={{ base: 'md', md: 'lg' }}
-                />
-                <FormErrorMessage fontSize="xs">{passwordError}</FormErrorMessage>
-              </FormControl>
-
-              <Button
-                type="submit"
-                colorScheme="brand"
-                size={{ base: 'md', md: 'lg' }}
+          <Tabs
+            index={tabIndex}
+            onChange={setTabIndex}
+            variant="enclosed"
+            colorScheme="brand"
+          >
+            <TabList mb="1em">
+              <Tab
+                _selected={{ color: 'white', bg: 'brand.500' }}
                 fontSize={{ base: 'sm', md: 'md' }}
-                isLoading={isLoading}
-                loadingText="लॉगिन हो रहा है..."
+                flex={1}
               >
-                लॉगिन करें
-              </Button>
-            </Stack>
-          </form>
+                📱 मोबाइल
+              </Tab>
+              <Tab
+                _selected={{ color: 'white', bg: 'brand.500' }}
+                fontSize={{ base: 'sm', md: 'md' }}
+                flex={1}
+              >
+                📧 ईमेल
+              </Tab>
+            </TabList>
 
-          <Text textAlign="center" color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>
-            क्या आपका अकाउंट नहीं है?{' '}
-            <Link as={RouterLink} to="/signup" color="brand.500" fontWeight="semibold">
-              साइन अप करें
-            </Link>
-          </Text>
+            <TabPanels>
+              <TabPanel px={0}>
+                <MobileOTPLogin />
+              </TabPanel>
+
+              <TabPanel px={0}>
+                <EmailPasswordLogin />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
         </Stack>
       </Box>
     </Container>

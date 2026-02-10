@@ -179,6 +179,55 @@ class ApiService {
   }
 
   /**
+   * Send OTP to mobile number
+   */
+  async sendOTP(data: {
+    mobileNumber: string;
+    countryCode: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    otpId: string;
+    expiresIn: number;
+    attemptsRemaining: number;
+  }> {
+    return this.request('/api/v1/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Verify OTP and login/signup user
+   */
+  async verifyOTP(data: {
+    mobileNumber: string;
+    otp: string;
+    otpId: string;
+  }): Promise<{
+    success: boolean;
+    isNewUser: boolean;
+    userId: string;
+    userName: string | null;
+    mobileNumber: string;
+    accessToken: string;
+  }> {
+    const response = await this.request<{
+      success: boolean;
+      isNewUser: boolean;
+      userId: string;
+      userName: string | null;
+      mobileNumber: string;
+      accessToken: string;
+    }>('/api/v1/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    this.setToken(response.accessToken);
+    return response;
+  }
+
+  /**
    * Create a new game
    */
   async createGame(data: CreateGameRequest): Promise<Game> {
