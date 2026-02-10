@@ -28,18 +28,20 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
     // Get player name from sessionStorage
     const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
 
-    // Track event in RudderStack
-    trackEvent({
-      eventName: 'registration_reminder_set',
-      properties: {
-        card_id: card.id,
-        user_id: userId,
-        player_name: playerName,
-        target_date_time: card.targetDateTime,
-        message: card.message,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    // Track event in RudderStack only if userId is valid (not "lobby")
+    if (userId && userId !== 'lobby') {
+      trackEvent({
+        eventName: 'registration_reminder_set',
+        properties: {
+          card_id: card.id,
+          user_id: userId,
+          player_name: playerName,
+          target_date_time: card.targetDateTime,
+          message: card.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
 
     // Mark reminder as set
     setReminderSet(true);
