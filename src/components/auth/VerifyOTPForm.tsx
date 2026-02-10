@@ -43,8 +43,8 @@ export function VerifyOTPForm({
     setOtp(value);
     setError('');
 
-    // Auto-submit when all 6 digits are entered
-    if (value.length === 6) {
+    // Auto-submit when all 4 digits are entered
+    if (value.length === 4) {
       onSubmit(value);
     }
   };
@@ -52,8 +52,8 @@ export function VerifyOTPForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (otp.length !== 6) {
-      setError('कृपया 6 अंकों का OTP दर्ज करें');
+    if (otp.length !== 4) {
+      setError('कृपया 4 अंकों का OTP दर्ज करें');
       return;
     }
 
@@ -90,7 +90,7 @@ export function VerifyOTPForm({
                 textAlign="center"
                 mb={3}
               >
-                6 अंकों का OTP दर्ज करें
+                4 अंकों का OTP दर्ज करें
               </Text>
               <HStack justify="center">
                 <PinInput
@@ -100,8 +100,6 @@ export function VerifyOTPForm({
                   onChange={handleChange}
                   isDisabled={loading}
                 >
-                  <PinInputField />
-                  <PinInputField />
                   <PinInputField />
                   <PinInputField />
                   <PinInputField />
@@ -122,7 +120,7 @@ export function VerifyOTPForm({
               fontSize={{ base: 'sm', md: 'md' }}
               isLoading={loading}
               loadingText="सत्यापित कर रहे हैं..."
-              isDisabled={otp.length !== 6}
+              isDisabled={otp.length !== 4}
             >
               सत्यापित करें
             </Button>
