@@ -6,22 +6,25 @@ import {
   Heading,
   VStack,
 } from '@chakra-ui/react';
-import { apiService, type PromotionalBanner, type YouTubeEmbed, type YouTubeLiveStream } from '../services/api.service';
+import { apiService, type PromotionalBanner, type YouTubeEmbed, type YouTubeLiveStream, type RegistrationCard } from '../services/api.service';
 import { Logo } from '../components/Logo';
 import { PromotionalBannerUpload } from '../components/PromotionalBannerUpload';
 import { YouTubeEmbedManagement } from '../components/YouTubeEmbedManagement';
 import { YouTubeLiveStreamManagement } from '../components/YouTubeLiveStreamManagement';
+import { RegistrationCardManagement } from '../components/RegistrationCardManagement';
 
 export default function BannerManagement() {
   const navigate = useNavigate();
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
   const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
   const [currentLiveStream, setCurrentLiveStream] = useState<YouTubeLiveStream | null>(null);
+  const [currentRegistrationCard, setCurrentRegistrationCard] = useState<RegistrationCard | null>(null);
 
   useEffect(() => {
     loadCurrentBanner();
     loadCurrentEmbed();
     loadCurrentLiveStream();
+    loadActiveRegistrationCard();
   }, []);
 
   const loadCurrentBanner = async () => {
@@ -48,6 +51,15 @@ export default function BannerManagement() {
       setCurrentLiveStream(stream);
     } catch (error) {
       console.error('Failed to load YouTube live stream:', error);
+    }
+  };
+
+  const loadActiveRegistrationCard = async () => {
+    try {
+      const card = await apiService.getActiveRegistrationCard();
+      setCurrentRegistrationCard(card);
+    } catch (error) {
+      console.error('Failed to load registration card:', error);
     }
   };
 
@@ -84,6 +96,12 @@ export default function BannerManagement() {
         </Box>
 
         <VStack spacing={6} maxW="800px" w="100%" mx="auto">
+          <RegistrationCardManagement
+            currentCard={currentRegistrationCard}
+            onCreateSuccess={(card) => setCurrentRegistrationCard(card)}
+            onDeleteSuccess={() => setCurrentRegistrationCard(null)}
+          />
+
           <PromotionalBannerUpload
             currentBanner={currentBanner}
             onUploadSuccess={(banner) => setCurrentBanner(banner)}
