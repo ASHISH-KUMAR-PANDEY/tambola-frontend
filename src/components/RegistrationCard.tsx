@@ -60,43 +60,52 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       borderColor="brand.500"
     >
       <VStack spacing={{ base: 4, md: 5 }} align="stretch">
-        {/* Message - Primary Focus */}
+        {/* Message - Primary Focus with Golden Color */}
         <Text
           fontSize={{ base: '2xl', md: '3xl' }}
           fontWeight="bold"
-          color="white"
+          color="#ea9e04"
           textAlign="center"
           lineHeight="1.3"
         >
           {card.message}
         </Text>
 
-        {/* Countdown Timer - Subtle, Not CTA */}
-        <HStack justify="center" spacing={2} py={2}>
-          <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-            ⏱️
-          </Text>
-          <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-            {timeRemaining.isExpired ? 'Time has passed!' : `Time remaining: ${countdownText}`}
-          </Text>
-        </HStack>
+        {/* Countdown Timer - More Highlighted */}
+        <Box
+          p={3}
+          bg="rgba(234, 158, 4, 0.1)"
+          borderRadius="md"
+          border="1px solid"
+          borderColor="rgba(234, 158, 4, 0.3)"
+        >
+          <HStack justify="center" spacing={2}>
+            <Text fontSize={{ base: 'sm', md: 'md' }} color="#ea9e04" fontWeight="semibold">
+              ⏱️
+            </Text>
+            <Text fontSize={{ base: 'sm', md: 'md' }} color="#ea9e04" fontWeight="semibold">
+              {timeRemaining.isExpired ? 'Time has passed!' : `Time remaining: ${countdownText}`}
+            </Text>
+          </HStack>
+        </Box>
 
-        {/* Set Reminder Button */}
+        {/* Set Reminder Button - Different colors for better visualization */}
         <Button
-          colorScheme="green"
-          bg={reminderSet ? 'green.500' : 'brand.500'}
+          bg={reminderSet ? '#ea9e04' : 'brand.500'}
+          color="white"
           size={{ base: 'md', md: 'lg' }}
           onClick={handleSetReminder}
           isDisabled={reminderSet}
           w="100%"
+          fontWeight="bold"
           _disabled={{
-            bg: 'green.500',
+            bg: '#ea9e04',
             color: 'white',
             opacity: 1,
             cursor: 'not-allowed'
           }}
           _hover={reminderSet ? {
-            bg: 'green.500'
+            bg: '#ea9e04'
           } : {
             bg: 'brand.600'
           }}
