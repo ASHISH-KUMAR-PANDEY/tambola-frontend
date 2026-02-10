@@ -31,14 +31,23 @@ const sendRudderStackEvent = ({
 }) => {
   const rudderAnalytics = window.rudderanalytics;
 
+  console.log('[sendRudderStackEvent] Called with:', eventName);
+  console.log('[sendRudderStackEvent] RudderAnalytics initialized?:', !!rudderAnalytics);
+
   if (!rudderAnalytics) {
     console.warn('RudderAnalytics not initialized yet', eventName);
     return;
   }
 
   try {
+    const finalEventName = getAppendedPlatformEventName(eventName);
+    console.log('[sendRudderStackEvent] Sending to Rudder:', finalEventName);
+    console.log('[sendRudderStackEvent] Properties:', properties);
+
     // Append platform name to event name for cross-platform analytics tracking
-    rudderAnalytics.track(getAppendedPlatformEventName(eventName), properties);
+    rudderAnalytics.track(finalEventName, properties);
+
+    console.log('[sendRudderStackEvent] ✅ Event sent successfully:', finalEventName);
   } catch (error) {
     console.error('Event failed to track on RudderStack -', eventName, 'Error -', error);
   }
@@ -50,6 +59,12 @@ export const useTambolaTracking = () => {
 
   const trackEvent = ({ eventName, properties = {} }: TrackEventParams) => {
     const appUserId = getAppUserId();
+
+    console.log('[useTambolaTracking] trackEvent called');
+    console.log('[useTambolaTracking] eventName:', eventName);
+    console.log('[useTambolaTracking] properties:', properties);
+    console.log('[useTambolaTracking] appUserId from localStorage:', appUserId);
+    console.log('[useTambolaTracking] user from authStore:', user);
 
     // Enrich properties with common data
     const enrichedProperties = {
@@ -65,8 +80,11 @@ export const useTambolaTracking = () => {
       ...(currentGameId && { game_id: currentGameId }),
     };
 
+    console.log('[useTambolaTracking] enrichedProperties:', enrichedProperties);
+
     // Send to RudderStack
     const sendEvents = () => {
+      console.log('[useTambolaTracking] Sending to RudderStack...');
       sendRudderStackEvent({ eventName, properties: enrichedProperties });
     };
 

@@ -25,11 +25,19 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
     const params = new URLSearchParams(window.location.search);
     const userId = params.get('app_user_id') || params.get('userId');
 
+    console.log('[RegistrationCard] handleSetReminder called');
+    console.log('[RegistrationCard] URL:', window.location.href);
+    console.log('[RegistrationCard] userId from URL:', userId);
+    console.log('[RegistrationCard] userId type:', typeof userId);
+    console.log('[RegistrationCard] userId is valid?:', userId && userId !== 'lobby');
+
     // Get player name from sessionStorage
     const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
+    console.log('[RegistrationCard] playerName:', playerName);
 
     // Track event in RudderStack only if userId is valid (not "lobby")
     if (userId && userId !== 'lobby') {
+      console.log('[RegistrationCard] Tracking event registration_reminder_set');
       trackEvent({
         eventName: 'registration_reminder_set',
         properties: {
@@ -41,12 +49,16 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
           timestamp: new Date().toISOString(),
         },
       });
+      console.log('[RegistrationCard] Event tracked successfully');
+    } else {
+      console.warn('[RegistrationCard] Event NOT tracked - userId invalid:', userId);
     }
 
     // Mark reminder as set
     setReminderSet(true);
     const key = `reminder_${card.id}`;
     localStorage.setItem(key, 'true');
+    console.log('[RegistrationCard] Reminder marked as set in localStorage');
   };
 
   return (
