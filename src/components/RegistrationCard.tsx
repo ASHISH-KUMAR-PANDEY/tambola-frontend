@@ -78,11 +78,13 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
           borderColor="#ea9e04"
         >
           <HStack justify="center" spacing={2}>
-            <Text fontSize={{ base: 'sm', md: 'md' }} color="#b6b6b6">
-              ⏱️ Time remaining:
-            </Text>
+            {!timeRemaining.isExpired && (
+              <Text fontSize={{ base: 'sm', md: 'md' }} color="#b6b6b6">
+                ⏱️ Time remaining:
+              </Text>
+            )}
             <Text fontSize={{ base: 'sm', md: 'md' }} color="#ea9e04" fontWeight="semibold">
-              {timeRemaining.isExpired ? 'Game time!' : countdownText}
+              {timeRemaining.isExpired ? '⏱️ जल्द शुरू होगा' : countdownText}
             </Text>
           </HStack>
         </Box>
