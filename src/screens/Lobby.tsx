@@ -935,17 +935,20 @@ export default function Lobby() {
       {/* Name Input Modal */}
       <Modal isOpen={showNameModal} onClose={() => {}} closeOnOverlayClick={false} isCentered>
         <ModalOverlay bg="blackAlpha.800" />
-        <ModalContent mx={4} bg="grey.700" borderColor="grey.600" borderWidth="1px">
-          <ModalHeader color="white" fontSize="xl" fontWeight="bold">
-            अपना नाम बताएं
+        <ModalContent
+          mx={4}
+          bg="grey.700"
+          borderColor="brand.400"
+          borderWidth="2px"
+          boxShadow="0 0 20px 2px rgba(37, 141, 88, 0.4)"
+        >
+          <ModalHeader color="white" fontSize="lg" fontWeight="bold" pb={2}>
+            Is sunday tambola me Iphone jeetne ke liye apna naam darj karein
           </ModalHeader>
           <ModalBody pb={6}>
             <FormControl>
-              <FormLabel color="grey.300" fontSize="sm" fontWeight="medium">
-                नाम
-              </FormLabel>
               <Input
-                placeholder="अपना नाम यहां लिखें"
+                placeholder="naam likhien"
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onKeyPress={(e) => {
