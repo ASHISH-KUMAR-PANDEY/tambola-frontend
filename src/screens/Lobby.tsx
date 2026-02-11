@@ -944,30 +944,35 @@ export default function Lobby() {
             '&::before': {
               content: '""',
               position: 'absolute',
-              inset: '-3px',
+              inset: '-4px',
               borderRadius: 'md',
-              padding: '3px',
-              background: 'linear-gradient(135deg, #FFD700, #FF4444, #FFD700, #FF4444)',
+              padding: '4px',
+              background: 'linear-gradient(90deg, #FFD700, #00FF00, #00FFFF, #FF00FF, #FFD700)',
               WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
               WebkitMaskComposite: 'xor',
               maskComposite: 'exclude',
-              animation: 'rotateBorder 6s linear infinite',
-              backgroundSize: '300% 300%',
+              animation: 'rotateBorder 3s linear infinite, pulseBorder 1.5s ease-in-out infinite',
+              backgroundSize: '300% 100%',
               zIndex: -1,
             },
             '@keyframes rotateBorder': {
               '0%': {
-                backgroundPosition: '0% 50%',
-              },
-              '50%': {
-                backgroundPosition: '100% 50%',
+                backgroundPosition: '0% 0%',
               },
               '100%': {
-                backgroundPosition: '0% 50%',
+                backgroundPosition: '300% 0%',
+              },
+            },
+            '@keyframes pulseBorder': {
+              '0%, 100%': {
+                filter: 'brightness(1) drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))',
+              },
+              '50%': {
+                filter: 'brightness(1.5) drop-shadow(0 0 20px rgba(0, 255, 0, 0.8))',
               },
             },
           }}
-          boxShadow="0 0 20px 3px rgba(255, 215, 0, 0.4), 0 0 40px 6px rgba(255, 68, 68, 0.2)"
+          boxShadow="0 0 30px 5px rgba(0, 255, 0, 0.3), 0 0 60px 10px rgba(255, 215, 0, 0.2)"
         >
           <ModalHeader
             color="white"
