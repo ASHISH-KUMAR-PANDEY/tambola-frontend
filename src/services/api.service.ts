@@ -179,6 +179,20 @@ class ApiService {
   }
 
   /**
+   * Update user profile (name)
+   */
+  async updateUserProfile(data: { name: string }): Promise<{
+    success: boolean;
+    message: string;
+    user: User;
+  }> {
+    return this.request('/api/v1/auth/update-profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * Send OTP to mobile number
    */
   async sendOTP(data: {

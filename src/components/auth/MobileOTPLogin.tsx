@@ -65,9 +65,9 @@ export function MobileOTPLogin() {
         // Save userId to localStorage
         localStorage.setItem('app_user_id', response.userId);
 
-        // Save userName if available
+        // Save userName if available (use localStorage for persistence)
         if (response.userName) {
-          sessionStorage.setItem('playerName', response.userName);
+          localStorage.setItem('playerName', response.userName);
         }
 
         // Set user in authStore

@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
-  Container,
   Heading,
-  Stack,
   Text,
   Badge,
   Grid,
@@ -15,7 +13,6 @@ import {
   HStack,
   VStack,
   useToast,
-  Icon,
   Image,
   AspectRatio,
   Modal,
@@ -26,7 +23,6 @@ import {
   ModalFooter,
   Input,
   FormControl,
-  FormLabel,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
 import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type RegistrationCard as RegistrationCardType } from '../services/api.service';
@@ -60,7 +56,7 @@ export default function Lobby() {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
   const [showNameModal, setShowNameModal] = useState(false);
-  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('playerName') || '');
+  const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [tempName, setTempName] = useState('');
 
   useEffect(() => {
@@ -70,22 +66,32 @@ export default function Lobby() {
     console.log('[Lobby] User role:', user?.role);
     console.log('[Lobby] User:', user);
     console.log('[Lobby] playerName state:', playerName);
-    console.log('[Lobby] sessionStorage playerName:', sessionStorage.getItem('playerName'));
+    console.log('[Lobby] localStorage playerName:', localStorage.getItem('playerName'));
 
     if (user?.role === 'ORGANIZER') {
       // This is an organizer, skip name modal
       console.log('[Lobby] ✓ User is ORGANIZER, skipping name modal');
       setShowNameModal(false);
     } else {
-      // This is a player (role is 'PLAYER' or undefined), check if name exists in sessionStorage
-      const savedName = sessionStorage.getItem('playerName');
+      // This is a player (role is 'PLAYER' or undefined)
+      // Check name from: 1) user object (from backend), 2) localStorage
+      const userName = user?.name;
+      const savedName = localStorage.getItem('playerName');
       console.log('[Lobby] User is PLAYER or undefined role');
-      console.log('[Lobby] Saved name from sessionStorage:', savedName);
+      console.log('[Lobby] User name from backend:', userName);
+      console.log('[Lobby] Saved name from localStorage:', savedName);
 
-      if (savedName) {
-        setPlayerName(savedName);
+      // Priority: backend userName > localStorage
+      const finalName = userName || savedName;
+
+      if (finalName) {
+        setPlayerName(finalName);
+        // Sync localStorage with backend value
+        if (userName) {
+          localStorage.setItem('playerName', userName);
+        }
         setShowNameModal(false);
-        console.log('[Lobby] ✓ Using saved name:', savedName);
+        console.log('[Lobby] ✓ Using name:', finalName);
       } else {
         setShowNameModal(true);
         console.log('[Lobby] ✗ NO SAVED NAME - Showing modal');
@@ -323,17 +329,27 @@ export default function Lobby() {
     navigate('/login');
   };
 
-  const handleNameSubmit = () => {
+  const handleNameSubmit = async () => {
     console.log('[Lobby] ===== NAME SUBMIT =====');
     console.log('[Lobby] tempName:', tempName);
     if (tempName.trim()) {
       const name = tempName.trim();
       console.log('[Lobby] ✓ Saving name:', name);
+
+      // Save to state and localStorage first (for immediate UI update)
       setPlayerName(name);
-      sessionStorage.setItem('playerName', name);
+      localStorage.setItem('playerName', name);
       setShowNameModal(false);
-      console.log('[Lobby] ✓ Name saved to state and sessionStorage');
-      console.log('[Lobby] Verify - sessionStorage value:', sessionStorage.getItem('playerName'));
+      console.log('[Lobby] ✓ Name saved to state and localStorage');
+
+      // Save to database (async, don't block UI)
+      try {
+        await apiService.updateUserProfile({ name });
+        console.log('[Lobby] ✓ Name saved to database');
+      } catch (error) {
+        console.error('[Lobby] Failed to save name to database:', error);
+        // Don't show error to user, localStorage is enough for now
+      }
 
       // Track player registration event
       trackEvent({
