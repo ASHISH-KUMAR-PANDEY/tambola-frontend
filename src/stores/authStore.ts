@@ -39,13 +39,25 @@ if (appUserId && typeof window !== 'undefined') {
   }
 }
 
+// Helper function to check if name is in default format
+const isDefaultName = (name: string | null): boolean => {
+  if (!name) return true;
+  return name.startsWith('User ') || name.startsWith('user_');
+};
+
+// Get saved name only if it's not in default format
+const getSavedName = (): string | null => {
+  const saved = typeof window !== 'undefined' ? localStorage.getItem('playerName') : null;
+  return saved && !isDefaultName(saved) ? saved : null;
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: appUserId ? {
         id: appUserId,
         email: `user_${appUserId}@app.com`,
-        name: localStorage.getItem('playerName') || `User ${appUserId}`,
+        name: getSavedName() || `User ${appUserId}`,
       } : null,
       isAuthenticated: !!appUserId,
       isLoading: false,
@@ -132,7 +144,7 @@ export const useAuthStore = create<AuthState>()(
           if (!user || user.id !== appUserId) {
             console.log('[AuthStore] Setting up mobile app user:', appUserId);
             const freshTimestamp = Date.now();
-            const savedName = localStorage.getItem('playerName');
+            const savedName = getSavedName();
             set({
               user: {
                 id: appUserId,
@@ -207,7 +219,7 @@ export const useAuthStore = create<AuthState>()(
         // If app_user_id exists, ALWAYS use mobile app user (ignore persisted state)
         if (currentAppUserId) {
           console.log('[AuthStore] Mobile app user detected, using fresh mobile user state');
-          const savedName = typeof window !== 'undefined' ? localStorage.getItem('playerName') : null;
+          const savedName = getSavedName();
           return {
             ...currentState,
             user: {

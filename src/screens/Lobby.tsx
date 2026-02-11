@@ -84,17 +84,24 @@ export default function Lobby() {
       // Priority: backend userName > localStorage
       const finalName = userName || savedName;
 
-      if (finalName) {
+      // Helper function to check if name is in default format
+      const isDefaultName = (name: string | null | undefined): boolean => {
+        if (!name) return true;
+        // Check if name matches pattern: "User {userId}" or "user_{userId}@app.com"
+        return name.startsWith('User ') || name.startsWith('user_');
+      };
+
+      if (finalName && !isDefaultName(finalName)) {
         setPlayerName(finalName);
         // Sync localStorage with backend value
-        if (userName) {
+        if (userName && !isDefaultName(userName)) {
           localStorage.setItem('playerName', userName);
         }
         setShowNameModal(false);
         console.log('[Lobby] ✓ Using name:', finalName);
       } else {
         setShowNameModal(true);
-        console.log('[Lobby] ✗ NO SAVED NAME - Showing modal');
+        console.log('[Lobby] ✗ NO VALID NAME (empty or default format) - Showing modal');
       }
     }
 
