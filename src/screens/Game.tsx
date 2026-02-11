@@ -108,17 +108,31 @@ export default function Game() {
         frontendLogger.playerAction('GAME_JOINED_EVENT', {
           gameId: data.gameId,
           playerId: data.playerId,
-          ticketReceived: !!data.ticket
+          ticketReceived: !!data.ticket,
+          winsReceived: (data as any).wins?.length || 0
         });
 
         // Set ticket and playerId in store
-        const { setTicket } = useGameStore.getState();
+        const { setTicket, addWinner } = useGameStore.getState();
         setTicket(data.playerId, data.ticket, data.gameId);
+
+        // If player has wins (rejoining after claiming), add them to state
+        const wins = (data as any).wins;
+        if (wins && wins.length > 0) {
+          console.log('[Game] Player has existing wins, syncing to state:', wins);
+          wins.forEach((category: string) => {
+            addWinner({
+              playerId: data.playerId,
+              category: category as any
+            });
+          });
+        }
 
         console.log('[Game] Joined game successfully, ticket set:', {
           playerId: data.playerId,
           gameId: data.gameId,
-          ticketSize: data.ticket?.length
+          ticketSize: data.ticket?.length,
+          existingWins: wins?.length || 0
         });
       },
       onStateSync: (data) => {

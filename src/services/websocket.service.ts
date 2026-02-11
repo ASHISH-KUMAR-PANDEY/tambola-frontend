@@ -554,14 +554,22 @@ class WebSocketService {
       this.handlers.onWinner?.(data);
     });
 
-    this.socket.on('game:winClaimed', (data: WinClaimedPayload) => {
+    this.socket.on('game:winClaimed', (data: WinClaimedPayload, ack?: () => void) => {
       frontendLogger.websocketEvent('game:winClaimed (received)', {
         category: data.category,
         success: data.success,
         message: data.message,
         userId: this.userId
       });
+
+      // Process the event
       this.handlers.onWinClaimed?.(data);
+
+      // Acknowledge receipt to ensure reliable delivery
+      if (ack) {
+        ack();
+        frontendLogger.info('Acknowledged game:winClaimed event', { category: data.category });
+      }
     });
 
     this.socket.on('game:completed', (data: GameCompletedPayload) => {
