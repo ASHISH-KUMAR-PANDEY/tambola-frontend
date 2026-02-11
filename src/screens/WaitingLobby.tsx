@@ -149,26 +149,28 @@ export default function WaitingLobby() {
   }
 
   return (
-    <Box minH="100vh" bg="grey.900" pb={20}>
-      {/* Header */}
-      <Box bg="grey.800" py={{ base: 3, md: 4 }} px={{ base: 4, md: 6 }} borderBottom="1px" borderColor="grey.700">
-        <HStack justify="space-between" align="center">
-          <Logo height={{ base: '25px', md: '30px' }} />
+    <Box w="100vw" minH="100vh" bg="grey.900" pb={20}>
+      <VStack spacing={{ base: 4, md: 6 }} w="100%" align="stretch" p={{ base: 3, md: 4 }}>
+        {/* Header */}
+        <Box position="relative" w="100%" minH={{ base: '40px', md: '50px' }}>
+          <Box position="absolute" left={0} top={0}>
+            <Logo height={{ base: '24px', md: '28px' }} />
+          </Box>
           <Button
-            size={{ base: 'xs', md: 'sm' }}
+            position="absolute"
+            top={0}
+            right={0}
+            variant="outline"
             colorScheme="red"
             onClick={handleLeave}
+            size={{ base: 'xs', md: 'sm' }}
           >
             छोड़ें
           </Button>
-        </HStack>
-      </Box>
-
-      {/* Content */}
-      <VStack spacing={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }} px={{ base: 4, md: 6 }} maxW="container.xl" mx="auto">
+        </Box>
 
         {/* Title with Player Count - Compact */}
-        <VStack spacing={{ base: 2, md: 3 }} w="100%">
+        <VStack spacing={{ base: 1, md: 2 }} w="100%">
           <Heading
             size={{ base: 'md', md: 'lg' }}
             color="white"
@@ -176,7 +178,7 @@ export default function WaitingLobby() {
           >
             प्रतीक्षा कक्ष
           </Heading>
-          <HStack spacing={2}>
+          <HStack spacing={2} justify="center">
             <Text color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
               कुल खिलाड़ी:
             </Text>
@@ -207,6 +209,7 @@ export default function WaitingLobby() {
               xl: 'repeat(8, 1fr)',
             }}
             gap={{ base: 2, md: 3 }}
+            w="100%"
           >
             {players.map((player) => (
               <GridItem key={player.userId}>
