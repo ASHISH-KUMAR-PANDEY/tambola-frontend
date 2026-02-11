@@ -943,12 +943,12 @@ export default function Lobby() {
           boxShadow="0 0 20px 2px rgba(37, 141, 88, 0.4)"
         >
           <ModalHeader color="white" fontSize="lg" fontWeight="bold" pb={2}>
-            Is sunday tambola me Iphone jeetne ke liye apna naam darj karein
+            इस रविवार के टैंबोला में आईफोन जीतने के लिए अपना नाम दर्ज करें
           </ModalHeader>
           <ModalBody pb={6}>
             <FormControl>
               <Input
-                placeholder="naam likhien"
+                placeholder="नाम लिखें"
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onKeyPress={(e) => {
