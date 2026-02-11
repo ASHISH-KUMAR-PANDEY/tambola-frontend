@@ -938,11 +938,65 @@ export default function Lobby() {
         <ModalContent
           mx={4}
           bg="grey.700"
-          borderColor="brand.400"
-          borderWidth="2px"
-          boxShadow="0 0 20px 2px rgba(37, 141, 88, 0.4)"
+          position="relative"
+          overflow="visible"
+          sx={{
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: '-4px',
+              borderRadius: 'md',
+              padding: '4px',
+              background: 'linear-gradient(90deg, #FFD700, #00FF00, #00FFFF, #FF00FF, #FFD700)',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+              animation: 'rotateBorder 3s linear infinite, pulseBorder 1.5s ease-in-out infinite',
+              backgroundSize: '300% 100%',
+              zIndex: -1,
+            },
+            '@keyframes rotateBorder': {
+              '0%': {
+                backgroundPosition: '0% 0%',
+              },
+              '100%': {
+                backgroundPosition: '300% 0%',
+              },
+            },
+            '@keyframes pulseBorder': {
+              '0%, 100%': {
+                filter: 'brightness(1) drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))',
+              },
+              '50%': {
+                filter: 'brightness(1.5) drop-shadow(0 0 20px rgba(0, 255, 0, 0.8))',
+              },
+            },
+          }}
+          boxShadow="0 0 30px 5px rgba(0, 255, 0, 0.3), 0 0 60px 10px rgba(255, 215, 0, 0.2)"
         >
-          <ModalHeader color="white" fontSize="lg" fontWeight="bold" pb={2}>
+          <ModalHeader
+            color="white"
+            fontSize="lg"
+            fontWeight="bold"
+            pb={2}
+            textAlign="center"
+            sx={{
+              animation: 'shimmer 3s ease-in-out infinite',
+              background: 'linear-gradient(90deg, #ffffff 0%, #FFD700 50%, #ffffff 100%)',
+              backgroundSize: '200% auto',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              '@keyframes shimmer': {
+                '0%': {
+                  backgroundPosition: '0% center',
+                },
+                '100%': {
+                  backgroundPosition: '200% center',
+                },
+              },
+            }}
+          >
             इस SUNDAY के TAMBOLA में iPhone जीतने के लिए अपना नाम दर्ज करें
           </ModalHeader>
           <ModalBody pb={6}>
@@ -977,6 +1031,17 @@ export default function Lobby() {
               isDisabled={!tempName.trim()}
               w="100%"
               size="lg"
+              sx={{
+                animation: 'pulseButton 2s ease-in-out infinite',
+                '@keyframes pulseButton': {
+                  '0%, 100%': {
+                    boxShadow: '0 0 15px rgba(37, 141, 88, 0.5)',
+                  },
+                  '50%': {
+                    boxShadow: '0 0 25px rgba(37, 141, 88, 0.8), 0 0 35px rgba(37, 141, 88, 0.4)',
+                  },
+                },
+              }}
             >
               जारी रखें
             </Button>
