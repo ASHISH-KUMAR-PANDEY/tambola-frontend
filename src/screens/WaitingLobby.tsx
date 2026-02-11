@@ -149,14 +149,13 @@ export default function WaitingLobby() {
   }
 
   return (
-    <Box minH="100vh" bg="grey.900" pb={24}>
+    <Box minH="100vh" bg="grey.900" pb={20}>
       {/* Header */}
-      <Box bg="grey.800" py={4} px={{ base: 4, md: 6 }} borderBottom="1px" borderColor="grey.700">
-        <HStack justify="space-between">
-          <Logo height="30px" />
+      <Box bg="grey.800" py={{ base: 3, md: 4 }} px={{ base: 4, md: 6 }} borderBottom="1px" borderColor="grey.700">
+        <HStack justify="space-between" align="center">
+          <Logo height={{ base: '25px', md: '30px' }} />
           <Button
             size={{ base: 'xs', md: 'sm' }}
-            variant="outline"
             colorScheme="red"
             onClick={handleLeave}
           >
@@ -166,32 +165,26 @@ export default function WaitingLobby() {
       </Box>
 
       {/* Content */}
-      <VStack spacing={{ base: 6, md: 8 }} py={{ base: 6, md: 10 }} px={{ base: 4, md: 6 }} maxW="container.lg" mx="auto">
+      <VStack spacing={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }} px={{ base: 4, md: 6 }} maxW="container.xl" mx="auto">
 
-        {/* Title with Player Count */}
-        <VStack spacing={2} w="100%">
+        {/* Title with Player Count - Compact */}
+        <VStack spacing={{ base: 2, md: 3 }} w="100%">
           <Heading
-            size={{ base: 'lg', md: 'xl' }}
+            size={{ base: 'md', md: 'lg' }}
             color="white"
             textAlign="center"
           >
             प्रतीक्षा कक्ष
           </Heading>
           <HStack spacing={2}>
-            <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }}>
+            <Text color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
               कुल खिलाड़ी:
             </Text>
-            <Badge
-              colorScheme="brand"
-              fontSize={{ base: 'md', md: 'lg' }}
-              px={3}
-              py={1}
-              borderRadius="full"
-            >
+            <Text color="brand.400" fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold">
               {playerCount}
-            </Badge>
+            </Text>
           </HStack>
-          <Text color="grey.500" fontSize={{ base: 'xs', md: 'sm' }} textAlign="center">
+          <Text color="grey.500" fontSize={{ base: '2xs', md: 'xs' }} textAlign="center">
             अन्य खिलाड़ी शामिल हो रहे हैं...
           </Text>
         </VStack>
@@ -199,29 +192,30 @@ export default function WaitingLobby() {
         {/* Players Grid */}
         <Box w="100%">
           <Heading
-            size={{ base: 'sm', md: 'md' }}
-            mb={{ base: 3, md: 4 }}
+            size={{ base: 'xs', md: 'sm' }}
+            mb={{ base: 2, md: 3 }}
             color="white"
           >
             शामिल खिलाड़ी
           </Heading>
           <Grid
             templateColumns={{
-              base: 'repeat(2, 1fr)',
-              sm: 'repeat(3, 1fr)',
-              md: 'repeat(4, 1fr)',
-              lg: 'repeat(5, 1fr)',
+              base: 'repeat(3, 1fr)',
+              sm: 'repeat(4, 1fr)',
+              md: 'repeat(5, 1fr)',
+              lg: 'repeat(6, 1fr)',
+              xl: 'repeat(8, 1fr)',
             }}
-            gap={{ base: 3, md: 4 }}
+            gap={{ base: 2, md: 3 }}
           >
-            {players.map((player, index) => (
+            {players.map((player) => (
               <GridItem key={player.userId}>
                 <Box
-                  bg="grey.700"
-                  p={{ base: 3, md: 4 }}
-                  borderRadius="lg"
+                  bg={player.userId === user?.id ? 'grey.600' : 'grey.700'}
+                  p={{ base: 2, md: 3 }}
+                  borderRadius="md"
                   boxShadow="md"
-                  border="1px"
+                  border="2px"
                   borderColor={
                     player.userId === user?.id ? 'brand.500' : 'grey.600'
                   }
@@ -229,41 +223,18 @@ export default function WaitingLobby() {
                   _hover={{
                     boxShadow: 'lg',
                     transform: 'translateY(-2px)',
-                    borderColor: player.userId === user?.id ? 'brand.400' : 'brand.500'
+                    borderColor: 'brand.500'
                   }}
-                  position="relative"
                 >
-                  <VStack align="start" spacing={2}>
-                    <HStack spacing={2} w="100%">
-                      <Badge
-                        colorScheme="brand"
-                        fontSize="xs"
-                        borderRadius="full"
-                        px={2}
-                      >
-                        {index + 1}
-                      </Badge>
-                      {player.userId === user?.id && (
-                        <Badge
-                          colorScheme="green"
-                          fontSize="xs"
-                          borderRadius="full"
-                          px={2}
-                        >
-                          आप
-                        </Badge>
-                      )}
-                    </HStack>
-                    <Text
-                      color="white"
-                      fontSize={{ base: 'sm', md: 'md' }}
-                      fontWeight="medium"
-                      noOfLines={1}
-                      w="100%"
-                    >
-                      {player.userName}
-                    </Text>
-                  </VStack>
+                  <Text
+                    color="white"
+                    fontSize={{ base: 'xs', md: 'sm' }}
+                    fontWeight={player.userId === user?.id ? 'bold' : 'medium'}
+                    noOfLines={1}
+                    textAlign="center"
+                  >
+                    {player.userName}
+                  </Text>
                 </Box>
               </GridItem>
             ))}
@@ -286,7 +257,7 @@ export default function WaitingLobby() {
         <Text
           color="white"
           fontWeight="bold"
-          fontSize={{ base: 'sm', md: 'md' }}
+          fontSize={{ base: 'xs', md: 'sm' }}
         >
           खेल जल्द शुरू होगा
         </Text>
