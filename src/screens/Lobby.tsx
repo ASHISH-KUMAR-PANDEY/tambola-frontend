@@ -338,10 +338,17 @@ export default function Lobby() {
       setShowNameModal(false);
       console.log('[Lobby] ✓ Name saved to state and localStorage');
 
-      // Save to database (async, don't block UI)
+      // Save to database and update authStore
       try {
-        await apiService.updateUserProfile({ name });
+        const response = await apiService.updateUserProfile({ name });
         console.log('[Lobby] ✓ Name saved to database');
+
+        // Update user object in authStore with the updated user from API
+        if (response.user && user) {
+          const updatedUser = { ...user, name: response.user.name };
+          useAuthStore.getState().setUser(updatedUser);
+          console.log('[Lobby] ✓ User object updated in authStore');
+        }
       } catch (error) {
         console.error('[Lobby] Failed to save name to database:', error);
         // Don't show error to user, localStorage is enough for now

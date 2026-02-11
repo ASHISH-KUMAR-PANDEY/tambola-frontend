@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
       user: appUserId ? {
         id: appUserId,
         email: `user_${appUserId}@app.com`,
-        name: `User ${appUserId}`,
+        name: localStorage.getItem('playerName') || `User ${appUserId}`,
       } : null,
       isAuthenticated: !!appUserId,
       isLoading: false,
@@ -132,11 +132,12 @@ export const useAuthStore = create<AuthState>()(
           if (!user || user.id !== appUserId) {
             console.log('[AuthStore] Setting up mobile app user:', appUserId);
             const freshTimestamp = Date.now();
+            const savedName = localStorage.getItem('playerName');
             set({
               user: {
                 id: appUserId,
                 email: `user_${appUserId}@app.com`,
-                name: `User ${appUserId}`,
+                name: savedName || `User ${appUserId}`,
               },
               isAuthenticated: true,
               isLoading: false,
@@ -206,12 +207,13 @@ export const useAuthStore = create<AuthState>()(
         // If app_user_id exists, ALWAYS use mobile app user (ignore persisted state)
         if (currentAppUserId) {
           console.log('[AuthStore] Mobile app user detected, using fresh mobile user state');
+          const savedName = typeof window !== 'undefined' ? localStorage.getItem('playerName') : null;
           return {
             ...currentState,
             user: {
               id: currentAppUserId,
               email: `user_${currentAppUserId}@app.com`,
-              name: `User ${currentAppUserId}`,
+              name: savedName || `User ${currentAppUserId}`,
             },
             isAuthenticated: true,
             lastActivity: Date.now(),
