@@ -193,6 +193,18 @@ class ApiService {
   }
 
   /**
+   * Get user profile by userId (for mobile app users)
+   */
+  async getUserProfile(userId: string): Promise<{
+    success: boolean;
+    user: User;
+  }> {
+    return this.request(`/api/v1/auth/profile/${userId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
    * Send OTP to mobile number
    */
   async sendOTP(data: {

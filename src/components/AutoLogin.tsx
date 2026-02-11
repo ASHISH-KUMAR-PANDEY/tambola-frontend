@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
+import { apiService } from '../services/api.service';
 import { useAuthStore } from '../stores/authStore';
 
 export const AutoLogin = () => {
@@ -95,18 +96,46 @@ export const AutoLogin = () => {
         // Store userId for app authentication
         localStorage.setItem('app_user_id', userId);
 
-        // Check for saved player name before setting user
-        const savedPlayerName = localStorage.getItem('playerName');
+        // Helper function to check if name is in default format
         const isDefaultName = (name: string | null): boolean => {
           if (!name) return true;
           return name.startsWith('User ') || name.startsWith('user_');
         };
-        const userName = savedPlayerName && !isDefaultName(savedPlayerName)
-          ? savedPlayerName
-          : `User ${userId}`;
 
-        console.log('[AutoLogin] Saved player name:', savedPlayerName);
-        console.log('[AutoLogin] Using name:', userName);
+        // Try to fetch user profile from database first
+        let userName = `User ${userId}`;
+        try {
+          console.log('[AutoLogin] Fetching user profile from database...');
+          setStatus('Loading your profile...');
+
+          const response = await apiService.getUserProfile(userId);
+          if (response.success && response.user && response.user.name && !isDefaultName(response.user.name)) {
+            userName = response.user.name;
+            console.log('[AutoLogin] ✓ Found saved name in database:', userName);
+            // Save to localStorage for faster access next time
+            localStorage.setItem('playerName', userName);
+          } else {
+            console.log('[AutoLogin] No saved name in database, checking localStorage...');
+            // Fall back to localStorage
+            const savedPlayerName = localStorage.getItem('playerName');
+            if (savedPlayerName && !isDefaultName(savedPlayerName)) {
+              userName = savedPlayerName;
+              console.log('[AutoLogin] ✓ Found saved name in localStorage:', userName);
+            } else {
+              console.log('[AutoLogin] No saved name found, will use default');
+            }
+          }
+        } catch (error) {
+          console.log('[AutoLogin] Failed to fetch profile from database, checking localStorage...');
+          // Fall back to localStorage if database fetch fails
+          const savedPlayerName = localStorage.getItem('playerName');
+          if (savedPlayerName && !isDefaultName(savedPlayerName)) {
+            userName = savedPlayerName;
+            console.log('[AutoLogin] ✓ Found saved name in localStorage:', userName);
+          }
+        }
+
+        console.log('[AutoLogin] Final user name:', userName);
 
         // Set user object in store with saved name if available
         setUser({
