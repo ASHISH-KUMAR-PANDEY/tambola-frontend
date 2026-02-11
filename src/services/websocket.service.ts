@@ -53,9 +53,38 @@ export interface GameDeletedPayload {
   message: string;
 }
 
+export interface LobbyJoinedPayload {
+  gameId: string;
+  playerCount: number;
+  players: Array<{ userId: string; userName: string }>;
+}
+
+export interface LobbyPlayerJoinedPayload {
+  gameId: string;
+  userId: string;
+  userName: string;
+  playerCount: number;
+  players: Array<{ userId: string; userName: string }>;
+}
+
+export interface LobbyPlayerLeftPayload {
+  gameId: string;
+  userId: string;
+  playerCount: number;
+  players: Array<{ userId: string; userName: string }>;
+}
+
+export interface GameStartingPayload {
+  gameId: string;
+}
+
 export type GameEventHandlers = {
   onConnected?: () => void;
   onDisconnected?: () => void;
+  onLobbyJoined?: (data: LobbyJoinedPayload) => void;
+  onLobbyPlayerJoined?: (data: LobbyPlayerJoinedPayload) => void;
+  onLobbyPlayerLeft?: (data: LobbyPlayerLeftPayload) => void;
+  onGameStarting?: (data: GameStartingPayload) => void;
   onGameJoined?: (data: GameJoinedPayload) => void;
   onStateSync?: (data: StateSyncPayload) => void;
   onPlayerJoined?: (data: PlayerJoinedPayload) => void;
@@ -191,6 +220,53 @@ class WebSocketService {
 
     frontendLogger.websocketEvent('game:leave', { gameId, userId: this.userId, socketId: this.socket.id });
     this.socket.emit('game:leave', { gameId });
+  }
+
+  /**
+   * Join waiting lobby
+   */
+  joinLobby(gameId: string, userName: string): void {
+    if (!this.socket) {
+      frontendLogger.error('WEBSOCKET_JOIN_LOBBY', new Error('Socket not initialized'), {
+        gameId,
+        userName,
+        userId: this.userId
+      });
+      return;
+    }
+    if (!this.socket.connected) {
+      frontendLogger.error('WEBSOCKET_JOIN_LOBBY', new Error('Socket not connected'), {
+        gameId,
+        userName,
+        userId: this.userId
+      });
+      return;
+    }
+
+    frontendLogger.websocketEvent('lobby:join', {
+      gameId,
+      userName,
+      userId: this.userId,
+      socketId: this.socket.id
+    });
+
+    this.socket.emit('lobby:join', { gameId, userName });
+  }
+
+  /**
+   * Leave waiting lobby
+   */
+  leaveLobby(gameId: string): void {
+    if (!this.socket?.connected) {
+      frontendLogger.error('WEBSOCKET_LEAVE_LOBBY', new Error('WebSocket not connected'), {
+        gameId,
+        userId: this.userId
+      });
+      return;
+    }
+
+    frontendLogger.websocketEvent('lobby:leave', { gameId, userId: this.userId, socketId: this.socket.id });
+    this.socket.emit('lobby:leave', { gameId });
   }
 
   /**
@@ -383,6 +459,43 @@ class WebSocketService {
           message: 'Failed to connect to game server. Please check your connection.',
         });
       }
+    });
+
+    // Lobby event listeners
+    this.socket.on('lobby:joined', (data: LobbyJoinedPayload) => {
+      frontendLogger.websocketEvent('lobby:joined (received)', {
+        gameId: data.gameId,
+        playerCount: data.playerCount,
+        userId: this.userId
+      });
+      this.handlers.onLobbyJoined?.(data);
+    });
+
+    this.socket.on('lobby:playerJoined', (data: LobbyPlayerJoinedPayload) => {
+      frontendLogger.websocketEvent('lobby:playerJoined (received)', {
+        gameId: data.gameId,
+        userName: data.userName,
+        playerCount: data.playerCount,
+        userId: this.userId
+      });
+      this.handlers.onLobbyPlayerJoined?.(data);
+    });
+
+    this.socket.on('lobby:playerLeft', (data: LobbyPlayerLeftPayload) => {
+      frontendLogger.websocketEvent('lobby:playerLeft (received)', {
+        gameId: data.gameId,
+        userId: data.userId,
+        playerCount: data.playerCount
+      });
+      this.handlers.onLobbyPlayerLeft?.(data);
+    });
+
+    this.socket.on('game:starting', (data: GameStartingPayload) => {
+      frontendLogger.websocketEvent('game:starting (received)', {
+        gameId: data.gameId,
+        userId: this.userId
+      });
+      this.handlers.onGameStarting?.(data);
     });
 
     // Game event listeners

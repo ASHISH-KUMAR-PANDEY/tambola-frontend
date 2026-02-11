@@ -245,14 +245,10 @@ export default function Lobby() {
     console.log('[Lobby] ===== JOIN GAME =====');
     console.log('[Lobby] Game ID:', game.id);
     console.log('[Lobby] playerName state:', playerName);
-    console.log('[Lobby] playerName type:', typeof playerName);
-    console.log('[Lobby] playerName length:', playerName?.length);
-    console.log('[Lobby] playerName empty?:', playerName === '');
-    console.log('[Lobby] sessionStorage playerName:', sessionStorage.getItem('playerName'));
-    console.log('[Lobby] ➡️  Sending to backend: gameId=' + game.id + ', userName=' + playerName);
-    setJoiningGameId(game.id);
-    setCurrentGame(game);
-    wsService.joinGame(game.id, playerName);
+    console.log('[Lobby] Navigating to waiting lobby');
+
+    // Navigate to waiting lobby where player will join and wait
+    navigate(`/waiting-lobby/${game.id}`);
   };
 
   const handleRejoinGame = async (game: Game) => {
