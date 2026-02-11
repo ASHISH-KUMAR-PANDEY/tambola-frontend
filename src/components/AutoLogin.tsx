@@ -95,11 +95,24 @@ export const AutoLogin = () => {
         // Store userId for app authentication
         localStorage.setItem('app_user_id', userId);
 
-        // Set minimal user object in store
+        // Check for saved player name before setting user
+        const savedPlayerName = localStorage.getItem('playerName');
+        const isDefaultName = (name: string | null): boolean => {
+          if (!name) return true;
+          return name.startsWith('User ') || name.startsWith('user_');
+        };
+        const userName = savedPlayerName && !isDefaultName(savedPlayerName)
+          ? savedPlayerName
+          : `User ${userId}`;
+
+        console.log('[AutoLogin] Saved player name:', savedPlayerName);
+        console.log('[AutoLogin] Using name:', userName);
+
+        // Set user object in store with saved name if available
         setUser({
           id: userId,
           email: `user_${userId}@app.com`,
-          name: `User ${userId}`,
+          name: userName,
         });
 
         console.log('[AutoLogin] User set in store, connecting WebSocket...');
