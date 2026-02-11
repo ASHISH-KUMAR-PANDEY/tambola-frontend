@@ -186,9 +186,17 @@ class ApiService {
     message: string;
     user: User;
   }> {
+    // For mobile app users, include userId in the body
+    const rawAppUserId = localStorage.getItem('app_user_id');
+    const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
+
+    const body = appUserId
+      ? { ...data, userId: appUserId }
+      : data;
+
     return this.request('/api/v1/auth/update-profile', {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
   }
 

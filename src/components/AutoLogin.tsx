@@ -104,34 +104,36 @@ export const AutoLogin = () => {
 
         // Try to fetch user profile from database first
         let userName = `User ${userId}`;
+        let userExists = false;
         try {
           console.log('[AutoLogin] Fetching user profile from database...');
           setStatus('Loading your profile...');
 
           const response = await apiService.getUserProfile(userId);
-          if (response.success && response.user && response.user.name && !isDefaultName(response.user.name)) {
-            userName = response.user.name;
-            console.log('[AutoLogin] ✓ Found saved name in database:', userName);
-            // Save to localStorage for faster access next time
-            localStorage.setItem('playerName', userName);
-          } else {
-            console.log('[AutoLogin] No saved name in database, checking localStorage...');
-            // Fall back to localStorage
-            const savedPlayerName = localStorage.getItem('playerName');
-            if (savedPlayerName && !isDefaultName(savedPlayerName)) {
-              userName = savedPlayerName;
-              console.log('[AutoLogin] ✓ Found saved name in localStorage:', userName);
+          if (response.success && response.user) {
+            userExists = true;
+            if (response.user.name && !isDefaultName(response.user.name)) {
+              userName = response.user.name;
+              console.log('[AutoLogin] ✓ Found saved name in database:', userName);
+              // Save to localStorage for faster access next time
+              localStorage.setItem('playerName', userName);
             } else {
-              console.log('[AutoLogin] No saved name found, will use default');
+              console.log('[AutoLogin] User exists but no custom name saved in database');
             }
           }
-        } catch (error) {
-          console.log('[AutoLogin] Failed to fetch profile from database, checking localStorage...');
-          // Fall back to localStorage if database fetch fails
+        } catch (error: any) {
+          console.log('[AutoLogin] Failed to fetch profile from database:', error?.message);
+        }
+
+        // If user doesn't exist in database or has no custom name, check localStorage
+        if (!userExists || isDefaultName(userName)) {
+          console.log('[AutoLogin] Checking localStorage for saved name...');
           const savedPlayerName = localStorage.getItem('playerName');
           if (savedPlayerName && !isDefaultName(savedPlayerName)) {
             userName = savedPlayerName;
             console.log('[AutoLogin] ✓ Found saved name in localStorage:', userName);
+          } else {
+            console.log('[AutoLogin] No saved name found, will use default and show modal');
           }
         }
 
