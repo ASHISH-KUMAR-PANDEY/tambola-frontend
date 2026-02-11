@@ -104,6 +104,23 @@ export default function Game() {
         // Join game when WebSocket connects/reconnects
         wsService.joinGame(gameId, playerName);
       },
+      onGameJoined: (data) => {
+        frontendLogger.playerAction('GAME_JOINED_EVENT', {
+          gameId: data.gameId,
+          playerId: data.playerId,
+          ticketReceived: !!data.ticket
+        });
+
+        // Set ticket and playerId in store
+        const { setTicket } = useGameStore.getState();
+        setTicket(data.playerId, data.ticket, data.gameId);
+
+        console.log('[Game] Joined game successfully, ticket set:', {
+          playerId: data.playerId,
+          gameId: data.gameId,
+          ticketSize: data.ticket?.length
+        });
+      },
       onStateSync: (data) => {
         // Sync game state when rejoining (optimized payload)
         const isOptimized = !!data.playerCount;
