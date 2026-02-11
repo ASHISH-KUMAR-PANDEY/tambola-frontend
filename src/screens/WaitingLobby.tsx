@@ -149,14 +149,14 @@ export default function WaitingLobby() {
   }
 
   return (
-    <Box minH="100vh" bg="grey.900" pb={20}>
+    <Box minH="100vh" bg="grey.900" pb={24}>
       {/* Header */}
-      <Box bg="grey.800" py={4} px={6} borderBottom="1px" borderColor="grey.700">
+      <Box bg="grey.800" py={4} px={{ base: 4, md: 6 }} borderBottom="1px" borderColor="grey.700">
         <HStack justify="space-between">
           <Logo height="30px" />
           <Button
-            size="sm"
-            variant="ghost"
+            size={{ base: 'xs', md: 'sm' }}
+            variant="outline"
             colorScheme="red"
             onClick={handleLeave}
           >
@@ -166,84 +166,104 @@ export default function WaitingLobby() {
       </Box>
 
       {/* Content */}
-      <VStack spacing={6} py={8} px={4} maxW="container.md" mx="auto">
-        {/* Player Count */}
-        <Box
-          bg="grey.800"
-          p={6}
-          borderRadius="xl"
-          w="100%"
-          textAlign="center"
-          borderWidth="2px"
-          borderColor="brand.400"
-        >
-          <Text color="grey.400" fontSize="sm" mb={2}>
-            खिलाड़ी
-          </Text>
-          <Heading color="brand.400" size="2xl">
-            {playerCount}
-          </Heading>
-        </Box>
+      <VStack spacing={{ base: 6, md: 8 }} py={{ base: 6, md: 10 }} px={{ base: 4, md: 6 }} maxW="container.lg" mx="auto">
 
-        {/* Waiting Message */}
-        <Box
-          bg="grey.800"
-          p={6}
-          borderRadius="xl"
-          w="100%"
-          textAlign="center"
-        >
-          <Text color="white" fontSize="lg" fontWeight="bold" mb={2}>
+        {/* Title with Player Count */}
+        <VStack spacing={2} w="100%">
+          <Heading
+            size={{ base: 'lg', md: 'xl' }}
+            color="white"
+            textAlign="center"
+          >
             प्रतीक्षा कक्ष
-          </Text>
-          <Text color="grey.400" fontSize="md">
+          </Heading>
+          <HStack spacing={2}>
+            <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }}>
+              कुल खिलाड़ी:
+            </Text>
+            <Badge
+              colorScheme="brand"
+              fontSize={{ base: 'md', md: 'lg' }}
+              px={3}
+              py={1}
+              borderRadius="full"
+            >
+              {playerCount}
+            </Badge>
+          </HStack>
+          <Text color="grey.500" fontSize={{ base: 'xs', md: 'sm' }} textAlign="center">
             अन्य खिलाड़ी शामिल हो रहे हैं...
           </Text>
-        </Box>
+        </VStack>
 
-        {/* Players List */}
+        {/* Players Grid */}
         <Box w="100%">
-          <Text color="white" fontSize="lg" fontWeight="bold" mb={4}>
+          <Heading
+            size={{ base: 'sm', md: 'md' }}
+            mb={{ base: 3, md: 4 }}
+            color="white"
+          >
             शामिल खिलाड़ी
-          </Text>
+          </Heading>
           <Grid
-            templateColumns="repeat(auto-fill, minmax(150px, 1fr))"
-            gap={3}
+            templateColumns={{
+              base: 'repeat(2, 1fr)',
+              sm: 'repeat(3, 1fr)',
+              md: 'repeat(4, 1fr)',
+              lg: 'repeat(5, 1fr)',
+            }}
+            gap={{ base: 3, md: 4 }}
           >
             {players.map((player, index) => (
               <GridItem key={player.userId}>
                 <Box
-                  bg="grey.800"
-                  p={4}
+                  bg="grey.700"
+                  p={{ base: 3, md: 4 }}
                   borderRadius="lg"
-                  borderWidth="1px"
+                  boxShadow="md"
+                  border="1px"
                   borderColor={
-                    player.userId === user?.id ? 'brand.400' : 'grey.700'
+                    player.userId === user?.id ? 'brand.500' : 'grey.600'
                   }
+                  transition="all 0.2s"
+                  _hover={{
+                    boxShadow: 'lg',
+                    transform: 'translateY(-2px)',
+                    borderColor: player.userId === user?.id ? 'brand.400' : 'brand.500'
+                  }}
+                  position="relative"
                 >
-                  <HStack spacing={2}>
-                    <Badge
-                      colorScheme="brand"
-                      fontSize="xs"
-                      borderRadius="full"
-                      px={2}
-                    >
-                      {index + 1}
-                    </Badge>
+                  <VStack align="start" spacing={2}>
+                    <HStack spacing={2} w="100%">
+                      <Badge
+                        colorScheme="brand"
+                        fontSize="xs"
+                        borderRadius="full"
+                        px={2}
+                      >
+                        {index + 1}
+                      </Badge>
+                      {player.userId === user?.id && (
+                        <Badge
+                          colorScheme="green"
+                          fontSize="xs"
+                          borderRadius="full"
+                          px={2}
+                        >
+                          आप
+                        </Badge>
+                      )}
+                    </HStack>
                     <Text
                       color="white"
-                      fontSize="sm"
+                      fontSize={{ base: 'sm', md: 'md' }}
                       fontWeight="medium"
                       noOfLines={1}
+                      w="100%"
                     >
                       {player.userName}
                     </Text>
-                  </HStack>
-                  {player.userId === user?.id && (
-                    <Text color="brand.400" fontSize="xs" mt={1}>
-                      आप
-                    </Text>
-                  )}
+                  </VStack>
                 </Box>
               </GridItem>
             ))}
@@ -251,19 +271,23 @@ export default function WaitingLobby() {
         </Box>
       </VStack>
 
-      {/* Bottom Toast - Persistent */}
+      {/* Bottom Status Bar */}
       <Box
         position="fixed"
         bottom={0}
         left={0}
         right={0}
         bg="brand.500"
-        py={4}
-        px={6}
+        py={{ base: 3, md: 4 }}
+        px={{ base: 4, md: 6 }}
         textAlign="center"
-        boxShadow="lg"
+        boxShadow="0 -2px 10px rgba(0, 0, 0, 0.3)"
       >
-        <Text color="white" fontWeight="bold" fontSize="md">
+        <Text
+          color="white"
+          fontWeight="bold"
+          fontSize={{ base: 'sm', md: 'md' }}
+        >
           खेल जल्द शुरू होगा
         </Text>
       </Box>
