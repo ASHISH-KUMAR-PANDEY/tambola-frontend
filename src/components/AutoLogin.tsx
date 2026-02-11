@@ -45,8 +45,35 @@ export const AutoLogin = () => {
           console.log('[AutoLogin] ✅ Found userId in query params (format 1):', userId);
         }
 
-        // If no userId in query params or userId is "lobby" (invalid), check for existing auth session
-        if (!userId || userId === 'lobby') {
+        // Validate userId - reject invalid values
+        const isValidUserId = (id: string | null): boolean => {
+          if (!id) return false;
+
+          // Convert to lowercase for case-insensitive check
+          const idLower = id.toLowerCase();
+
+          // List of invalid route names and reserved words
+          const invalidValues = [
+            'lobby', 'login', 'signup', 'organizer', 'game',
+            'waiting-lobby', 'undefined', 'null', 'admin'
+          ];
+
+          if (invalidValues.includes(idLower)) {
+            console.log('[AutoLogin] ✗ Invalid userId (reserved word):', id);
+            return false;
+          }
+
+          // UserId should be at least 10 characters (reasonable for ObjectId or UUID)
+          if (id.length < 10) {
+            console.log('[AutoLogin] ✗ Invalid userId (too short):', id);
+            return false;
+          }
+
+          return true;
+        };
+
+        // If no userId or invalid userId, check for existing auth session
+        if (!isValidUserId(userId)) {
           // Check if there's a token in localStorage
           const token = localStorage.getItem('auth_token');
           const authStorage = localStorage.getItem('auth-storage');

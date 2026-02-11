@@ -20,10 +20,35 @@ interface AuthState {
   updateActivity: () => void;
 }
 
+// Validate userId - reject invalid values
+const isValidUserId = (id: string | null): boolean => {
+  if (!id) return false;
+
+  // Convert to lowercase for case-insensitive check
+  const idLower = id.toLowerCase();
+
+  // List of invalid route names and reserved words
+  const invalidValues = [
+    'lobby', 'login', 'signup', 'organizer', 'game',
+    'waiting-lobby', 'undefined', 'null', 'admin'
+  ];
+
+  if (invalidValues.includes(idLower)) {
+    return false;
+  }
+
+  // UserId should be at least 10 characters (reasonable for ObjectId or UUID)
+  if (id.length < 10) {
+    return false;
+  }
+
+  return true;
+};
+
 // Check if mobile app user exists before creating store
 const rawAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
-// Filter out invalid userId values like "lobby"
-const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
+// Filter out invalid userId values
+const appUserId = isValidUserId(rawAppUserId) ? rawAppUserId : null;
 const nowTimestamp = Date.now();
 
 // If mobile app user exists, clear any old auth session to prevent conflicts
@@ -131,8 +156,8 @@ export const useAuthStore = create<AuthState>()(
 
       loadUser: async () => {
         const rawAppUserId = localStorage.getItem('app_user_id');
-        // Filter out invalid userId values like "lobby"
-        const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
+        // Filter out invalid userId values
+        const appUserId = isValidUserId(rawAppUserId) ? rawAppUserId : null;
         const { user } = get();
 
         // If app_user_id exists, always prioritize mobile app user
@@ -213,8 +238,8 @@ export const useAuthStore = create<AuthState>()(
       // Custom merge to handle mobile app user priority
       merge: (persistedState: any, currentState: any) => {
         const rawAppUserId = typeof window !== 'undefined' ? localStorage.getItem('app_user_id') : null;
-        // Filter out invalid userId values like "lobby"
-        const currentAppUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
+        // Filter out invalid userId values
+        const currentAppUserId = isValidUserId(rawAppUserId) ? rawAppUserId : null;
 
         // If app_user_id exists, use mobile app user
         if (currentAppUserId) {

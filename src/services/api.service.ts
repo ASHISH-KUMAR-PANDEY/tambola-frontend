@@ -1,5 +1,30 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+// Validate userId - reject invalid values
+function isValidUserId(id: string | null): boolean {
+  if (!id) return false;
+
+  // Convert to lowercase for case-insensitive check
+  const idLower = id.toLowerCase();
+
+  // List of invalid route names and reserved words
+  const invalidValues = [
+    'lobby', 'login', 'signup', 'organizer', 'game',
+    'waiting-lobby', 'undefined', 'null', 'admin'
+  ];
+
+  if (invalidValues.includes(idLower)) {
+    return false;
+  }
+
+  // UserId should be at least 10 characters (reasonable for ObjectId or UUID)
+  if (id.length < 10) {
+    return false;
+  }
+
+  return true;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -188,7 +213,7 @@ class ApiService {
   }> {
     // For mobile app users, include userId in the body
     const rawAppUserId = localStorage.getItem('app_user_id');
-    const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
+    const appUserId = isValidUserId(rawAppUserId) ? rawAppUserId : null;
 
     const body = appUserId
       ? { ...data, userId: appUserId }
@@ -313,8 +338,8 @@ class ApiService {
    */
   async getMyActiveGames(): Promise<Game[]> {
     const rawAppUserId = localStorage.getItem('app_user_id');
-    // Filter out invalid userId values like "lobby"
-    const appUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
+    // Filter out invalid userId values
+    const appUserId = isValidUserId(rawAppUserId) ? rawAppUserId : null;
     const query = appUserId ? `?userId=${appUserId}` : '';
     const response = await this.request<{ games: Game[] }>(`/api/v1/games/my-active${query}`);
     return response.games;
