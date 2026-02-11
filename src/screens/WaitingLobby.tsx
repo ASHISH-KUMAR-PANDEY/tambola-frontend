@@ -39,91 +39,147 @@ export default function WaitingLobby() {
       return;
     }
 
-    // Check if user is organizer (for future use)
-    // You'll need to pass this info from the previous screen or fetch from API
-    // For now, we'll determine it from the game join response
+    let joinTimeout: NodeJS.Timeout;
+    let isCleanedUp = false;
 
-    // Connect WebSocket if not already connected
-    if (!wsService.isConnected()) {
-      wsService.connect(user.id);
-    }
+    const joinLobby = async () => {
+      try {
+        // Setup listeners first
+        wsService.on({
+          onLobbyJoined: (data) => {
+            if (isCleanedUp) return;
+            console.log('[WaitingLobby] Joined lobby:', data);
+            setPlayers(data.players || []);
+            setPlayerCount(data.playerCount || 0);
+            setIsJoining(false);
+          },
+          onLobbyPlayerJoined: (data) => {
+            if (isCleanedUp) return;
+            console.log('[WaitingLobby] Player joined:', data);
+            setPlayers(data.players || []);
+            setPlayerCount(data.playerCount || 0);
 
-    // Join waiting lobby
-    const userName = localStorage.getItem('playerName') || user.name || 'Player';
-    wsService.joinLobby(gameId, userName);
+            toast({
+              title: 'खिलाड़ी शामिल हुआ',
+              description: `${data.userName} इस गेम में शामिल हुए`,
+              status: 'info',
+              duration: 2000,
+            });
+          },
+          onLobbyPlayerLeft: (data) => {
+            if (isCleanedUp) return;
+            console.log('[WaitingLobby] Player left:', data);
+            setPlayers(data.players || []);
+            setPlayerCount(data.playerCount || 0);
+          },
+          onGameStarting: (data) => {
+            if (isCleanedUp) return;
+            console.log('[WaitingLobby] Game starting:', data);
 
-    // Setup listeners
-    wsService.on({
-      onLobbyJoined: (data) => {
-        console.log('[WaitingLobby] Joined lobby:', data);
-        setPlayers(data.players || []);
-        setPlayerCount(data.playerCount || 0);
-        setIsJoining(false);
-      },
-      onLobbyPlayerJoined: (data) => {
-        console.log('[WaitingLobby] Player joined:', data);
-        setPlayers(data.players || []);
-        setPlayerCount(data.playerCount || 0);
+            toast({
+              title: 'खेल शुरू हो रहा है!',
+              description: 'आप खेल में जा रहे हैं...',
+              status: 'success',
+              duration: 2000,
+            });
 
-        toast({
-          title: 'खिलाड़ी शामिल हुआ',
-          description: `${data.userName} इस गेम में शामिल हुए`,
-          status: 'info',
-          duration: 2000,
+            // Navigate to game screen after a short delay
+            setTimeout(() => {
+              navigate(`/game/${data.gameId}`);
+            }, 1000);
+          },
+          onError: (error) => {
+            if (isCleanedUp) return;
+            console.error('[WaitingLobby] Error:', error);
+
+            if (error.code === 'GAME_ALREADY_STARTED') {
+              toast({
+                title: 'खेल शुरू हो गया है',
+                description: 'यह खेल पहले ही शुरू हो चुका है',
+                status: 'warning',
+                duration: 3000,
+              });
+              navigate('/lobby');
+            } else if (error.code === 'GAME_NOT_FOUND') {
+              toast({
+                title: 'खेल नहीं मिला',
+                description: 'यह खेल अब उपलब्ध नहीं है',
+                status: 'error',
+                duration: 3000,
+              });
+              navigate('/lobby');
+            } else {
+              toast({
+                title: 'त्रुटि',
+                description: error.message || 'कुछ गलत हो गया',
+                status: 'error',
+                duration: 3000,
+              });
+            }
+          },
         });
-      },
-      onLobbyPlayerLeft: (data) => {
-        console.log('[WaitingLobby] Player left:', data);
-        setPlayers(data.players || []);
-        setPlayerCount(data.playerCount || 0);
-      },
-      onGameStarting: (data) => {
-        console.log('[WaitingLobby] Game starting:', data);
 
-        toast({
-          title: 'खेल शुरू हो रहा है!',
-          description: 'आप खेल में जा रहे हैं...',
-          status: 'success',
-          duration: 2000,
-        });
-
-        // Navigate to game screen after a short delay
-        setTimeout(() => {
-          navigate(`/game/${data.gameId}`);
-        }, 1000);
-      },
-      onError: (error) => {
-        console.error('[WaitingLobby] Error:', error);
-
-        if (error.code === 'GAME_ALREADY_STARTED') {
-          toast({
-            title: 'खेल शुरू हो गया है',
-            description: 'यह खेल पहले ही शुरू हो चुका है',
-            status: 'warning',
-            duration: 3000,
-          });
-          navigate('/lobby');
-        } else if (error.code === 'GAME_NOT_FOUND') {
-          toast({
-            title: 'खेल नहीं मिला',
-            description: 'यह खेल अब उपलब्ध नहीं है',
-            status: 'error',
-            duration: 3000,
-          });
-          navigate('/lobby');
-        } else {
-          toast({
-            title: 'त्रुटि',
-            description: error.message || 'कुछ गलत हो गया',
-            status: 'error',
-            duration: 3000,
-          });
+        // Connect WebSocket if not already connected
+        if (!wsService.isConnected()) {
+          console.log('[WaitingLobby] Connecting WebSocket...');
+          wsService.connect(user.id);
         }
-      },
-    });
+
+        // Wait for WebSocket connection before joining
+        const waitForConnection = new Promise<void>((resolve, reject) => {
+          const checkInterval = setInterval(() => {
+            if (isCleanedUp) {
+              clearInterval(checkInterval);
+              reject(new Error('Cleaned up'));
+              return;
+            }
+
+            if (wsService.isConnected()) {
+              console.log('[WaitingLobby] WebSocket connected, joining lobby...');
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 100);
+
+          // Timeout after 10 seconds
+          joinTimeout = setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!isCleanedUp) {
+              console.error('[WaitingLobby] WebSocket connection timeout');
+              reject(new Error('Connection timeout'));
+            }
+          }, 10000);
+        });
+
+        await waitForConnection;
+
+        // Join waiting lobby
+        const userName = localStorage.getItem('playerName') || user.name || 'Player';
+        console.log('[WaitingLobby] Joining lobby with name:', userName);
+        wsService.joinLobby(gameId, userName);
+
+      } catch (error) {
+        if (!isCleanedUp) {
+          console.error('[WaitingLobby] Failed to join lobby:', error);
+          toast({
+            title: 'कनेक्शन त्रुटि',
+            description: 'लॉबी में शामिल नहीं हो सके। कृपया पुन: प्रयास करें।',
+            status: 'error',
+            duration: 3000,
+          });
+          navigate('/lobby');
+        }
+      }
+    };
+
+    joinLobby();
 
     // Cleanup on unmount
     return () => {
+      isCleanedUp = true;
+      if (joinTimeout) {
+        clearTimeout(joinTimeout);
+      }
       // Leave lobby when component unmounts
       wsService.leaveLobby(gameId);
       wsService.off();
