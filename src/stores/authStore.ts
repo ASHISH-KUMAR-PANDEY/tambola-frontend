@@ -216,16 +216,31 @@ export const useAuthStore = create<AuthState>()(
         // Filter out invalid userId values like "lobby"
         const currentAppUserId = rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
 
-        // If app_user_id exists, ALWAYS use mobile app user (ignore persisted state)
+        // If app_user_id exists, use mobile app user
         if (currentAppUserId) {
-          console.log('[AuthStore] Mobile app user detected, using fresh mobile user state');
-          const savedName = getSavedName();
+          console.log('[AuthStore] Mobile app user detected');
+
+          // Check if persisted state has a valid user with custom name
+          const persistedUser = persistedState?.user;
+          const persistedName = persistedUser?.name;
+          const hasValidPersistedName = persistedName && !isDefaultName(persistedName);
+
+          console.log('[AuthStore] Persisted user name:', persistedName);
+          console.log('[AuthStore] Has valid persisted name:', hasValidPersistedName);
+
+          // Priority: persisted user name > localStorage playerName > default
+          const finalName = hasValidPersistedName
+            ? persistedName
+            : (getSavedName() || `User ${currentAppUserId}`);
+
+          console.log('[AuthStore] Final name:', finalName);
+
           return {
             ...currentState,
             user: {
               id: currentAppUserId,
               email: `user_${currentAppUserId}@app.com`,
-              name: savedName || `User ${currentAppUserId}`,
+              name: finalName,
             },
             isAuthenticated: true,
             lastActivity: Date.now(),

@@ -59,52 +59,54 @@ export default function Lobby() {
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [tempName, setTempName] = useState('');
 
+  // Separate effect for name modal check
   useEffect(() => {
+    // Helper function to check if name is in default format
+    const isDefaultName = (name: string | null | undefined): boolean => {
+      if (!name) return true;
+      // Check if name matches pattern: "User {userId}" or "user_{userId}@app.com"
+      return name.startsWith('User ') || name.startsWith('user_');
+    };
+
     // Only show name modal for players, not organizers
-    // Check user role to determine if they're an organizer
     console.log('[Lobby] ===== NAME MODAL CHECK =====');
     console.log('[Lobby] User role:', user?.role);
-    console.log('[Lobby] User:', user);
-    console.log('[Lobby] playerName state:', playerName);
+    console.log('[Lobby] User name:', user?.name);
     console.log('[Lobby] localStorage playerName:', localStorage.getItem('playerName'));
 
     if (user?.role === 'ORGANIZER') {
       // This is an organizer, skip name modal
       console.log('[Lobby] ✓ User is ORGANIZER, skipping name modal');
       setShowNameModal(false);
-    } else {
-      // This is a player (role is 'PLAYER' or undefined)
-      // Check name from: 1) user object (from backend), 2) localStorage
-      const userName = user?.name;
-      const savedName = localStorage.getItem('playerName');
-      console.log('[Lobby] User is PLAYER or undefined role');
-      console.log('[Lobby] User name from backend:', userName);
-      console.log('[Lobby] Saved name from localStorage:', savedName);
-
-      // Priority: backend userName > localStorage
-      const finalName = userName || savedName;
-
-      // Helper function to check if name is in default format
-      const isDefaultName = (name: string | null | undefined): boolean => {
-        if (!name) return true;
-        // Check if name matches pattern: "User {userId}" or "user_{userId}@app.com"
-        return name.startsWith('User ') || name.startsWith('user_');
-      };
-
-      if (finalName && !isDefaultName(finalName)) {
-        setPlayerName(finalName);
-        // Sync localStorage with backend value
-        if (userName && !isDefaultName(userName)) {
-          localStorage.setItem('playerName', userName);
-        }
-        setShowNameModal(false);
-        console.log('[Lobby] ✓ Using name:', finalName);
-      } else {
-        setShowNameModal(true);
-        console.log('[Lobby] ✗ NO VALID NAME (empty or default format) - Showing modal');
-      }
+      return;
     }
 
+    // This is a player (role is 'PLAYER' or undefined)
+    // Check name from: 1) user object (from backend), 2) localStorage
+    const userName = user?.name;
+    const savedName = localStorage.getItem('playerName');
+    console.log('[Lobby] User name from backend:', userName);
+    console.log('[Lobby] Saved name from localStorage:', savedName);
+
+    // Priority: backend userName > localStorage
+    const finalName = userName || savedName;
+
+    if (finalName && !isDefaultName(finalName)) {
+      setPlayerName(finalName);
+      // Sync localStorage with backend value
+      if (userName && !isDefaultName(userName)) {
+        localStorage.setItem('playerName', userName);
+      }
+      setShowNameModal(false);
+      console.log('[Lobby] ✓ Using name:', finalName);
+    } else {
+      setShowNameModal(true);
+      console.log('[Lobby] ✗ NO VALID NAME (empty or default format) - Showing modal');
+    }
+  }, [user?.name, user?.role]); // Re-run when user name or role changes
+
+  // Separate effect for initialization
+  useEffect(() => {
     loadGames();
     loadMyActiveGames();
     loadCurrentBanner();
