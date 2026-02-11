@@ -943,7 +943,7 @@ export default function Lobby() {
           boxShadow="0 0 20px 2px rgba(37, 141, 88, 0.4)"
         >
           <ModalHeader color="white" fontSize="lg" fontWeight="bold" pb={2}>
-            इस रविवार के टैंबोला में आईफोन जीतने के लिए अपना नाम दर्ज करें
+            इस रविवार के TAMBOLA में आईफोन जीतने के लिए अपना नाम दर्ज करें
           </ModalHeader>
           <ModalBody pb={6}>
             <FormControl>
