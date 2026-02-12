@@ -92,7 +92,16 @@ export default function WaitingLobby() {
             if (isCleanedUp) return;
             console.error('[WaitingLobby] Error:', error);
 
-            if (error.code === 'GAME_ALREADY_STARTED') {
+            if (error.code === 'VIP_ONLY') {
+              toast({
+                title: 'VIP सदस्यता आवश्यक',
+                description: error.message || 'यह गेम केवल STAGE-VIP सदस्यों के लिए है, शामिल होने के लिए STAGE के VIP सदस्य बनें।',
+                status: 'warning',
+                duration: 10000,
+                isClosable: true,
+              });
+              navigate('/lobby');
+            } else if (error.code === 'GAME_ALREADY_STARTED') {
               toast({
                 title: 'खेल शुरू हो गया है',
                 description: 'यह खेल पहले ही शुरू हो चुका है',

@@ -558,6 +558,67 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  /**
+   * Upload VIP cohort CSV file (replaces existing list)
+   */
+  async uploadVIPCohort(file: File): Promise<{ success: boolean; count: number; message: string }> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/api/v1/vip-cohort/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(error.message || 'Failed to upload VIP cohort');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Download current VIP cohort as CSV file
+   */
+  async downloadVIPCohort(): Promise<Blob> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await fetch(`${API_URL}/api/v1/vip-cohort/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Download failed' }));
+      throw new Error(error.message || 'Failed to download VIP cohort');
+    }
+
+    return response.blob();
+  }
+
+  /**
+   * Get VIP cohort statistics
+   */
+  async getVIPStats(): Promise<{ success: boolean; count: number; sampleUsers: string[] }> {
+    return this.request<{ success: boolean; count: number; sampleUsers: string[] }>(
+      '/api/v1/vip-cohort/stats'
+    );
+  }
 }
 
 export interface PromotionalBanner {

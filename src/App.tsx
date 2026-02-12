@@ -10,6 +10,7 @@ import Game from './screens/Game';
 import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
 import BannerManagement from './screens/BannerManagement';
+import CohortManagement from './screens/CohortManagement';
 import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
@@ -67,6 +68,14 @@ export const App = () => {
             element={
               <OrganizerRoute>
                 <BannerManagement />
+              </OrganizerRoute>
+            }
+          />
+          <Route
+            path="/cohort-management"
+            element={
+              <OrganizerRoute>
+                <CohortManagement />
               </OrganizerRoute>
             }
           />

@@ -164,8 +164,18 @@ export default function Lobby() {
         loadMyActiveGames();
       },
       onError: (error) => {
+        // Special handling for VIP-only access
+        if (error.code === 'VIP_ONLY') {
+          toast({
+            title: 'VIP सदस्यता आवश्यक',
+            description: error.message || 'यह गेम केवल STAGE-VIP सदस्यों के लिए है, शामिल होने के लिए STAGE के VIP सदस्य बनें।',
+            status: 'warning',
+            duration: 10000,
+            isClosable: true,
+          });
+        }
         // Special handling for game not found (deleted game)
-        if (error.code === 'GAME_NOT_FOUND') {
+        else if (error.code === 'GAME_NOT_FOUND') {
           toast({
             title: 'Game Deleted',
             description: 'Game has been deleted by the organizer',
@@ -199,15 +209,28 @@ export default function Lobby() {
       const allGames = (response as any).games || response;
       const validGames = Array.isArray(allGames) ? allGames : [];
       setGames(validGames.filter((g) => g.status === 'LOBBY' || g.status === 'ACTIVE'));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load games:', error);
       setGames([]);
-      toast({
-        title: 'Error',
-        description: 'Failed to load games',
-        status: 'error',
-        duration: 5000,
-      });
+
+      // Check if it's a VIP-only error
+      const errorMessage = error?.message || error?.toString() || '';
+      if (errorMessage.includes('STAGE-VIP') || errorMessage.includes('VIP_ONLY')) {
+        toast({
+          title: 'VIP सदस्यता आवश्यक',
+          description: 'यह गेम केवल STAGE-VIP सदस्यों के लिए है, शामिल होने के लिए STAGE के VIP सदस्य बनें।',
+          status: 'warning',
+          duration: 10000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to load games',
+          status: 'error',
+          duration: 5000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -522,7 +545,7 @@ export default function Lobby() {
 
         {/* Organizer Controls - Always show for organizers */}
         {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
-          <HStack spacing={4} justify="center" w="100%">
+          <HStack spacing={4} justify="center" w="100%" flexWrap="wrap">
             <Button
               colorScheme="brand"
               onClick={() => navigate('/organizer')}
@@ -538,6 +561,14 @@ export default function Lobby() {
               variant="solid"
             >
               Manage Banner
+            </Button>
+            <Button
+              colorScheme="teal"
+              onClick={() => navigate('/cohort-management')}
+              size={{ base: 'sm', md: 'md' }}
+              variant="solid"
+            >
+              Manage Cohort
             </Button>
           </HStack>
         )}
