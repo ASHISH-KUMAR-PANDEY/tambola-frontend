@@ -65,10 +65,16 @@ export default function GameControl() {
     wsService.on({
       onStateSync: (data) => {
         // Sync game state when organizer joins
+        console.log('[GameControl] ===== onStateSync called =====');
+        console.log('[GameControl] Winners from backend:', data.winners?.length || 0);
+        console.log('[GameControl] Current winners before sync:', winners.length);
+
         setCalledNumbers(data.calledNumbers || []);
         setCurrentNumber(data.currentNumber || null);
         setPlayers(data.players || []);
         setWinners(data.winners || []);
+
+        console.log('[GameControl] ===== onStateSync complete =====');
       },
       onPlayerJoined: (data) => {
         setPlayers((prev) => [...prev, { playerId: data.playerId, userName: data.userName }]);
@@ -84,7 +90,17 @@ export default function GameControl() {
         setCurrentNumber(data.number);
       },
       onWinner: (data) => {
-        setWinners((prev) => [...prev, data]);
+        console.log('[GameControl] ===== onWinner called =====');
+        console.log('[GameControl] Winner data:', JSON.stringify(data));
+        console.log('[GameControl] Current winners before:', winners.length);
+
+        setWinners((prev) => {
+          console.log('[GameControl] setWinners prev:', prev.length);
+          const newWinners = [...prev, data];
+          console.log('[GameControl] setWinners new:', newWinners.length);
+          return newWinners;
+        });
+
         const userName = data.userName || 'Someone';
         const categoryName = data.category
           .split('_')
@@ -159,6 +175,12 @@ export default function GameControl() {
       wsService.off();
     };
   }, [gameId]);
+
+  // DEBUG: Track winners state changes
+  useEffect(() => {
+    console.log('[GameControl] RENDER - Winners count:', winners.length);
+    console.log('[GameControl] RENDER - Winners:', JSON.stringify(winners));
+  }, [winners]);
 
   const loadGameData = async () => {
     frontendLogger.organizerLoadStart();
