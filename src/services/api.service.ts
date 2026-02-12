@@ -300,7 +300,15 @@ class ApiService {
    * Get list of games
    */
   async getGames(status?: string): Promise<Game[]> {
-    const query = status ? `?status=${status}` : '';
+    const rawAppUserId = localStorage.getItem('app_user_id');
+    // Filter out invalid userId values
+    const appUserId = isValidUserId(rawAppUserId) ? rawAppUserId : null;
+
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (appUserId) params.append('userId', appUserId);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<Game[]>(`/api/v1/games${query}`);
   }
 
