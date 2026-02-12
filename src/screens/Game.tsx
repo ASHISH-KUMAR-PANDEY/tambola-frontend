@@ -62,6 +62,16 @@ export default function Game() {
     clearGame,
   } = useGameStore();
 
+  // DEBUG: Log winners on every render
+  console.log('[Game Component] RENDER - Winners count:', winners.length);
+  console.log('[Game Component] RENDER - Winners:', JSON.stringify(winners));
+
+  // DEBUG: Track winners changes
+  useEffect(() => {
+    console.log('[Game Component] useEffect triggered - Winners changed to:', winners.length);
+    console.log('[Game Component] Winners array:', JSON.stringify(winners));
+  }, [winners]);
+
   useEffect(() => {
     // Load live stream
     const loadLiveStream = async () => {
@@ -219,6 +229,11 @@ export default function Game() {
         });
       },
       onWinClaimed: (data) => {
+        console.log('[Game] ===== onWinClaimed called =====');
+        console.log('[Game] Win data:', JSON.stringify(data));
+        console.log('[Game] Current playerId:', playerId);
+        console.log('[Game] Current winners before addWinner:', winners.length);
+
         frontendLogger.playerWinClaimResult(
           data.category,
           data.success,
@@ -226,11 +241,13 @@ export default function Game() {
         );
 
         if (data.success && playerId) {
+          console.log('[Game] Calling addWinner...');
           // Add ourselves to winners list to update UI
           addWinner({
             playerId,
             category: data.category as any,
           });
+          console.log('[Game] addWinner called, winners should update now');
 
           // Track prize won event
           trackEvent({

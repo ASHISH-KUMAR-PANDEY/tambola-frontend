@@ -118,6 +118,11 @@ export const useGameStore = create<GameState>()(
       },
 
       addWinner: (winner: Winner) => {
+        console.log('[GameStore] ===== addWinner called =====');
+        console.log('[GameStore] Winner to add:', JSON.stringify(winner));
+        console.log('[GameStore] Current winners before:', get().winners.length);
+        console.log('[GameStore] Current winners:', JSON.stringify(get().winners));
+
         set((state) => {
           // Prevent duplicate winners for the same category
           const isDuplicate = state.winners.some(
@@ -125,13 +130,20 @@ export const useGameStore = create<GameState>()(
           );
 
           if (isDuplicate) {
+            console.log('[GameStore] DUPLICATE detected, not adding');
             return state; // Don't add if already exists
           }
 
+          const newWinners = [...state.winners, winner];
+          console.log('[GameStore] Creating new winners array, length:', newWinners.length);
           return {
-            winners: [...state.winners, winner],
+            winners: newWinners,
           };
         });
+
+        console.log('[GameStore] Winners after set:', get().winners.length);
+        console.log('[GameStore] Winners array:', JSON.stringify(get().winners));
+        console.log('[GameStore] ===== addWinner complete =====');
       },
 
       markNumber: (number: number) => {
