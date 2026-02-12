@@ -6,6 +6,10 @@ frontend:
         - npm ci
     build:
       commands:
+        - echo "VITE_API_URL=${VITE_API_URL}"
+        - echo "VITE_WS_URL=${VITE_WS_URL}"
+        - echo "VITE_RUDDERSTACK_ENDPOINT=${VITE_RUDDERSTACK_ENDPOINT}"
+        - echo "VITE_RUDDERSTACK_WRITE_KEY set = $([ -n \"$VITE_RUDDERSTACK_WRITE_KEY\" ] && echo 'yes' || echo 'no')"
         - npx vite build
   artifacts:
     baseDirectory: dist
