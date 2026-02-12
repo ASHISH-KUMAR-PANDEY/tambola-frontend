@@ -104,37 +104,40 @@ export const useGameStore = create<GameState>()(
       },
 
       addCalledNumber: (number: number) => {
-        set((state) => ({
-          ...state, // Preserve other state properties
+        const state = get();
+        set({
           calledNumbers: [...state.calledNumbers, number],
           currentNumber: number,
-        }));
+        });
         // No auto-marking - players must mark manually
       },
 
       addPlayer: (player: Player) => {
-        set((state) => ({
-          ...state, // Preserve other state properties
+        const state = get();
+        set({
           players: [...state.players, player],
-        }));
+        });
       },
 
       addWinner: (winner: Winner) => {
-        set((state) => {
-          // Prevent duplicate winners for the same category
-          const isDuplicate = state.winners.some(
-            (w) => w.category === winner.category && w.playerId === winner.playerId
-          );
+        const state = get();
 
-          if (isDuplicate) {
-            return state; // Don't add if already exists
-          }
+        // Prevent duplicate winners for the same category
+        const isDuplicate = state.winners.some(
+          (w) => w.category === winner.category && w.playerId === winner.playerId
+        );
 
-          return {
-            ...state, // CRITICAL: Spread existing state to preserve other properties
-            winners: [...state.winners, winner],
-          };
-        });
+        if (isDuplicate) {
+          console.log('[GameStore] Duplicate winner detected, skipping:', winner);
+          return; // Don't add if already exists
+        }
+
+        const newWinners = [...state.winners, winner];
+        console.log('[GameStore] Adding winner:', winner);
+        console.log('[GameStore] Winners before:', state.winners.length);
+        console.log('[GameStore] Winners after:', newWinners.length);
+
+        set({ winners: newWinners });
       },
 
       markNumber: (number: number) => {
