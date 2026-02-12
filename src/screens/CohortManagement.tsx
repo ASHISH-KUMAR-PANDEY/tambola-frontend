@@ -24,7 +24,7 @@ import {
   AlertDialogOverlay,
   useDisclosure,
 } from '@chakra-ui/react';
-import { DownloadIcon, UploadIcon } from '@chakra-ui/icons';
+import { DownloadIcon, AttachmentIcon } from '@chakra-ui/icons';
 import { Logo } from '../components/Logo';
 import { apiService } from '../services/api.service';
 
@@ -246,7 +246,7 @@ export default function CohortManagement() {
 
                   <HStack spacing={4}>
                     <Button
-                      leftIcon={<UploadIcon />}
+                      leftIcon={<AttachmentIcon />}
                       colorScheme="teal"
                       onClick={() => fileInputRef.current?.click()}
                       isLoading={isLoading}
