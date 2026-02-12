@@ -213,24 +213,13 @@ export default function Lobby() {
       console.error('Failed to load games:', error);
       setGames([]);
 
-      // Check if it's a VIP-only error
-      const errorMessage = error?.message || error?.toString() || '';
-      if (errorMessage.includes('STAGE-VIP') || errorMessage.includes('VIP_ONLY')) {
-        toast({
-          title: 'VIP सदस्यता आवश्यक',
-          description: 'यह गेम केवल STAGE-VIP सदस्यों के लिए है, शामिल होने के लिए STAGE के VIP सदस्य बनें।',
-          status: 'warning',
-          duration: 10000,
-          isClosable: true,
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to load games',
-          status: 'error',
-          duration: 5000,
-        });
-      }
+      // NOTE: Everyone can see games now. VIP check happens when joining.
+      toast({
+        title: 'Error',
+        description: 'Failed to load games',
+        status: 'error',
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }
