@@ -25,7 +25,6 @@ interface GameState {
   players: Player[];
   winners: Winner[];
   markedNumbers: Set<number>;
-  _updateTrigger: number; // Force re-renders
 
   // Actions
   setCurrentGame: (game: Game | null) => void;
@@ -55,7 +54,6 @@ export const useGameStore = create<GameState>()(
       players: [],
       winners: [],
       markedNumbers: new Set(),
-      _updateTrigger: 0,
 
       setCurrentGame: (game: Game | null) => {
         set({ currentGame: game });
@@ -106,47 +104,34 @@ export const useGameStore = create<GameState>()(
       },
 
       addCalledNumber: (number: number) => {
-        const state = get();
-        set({
+        set((state) => ({
           calledNumbers: [...state.calledNumbers, number],
           currentNumber: number,
-        });
+        }));
         // No auto-marking - players must mark manually
       },
 
       addPlayer: (player: Player) => {
-        const state = get();
-        set({
+        set((state) => ({
           players: [...state.players, player],
-        });
+        }));
       },
 
       addWinner: (winner: Winner) => {
-        const state = get();
+        set((state) => {
+          // Prevent duplicate winners for the same category
+          const isDuplicate = state.winners.some(
+            (w) => w.category === winner.category && w.playerId === winner.playerId
+          );
 
-        // Prevent duplicate winners for the same category
-        const isDuplicate = state.winners.some(
-          (w) => w.category === winner.category && w.playerId === winner.playerId
-        );
+          if (isDuplicate) {
+            return state; // Don't add if already exists
+          }
 
-        if (isDuplicate) {
-          console.log('[GameStore] Duplicate winner detected, skipping:', winner);
-          return; // Don't add if already exists
-        }
-
-        const newWinners = [...state.winners, winner];
-        console.log('[GameStore] Adding winner:', winner);
-        console.log('[GameStore] Winners before:', state.winners.length);
-        console.log('[GameStore] Winners after:', newWinners.length);
-
-        // Update winners AND increment trigger to force React re-render
-        set({
-          winners: newWinners,
-          _updateTrigger: state._updateTrigger + 1, // Force React to detect change
+          return {
+            winners: [...state.winners, winner],
+          };
         });
-
-        console.log('[GameStore] State update complete, new winners count:', get().winners.length);
-        console.log('[GameStore] Update trigger:', get()._updateTrigger);
       },
 
       markNumber: (number: number) => {
@@ -190,7 +175,6 @@ export const useGameStore = create<GameState>()(
           players: [],
           winners: [],
           markedNumbers: new Set(),
-          _updateTrigger: 0,
         });
         // No need to clear localStorage since winners aren't persisted
       },
