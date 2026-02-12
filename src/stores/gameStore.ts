@@ -25,6 +25,7 @@ interface GameState {
   players: Player[];
   winners: Winner[];
   markedNumbers: Set<number>;
+  _updateTrigger: number; // Force re-renders
 
   // Actions
   setCurrentGame: (game: Game | null) => void;
@@ -54,6 +55,7 @@ export const useGameStore = create<GameState>()(
       players: [],
       winners: [],
       markedNumbers: new Set(),
+      _updateTrigger: 0,
 
       setCurrentGame: (game: Game | null) => {
         set({ currentGame: game });
@@ -137,7 +139,14 @@ export const useGameStore = create<GameState>()(
         console.log('[GameStore] Winners before:', state.winners.length);
         console.log('[GameStore] Winners after:', newWinners.length);
 
-        set({ winners: newWinners });
+        // Update winners AND increment trigger to force React re-render
+        set({
+          winners: newWinners,
+          _updateTrigger: state._updateTrigger + 1, // Force React to detect change
+        });
+
+        console.log('[GameStore] State update complete, new winners count:', get().winners.length);
+        console.log('[GameStore] Update trigger:', get()._updateTrigger);
       },
 
       markNumber: (number: number) => {
@@ -181,6 +190,7 @@ export const useGameStore = create<GameState>()(
           players: [],
           winners: [],
           markedNumbers: new Set(),
+          _updateTrigger: 0,
         });
         // No need to clear localStorage since winners aren't persisted
       },

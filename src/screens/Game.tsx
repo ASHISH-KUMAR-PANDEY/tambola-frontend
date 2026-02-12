@@ -62,6 +62,12 @@ export default function Game() {
     clearGame,
   } = useGameStore();
 
+  // Debug: Log when winners change to verify React re-renders
+  useEffect(() => {
+    console.log('[Game Component] Winners changed! Count:', winners.length);
+    console.log('[Game Component] Winners:', JSON.stringify(winners));
+  }, [winners]);
+
   useEffect(() => {
     // Load live stream
     const loadLiveStream = async () => {
