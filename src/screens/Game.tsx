@@ -231,7 +231,8 @@ export default function Game() {
       onWinClaimed: (data) => {
         console.log('[Game] ===== onWinClaimed called =====');
         console.log('[Game] Win data:', JSON.stringify(data));
-        console.log('[Game] Current playerId:', playerId);
+        console.log('[Game] Store playerId:', playerId);
+        console.log('[Game] Event playerId:', (data as any).playerId);
         console.log('[Game] Current winners before addWinner:', winners.length);
 
         frontendLogger.playerWinClaimResult(
@@ -240,11 +241,19 @@ export default function Game() {
           data.message || (data.success ? 'Win claimed successfully' : 'Win claim failed')
         );
 
-        if (data.success && playerId) {
-          console.log('[Game] Calling addWinner...');
+        if (data.success) {
+          // Use playerId from event (backend sends it) as fallback if store playerId is null
+          const winnerPlayerId = (data as any).playerId || playerId;
+
+          if (!winnerPlayerId) {
+            console.error('[Game] ERROR: No playerId available from event or store!');
+            return;
+          }
+
+          console.log('[Game] Calling addWinner with playerId:', winnerPlayerId);
           // Add ourselves to winners list to update UI
           addWinner({
-            playerId,
+            playerId: winnerPlayerId,
             category: data.category as any,
           });
           console.log('[Game] addWinner called, winners should update now');

@@ -25,6 +25,7 @@ export interface WinnerPayload {
 }
 
 export interface WinClaimedPayload {
+  playerId?: string;  // Added by backend so frontend can add winner even if store playerId is null
   category: string;
   success: boolean;
   message: string;
