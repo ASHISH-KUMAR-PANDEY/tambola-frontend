@@ -105,6 +105,7 @@ export const useGameStore = create<GameState>()(
 
       addCalledNumber: (number: number) => {
         set((state) => ({
+          ...state, // Preserve other state properties
           calledNumbers: [...state.calledNumbers, number],
           currentNumber: number,
         }));
@@ -113,6 +114,7 @@ export const useGameStore = create<GameState>()(
 
       addPlayer: (player: Player) => {
         set((state) => ({
+          ...state, // Preserve other state properties
           players: [...state.players, player],
         }));
       },
@@ -129,6 +131,7 @@ export const useGameStore = create<GameState>()(
           }
 
           return {
+            ...state, // CRITICAL: Spread existing state to preserve other properties
             winners: [...state.winners, winner],
           };
         });
