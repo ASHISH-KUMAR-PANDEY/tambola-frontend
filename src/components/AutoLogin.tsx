@@ -111,9 +111,11 @@ export const AutoLogin = () => {
             }
           }
 
-          // No existing session or session restore failed, go to login
-          console.log('[AutoLogin] No valid session, redirecting to login');
-          navigate('/login', { replace: true });
+          // No existing session or session restore failed, redirect to Stage webapp login
+          console.log('[AutoLogin] No valid session, redirecting to Stage webapp login');
+          const stageLoginUrl = 'https://stage.in/hi/login';
+          const returnUrl = encodeURIComponent(window.location.origin);
+          window.location.href = `${stageLoginUrl}?isTambolaFlow=true&returnUrl=${returnUrl}`;
           return;
         }
 
