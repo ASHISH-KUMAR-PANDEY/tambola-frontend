@@ -21,7 +21,19 @@ import { FlutterAuth } from './components/FlutterAuth';
 
 export const App = () => {
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider
+      theme={theme}
+      toastOptions={{
+        defaultOptions: {
+          position: 'top',
+          isClosable: true,
+          containerStyle: {
+            maxWidth: '90vw',
+            fontSize: 'sm',
+          },
+        },
+      }}
+    >
       <BrowserRouter>
         <InactivityHandler />
         <InitializeTambolaAnalytics />

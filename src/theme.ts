@@ -87,6 +87,23 @@ const theme = extendTheme({
         },
       },
     },
+    Alert: {
+      baseStyle: {
+        container: {
+          // Responsive width for toasts
+          maxWidth: { base: '90vw', sm: '400px', md: '500px' },
+        },
+        title: {
+          // Smaller font on mobile
+          fontSize: { base: 'sm', md: 'md' },
+          fontWeight: 'semibold',
+        },
+        description: {
+          // Smaller font on mobile
+          fontSize: { base: 'xs', md: 'sm' },
+        },
+      },
+    },
   },
 });
 
