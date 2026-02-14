@@ -131,7 +131,8 @@ class WebSocketService {
       reconnectionDelay: 500,           // Start reconnecting faster (was 1000ms)
       reconnectionDelayMax: 3000,       // Cap at 3s (was 5000ms)
       reconnectionAttempts: this.maxReconnectAttempts,
-      transports: ['polling'],          // Use polling only (AWS App Runner doesn't support WebSocket upgrades)
+      transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling for compatibility
+      upgrade: true,                     // Allow upgrade from polling to WebSocket
       pingTimeout: 20000,                // Wait 20s for pong (was 5s default) - mobile-friendly
       pingInterval: 15000,               // Send ping every 15s (was 25s default)
       timeout: 10000,                    // Connection timeout 10s (was 20s default)
