@@ -138,6 +138,17 @@ export default function Game() {
           });
         }
 
+        // Track game joined event
+        trackEvent({
+          eventName: 'game_joined',
+          properties: {
+            game_id: data.gameId,
+            player_id: data.playerId,
+            user_name: playerName || user?.name || 'Anonymous',
+            player_count: players.length || 0,
+          },
+        });
+
         console.log('[Game] Joined game successfully, ticket set:', {
           playerId: data.playerId,
           gameId: data.gameId,

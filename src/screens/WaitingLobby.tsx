@@ -16,6 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
+import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { Logo } from '../components/Logo';
 
 interface LobbyPlayer {
@@ -28,6 +29,7 @@ export default function WaitingLobby() {
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuthStore();
+  const { trackEvent } = useTambolaTracking();
 
   const [players, setPlayers] = useState<LobbyPlayer[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
@@ -52,6 +54,17 @@ export default function WaitingLobby() {
             setPlayers(data.players || []);
             setPlayerCount(data.playerCount || 0);
             setIsJoining(false);
+
+            // Track player registration event with game context
+            const userName = localStorage.getItem('playerName') || user?.name || 'Anonymous';
+            trackEvent({
+              eventName: 'player_registered',
+              properties: {
+                game_id: gameId,
+                user_name: userName,
+                player_count: data.playerCount || 0,
+              },
+            });
           },
           onLobbyPlayerJoined: (data) => {
             if (isCleanedUp) return;
