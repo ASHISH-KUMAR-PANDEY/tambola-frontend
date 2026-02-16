@@ -52,6 +52,9 @@ export default function Game() {
     calledNumbers,
     winners,
     players,
+    isMidGameJoin,
+    calledNumbersAtJoin,
+    availablePrizes,
     addCalledNumber,
     addPlayer,
     addWinner,
@@ -119,15 +122,17 @@ export default function Game() {
           gameId: data.gameId,
           playerId: data.playerId,
           ticketReceived: !!data.ticket,
-          winsReceived: (data as any).wins?.length || 0
+          winsReceived: data.wins?.length || 0,
+          isMidGameJoin: data.isMidGameJoin || false,
+          calledNumbersCount: data.calledNumbersCount || 0
         });
 
         // Set ticket and playerId in store
         const { setTicket, addWinner } = useGameStore.getState();
-        setTicket(data.playerId, data.ticket, data.gameId);
+        setTicket(data.playerId, data.ticket, data.gameId, data.isMidGameJoin, data.calledNumbersCount);
 
         // If player has wins (rejoining after claiming), add them to state
-        const wins = (data as any).wins;
+        const wins = data.wins;
         if (wins && wins.length > 0) {
           console.log('[Game] Player has existing wins, syncing to state:', wins);
           wins.forEach((category: string) => {
@@ -146,6 +151,8 @@ export default function Game() {
             player_id: data.playerId,
             user_name: playerName || user?.name || 'Anonymous',
             player_count: players.length || 0,
+            is_mid_game_join: data.isMidGameJoin || false,
+            called_numbers_count: data.calledNumbersCount || 0,
           },
         });
 
@@ -153,7 +160,9 @@ export default function Game() {
           playerId: data.playerId,
           gameId: data.gameId,
           ticketSize: data.ticket?.length,
-          existingWins: wins?.length || 0
+          existingWins: wins?.length || 0,
+          isMidGameJoin: data.isMidGameJoin || false,
+          calledNumbersCount: data.calledNumbersCount || 0
         });
       },
       onStateSync: (data) => {
@@ -168,7 +177,9 @@ export default function Game() {
           playersCount: data.playerCount || data.players.length,
           winnersCount: data.winners.length,
           markedNumbersCount: data.markedNumbers?.length || 0,
-          optimized: isOptimized
+          optimized: isOptimized,
+          isMidGameJoin: data.isMidGameJoin || false,
+          availablePrizesCount: data.availablePrizes ? Object.values(data.availablePrizes).filter(Boolean).length : 5
         });
 
         // If playerCount provided (optimized), use empty players array
@@ -178,7 +189,9 @@ export default function Game() {
           data.currentNumber || null,
           data.players, // Will be empty array if optimized
           data.winners as any,
-          data.markedNumbers || []
+          data.markedNumbers || [],
+          data.availablePrizes,
+          data.isMidGameJoin
         );
       },
       onPlayerJoined: (data) => {
@@ -645,6 +658,21 @@ export default function Game() {
           </Button>
         </Box>
 
+        {/* Mid-Game Join Banner */}
+        {isMidGameJoin && calledNumbersAtJoin > 0 && (
+          <Alert status="warning" variant="left-accent" borderRadius="md" bg="orange.50" borderColor="orange.400">
+            <AlertIcon color="orange.500" />
+            <VStack align="start" spacing={0} flex={1}>
+              <Text fontSize="sm" fontWeight="bold" color="orange.900">
+                गेम के बीच में शामिल हुए
+              </Text>
+              <Text fontSize="xs" color="orange.800">
+                {calledNumbersAtJoin} नंबर पहले ही बुलाए जा चुके हैं। आपका टिकट खाली शुरू होता है - नंबरों को बुलाए जाने पर मैन्युअल रूप से चिह्नित करें।
+              </Text>
+            </VStack>
+          </Alert>
+        )}
+
         {/* Keep Screen On Warning */}
         <Alert status="info" variant="solid" borderRadius="md">
           <AlertIcon />
@@ -721,15 +749,21 @@ export default function Game() {
                   : key === 'FULL_HOUSE'
                   ? checkFullHouse()
                   : getMarkedCount() >= 5;
+              const isAvailable = availablePrizes[key as keyof typeof availablePrizes];
 
               return (
-                <HStack key={key} justify="space-between" p={{ base: 3, md: 4 }} bg="white" borderRadius="md" border="1px" borderColor="grey.300" spacing={2}>
-                  <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="grey.900">{label}</Text>
+                <HStack key={key} justify="space-between" p={{ base: 3, md: 4 }} bg={isAvailable ? 'white' : 'grey.50'} borderRadius="md" border="1px" borderColor={isAvailable ? 'grey.300' : 'grey.200'} spacing={2} opacity={isAvailable ? 1 : 0.7}>
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="grey.900">{label}</Text>
+                    {!isAvailable && !winner && (
+                      <Text fontSize={{ base: '2xs', sm: 'xs' }} color="grey.600">पहले ही जीत लिया गया</Text>
+                    )}
+                  </VStack>
                   {winner ? (
                     <Badge colorScheme={isMyWin ? "green" : "red"} fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>
                       {isMyWin ? 'आपने जीता ✓' : 'किसी और ने जीता'}
                     </Badge>
-                  ) : isComplete ? (
+                  ) : isComplete && isAvailable ? (
                     <Button
                       size={{ base: 'sm', md: 'md' }}
                       colorScheme="yellow"
@@ -738,6 +772,8 @@ export default function Game() {
                     >
                       जीत का दावा करें
                     </Button>
+                  ) : !isAvailable ? (
+                    <Badge colorScheme="grey" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>जीत लिया गया</Badge>
                   ) : (
                     <Badge colorScheme="grey" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>प्रगति में</Badge>
                   )}

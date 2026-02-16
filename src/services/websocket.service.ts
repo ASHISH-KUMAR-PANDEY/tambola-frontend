@@ -7,6 +7,9 @@ export interface GameJoinedPayload {
   gameId: string;
   playerId: string;
   ticket: number[][];
+  wins?: string[];
+  isMidGameJoin?: boolean;
+  calledNumbersCount?: number;
 }
 
 export interface PlayerJoinedPayload {
@@ -47,6 +50,14 @@ export interface StateSyncPayload {
   playerCount?: number; // Optimized: send count instead of full list for players
   winners: Array<{ playerId: string; category: string; userName?: string }>;
   markedNumbers?: number[];
+  availablePrizes?: {
+    EARLY_5: boolean;
+    TOP_LINE: boolean;
+    MIDDLE_LINE: boolean;
+    BOTTOM_LINE: boolean;
+    FULL_HOUSE: boolean;
+  };
+  isMidGameJoin?: boolean;
 }
 
 export interface GameDeletedPayload {

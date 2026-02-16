@@ -25,12 +25,21 @@ interface GameState {
   players: Player[];
   winners: Winner[];
   markedNumbers: Set<number>;
+  isMidGameJoin: boolean;
+  calledNumbersAtJoin: number;
+  availablePrizes: {
+    EARLY_5: boolean;
+    TOP_LINE: boolean;
+    MIDDLE_LINE: boolean;
+    BOTTOM_LINE: boolean;
+    FULL_HOUSE: boolean;
+  };
 
   // Actions
   setCurrentGame: (game: Game | null) => void;
-  setTicket: (playerId: string, ticket: number[][], gameId: string) => void;
+  setTicket: (playerId: string, ticket: number[][], gameId: string, isMidGameJoin?: boolean, calledNumbersCount?: number) => void;
   restoreGameState: (playerId: string, ticket: number[][], markedNumbers: number[], calledNumbers: number[]) => void;
-  syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[]) => void;
+  syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[], availablePrizes?: { EARLY_5: boolean; TOP_LINE: boolean; MIDDLE_LINE: boolean; BOTTOM_LINE: boolean; FULL_HOUSE: boolean; }, isMidGameJoin?: boolean) => void;
   addCalledNumber: (number: number) => void;
   addPlayer: (player: Player) => void;
   addWinner: (winner: Winner) => void;
@@ -54,13 +63,29 @@ export const useGameStore = create<GameState>()(
       players: [],
       winners: [],
       markedNumbers: new Set(),
+      isMidGameJoin: false,
+      calledNumbersAtJoin: 0,
+      availablePrizes: {
+        EARLY_5: true,
+        TOP_LINE: true,
+        MIDDLE_LINE: true,
+        BOTTOM_LINE: true,
+        FULL_HOUSE: true,
+      },
 
       setCurrentGame: (game: Game | null) => {
         set({ currentGame: game });
       },
 
-      setTicket: (playerId: string, ticket: number[][], gameId: string) => {
-        set({ playerId, ticket, currentGameId: gameId, markedNumbers: new Set() });
+      setTicket: (playerId: string, ticket: number[][], gameId: string, isMidGameJoin?: boolean, calledNumbersCount?: number) => {
+        set({
+          playerId,
+          ticket,
+          currentGameId: gameId,
+          markedNumbers: new Set(),
+          isMidGameJoin: isMidGameJoin || false,
+          calledNumbersAtJoin: calledNumbersCount || 0,
+        });
       },
 
       restoreGameState: (playerId: string, ticket: number[][], markedNumbers: number[], calledNumbers: number[]) => {
@@ -75,7 +100,7 @@ export const useGameStore = create<GameState>()(
         });
       },
 
-      syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[]) => {
+      syncGameState: (calledNumbers: number[], currentNumber: number | null, players: Player[], winners: Winner[], markedNumbers?: number[], availablePrizes?: { EARLY_5: boolean; TOP_LINE: boolean; MIDDLE_LINE: boolean; BOTTOM_LINE: boolean; FULL_HOUSE: boolean; }, isMidGameJoin?: boolean) => {
         // Sync game state when rejoining (called numbers, players, winners)
         // If markedNumbers provided from backend, restore them
         console.log('[GameStore] ===== syncGameState called =====');
@@ -85,6 +110,8 @@ export const useGameStore = create<GameState>()(
         console.log('[GameStore] winners:', winners.length, 'winners');
         console.log('[GameStore] winners array:', JSON.stringify(winners));
         console.log('[GameStore] markedNumbers:', markedNumbers?.length || 0, 'numbers');
+        console.log('[GameStore] availablePrizes:', availablePrizes);
+        console.log('[GameStore] isMidGameJoin:', isMidGameJoin);
 
         const updates: any = {
           calledNumbers,
@@ -96,6 +123,15 @@ export const useGameStore = create<GameState>()(
         if (markedNumbers) {
           updates.markedNumbers = new Set(markedNumbers);
           console.log('[GameStore] Restoring markedNumbers:', markedNumbers.length, 'numbers');
+        }
+
+        if (availablePrizes) {
+          updates.availablePrizes = availablePrizes;
+        }
+
+        if (isMidGameJoin !== undefined) {
+          updates.isMidGameJoin = isMidGameJoin;
+          updates.calledNumbersAtJoin = calledNumbers.length;
         }
 
         set(updates);
@@ -187,6 +223,15 @@ export const useGameStore = create<GameState>()(
           players: [],
           winners: [],
           markedNumbers: new Set(),
+          isMidGameJoin: false,
+          calledNumbersAtJoin: 0,
+          availablePrizes: {
+            EARLY_5: true,
+            TOP_LINE: true,
+            MIDDLE_LINE: true,
+            BOTTOM_LINE: true,
+            FULL_HOUSE: true,
+          },
         });
         // No need to clear localStorage since winners aren't persisted
       },
