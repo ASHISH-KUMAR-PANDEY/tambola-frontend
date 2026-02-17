@@ -268,39 +268,33 @@ export default function Lobby() {
     console.log('[Lobby] Game Status:', game.status);
     console.log('[Lobby] playerName state:', playerName);
 
-    // For ACTIVE games, join directly (mid-game join)
-    if (game.status === 'ACTIVE') {
-      console.log('[Lobby] ACTIVE game - calling joinGame directly');
-      setJoiningGameId(game.id);
-      const userName = playerName || localStorage.getItem('playerName') || user?.name || 'Player';
+    // Join game directly - works for both LOBBY and ACTIVE games
+    setJoiningGameId(game.id);
+    const userName = playerName || localStorage.getItem('playerName') || user?.name || 'Player';
 
-      // Ensure WebSocket is connected
-      if (!wsService.isConnected()) {
-        wsService.connect(user!.id);
-        // Wait for connection
-        await new Promise<void>((resolve) => {
-          const interval = setInterval(() => {
-            if (wsService.isConnected()) {
-              clearInterval(interval);
-              resolve();
-            }
-          }, 100);
-          // Timeout after 5 seconds
-          setTimeout(() => {
+    // Ensure WebSocket is connected
+    if (!wsService.isConnected()) {
+      wsService.connect(user!.id);
+      // Wait for connection
+      await new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+          if (wsService.isConnected()) {
             clearInterval(interval);
             resolve();
-          }, 5000);
-        });
-      }
-
-      // Join active game directly (triggers mid-game join on backend)
-      wsService.joinGame(game.id, userName);
-      // onGameJoined handler (line 136) will navigate to /game/{gameId}
-    } else {
-      // For LOBBY games, navigate to waiting lobby (existing flow)
-      console.log('[Lobby] LOBBY game - navigating to waiting lobby');
-      navigate(`/waiting-lobby/${game.id}`);
+          }
+        }, 100);
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(interval);
+          resolve();
+        }, 5000);
+      });
     }
+
+    console.log('[Lobby] Calling joinGame - waiting lobby removed');
+    // Join game (backend handles both LOBBY and ACTIVE status)
+    wsService.joinGame(game.id, userName);
+    // onGameJoined handler will navigate to /game/{gameId}
   };
 
   const handleRejoinGame = async (game: Game) => {

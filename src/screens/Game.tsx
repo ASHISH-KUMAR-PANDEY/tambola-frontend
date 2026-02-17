@@ -673,6 +673,21 @@ export default function Game() {
           </Alert>
         )}
 
+        {/* Waiting for Game to Start Banner */}
+        {calledNumbers.length === 0 && !isMidGameJoin && (
+          <Alert status="info" variant="left-accent" borderRadius="md" bg="blue.50" borderColor="blue.400">
+            <AlertIcon color="blue.500" />
+            <VStack align="start" spacing={0} flex={1}>
+              <Text fontSize="sm" fontWeight="bold" color="blue.900">
+                गेम शुरू होने का इंतजार
+              </Text>
+              <Text fontSize="xs" color="blue.800">
+                आयोजक जल्द ही खेल शुरू करेंगे। अपना टिकट तैयार रखें!
+              </Text>
+            </VStack>
+          </Alert>
+        )}
+
         {/* Keep Screen On Warning */}
         <Alert status="info" variant="solid" borderRadius="md">
           <AlertIcon />

@@ -5,7 +5,6 @@ import Home from './screens/Home';
 import Login from './screens/Login';
 import Signup from './screens/Signup';
 import Lobby from './screens/Lobby';
-import WaitingLobby from './screens/WaitingLobby';
 import Game from './screens/Game';
 import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
@@ -48,14 +47,6 @@ export const App = () => {
             element={
               <ProtectedRoute>
                 <Lobby />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/waiting-lobby/:gameId"
-            element={
-              <ProtectedRoute>
-                <WaitingLobby />
               </ProtectedRoute>
             }
           />
