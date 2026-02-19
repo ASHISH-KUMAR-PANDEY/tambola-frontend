@@ -13,8 +13,6 @@ import {
   useToast,
   NumberInput,
   NumberInputField,
-  Divider,
-  Stack,
 } from '@chakra-ui/react';
 import { apiService } from '../services/api.service';
 import { wsService } from '../services/websocket.service';

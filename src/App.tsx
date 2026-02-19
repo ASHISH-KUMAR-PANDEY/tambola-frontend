@@ -10,7 +10,6 @@ import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
 import BannerManagement from './screens/BannerManagement';
 import CohortManagement from './screens/CohortManagement';
-import TestOrganizer from './screens/TestOrganizer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
 import { InactivityHandler } from './components/InactivityHandler';

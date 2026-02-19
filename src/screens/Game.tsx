@@ -3,9 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
-  Container,
   Heading,
-  Stack,
   Text,
   Grid,
   GridItem,
@@ -13,7 +11,6 @@ import {
   VStack,
   Badge,
   useToast,
-  Divider,
   Center,
   Spinner,
   AspectRatio,
@@ -39,7 +36,7 @@ export default function Game() {
   const [showSummary, setShowSummary] = useState(false);
   const [gameStartTime] = useState<number>(Date.now());
   const [liveStream, setLiveStream] = useState<YouTubeLiveStream | null>(null);
-  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('playerName') || '');
+  const [playerName] = useState(() => sessionStorage.getItem('playerName') || '');
 
   // Wake Lock to prevent screen from sleeping during game
   const wakeLockRef = useRef<any>(null);
@@ -395,7 +392,7 @@ export default function Game() {
 
     return () => {
       if (gameId) {
-        frontendLogger.playerLeaveGame(gameId, playerId || 'unknown');
+        frontendLogger.playerLeaveGame(gameId);
         wsService.leaveGame(gameId);
       }
       wsService.off();
@@ -518,7 +515,7 @@ export default function Game() {
         currentNumber,
         players,
         winners,
-        markedNumbers: getMarkedCount ? [] : [], // Placeholder, actual marked numbers tracked in store
+        markedNumbers: [], // Placeholder, actual marked numbers tracked in store
       };
 
       localStorage.setItem(`gameState:${gameId}`, JSON.stringify(state));
@@ -530,7 +527,7 @@ export default function Game() {
   }, [gameId, currentGameId, playerId, calledNumbers, currentNumber, players, winners, getMarkedCount]);
 
   const handleLeaveGame = () => {
-    frontendLogger.playerLeaveGame(gameId || 'unknown', playerId || 'unknown');
+    frontendLogger.playerLeaveGame(gameId || 'unknown');
 
     if (gameId) {
       wsService.leaveGame(gameId);

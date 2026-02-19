@@ -7,7 +7,6 @@ let isLoadingRudderAnalytics = false;
 // Extend window interface for RudderStack
 declare global {
   interface Window {
-    rudderanalytics?: any;
     isRudderAnalyticsInitialized?: boolean;
   }
 }

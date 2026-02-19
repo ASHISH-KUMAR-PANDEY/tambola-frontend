@@ -15,7 +15,7 @@ export const useInactivityTimeout = ({
   timeout = 10 * 60 * 1000, // 10 minutes default
   enabled = true,
 }: UseInactivityTimeoutOptions) => {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
 
   const resetTimer = useCallback(() => {
@@ -49,13 +49,13 @@ export const useInactivityTimeout = ({
     ];
 
     // Throttle function to avoid too many resets
-    let throttleTimeout: NodeJS.Timeout | null = null;
+    let throttleTimeout: number | null = null;
     const throttledReset = () => {
       if (!throttleTimeout) {
         resetTimer();
         throttleTimeout = setTimeout(() => {
           throttleTimeout = null;
-        }, 1000); // Throttle to once per second
+        }, 1000) as unknown as number; // Throttle to once per second
       }
     };
 

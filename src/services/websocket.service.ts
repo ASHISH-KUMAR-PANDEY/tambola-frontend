@@ -143,9 +143,10 @@ class WebSocketService {
       reconnectionDelayMax: 3000,       // Cap at 3s (was 5000ms)
       reconnectionAttempts: this.maxReconnectAttempts,
       transports: ['websocket', 'polling'], // Prefer WebSocket over polling for better performance
+      timeout: 10000,                    // Connection timeout 10s (was 20s default)
+      // @ts-ignore - pingTimeout and pingInterval are valid but not in types
       pingTimeout: 20000,                // Wait 20s for pong (was 5s default) - mobile-friendly
       pingInterval: 15000,               // Send ping every 15s (was 25s default)
-      timeout: 10000,                    // Connection timeout 10s (was 20s default)
     });
 
     this.setupEventListeners();
@@ -456,7 +457,7 @@ class WebSocketService {
     this.socket.on('connect_error', (error) => {
       this.reconnectAttempts++;
 
-      frontendLogger.websocketError(error);
+      frontendLogger.websocketError(error.message);
       frontendLogger.measureReconnects(this.reconnectAttempts, error.message);
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {

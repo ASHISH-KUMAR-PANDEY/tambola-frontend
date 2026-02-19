@@ -44,7 +44,7 @@ export const InactivityHandler = () => {
   }, []); // Run only on mount
 
   // Set up inactivity tracking (skip for mobile app users)
-  const { resetTimer } = useInactivityTimeout({
+  useInactivityTimeout({
     onInactive: handleInactive,
     timeout: INACTIVITY_TIMEOUT,
     enabled: isAuthenticated && !isMobileAppUser,
@@ -56,13 +56,13 @@ export const InactivityHandler = () => {
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 
-    let throttleTimeout: NodeJS.Timeout | null = null;
+    let throttleTimeout: number | null = null;
     const throttledUpdate = () => {
       if (!throttleTimeout) {
         updateActivity();
         throttleTimeout = setTimeout(() => {
           throttleTimeout = null;
-        }, 5000); // Update store once per 5 seconds max
+        }, 5000) as unknown as number; // Update store once per 5 seconds max
       }
     };
 

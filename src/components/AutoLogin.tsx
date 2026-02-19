@@ -119,6 +119,9 @@ export const AutoLogin = () => {
           return;
         }
 
+        // TypeScript guard: After isValidUserId check, userId must be a valid string
+        if (!userId) return;
+
         console.log('[AutoLogin] Starting auto-login for userId:', userId);
         setStatus('Setting up authentication...');
 

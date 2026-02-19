@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, Heading, Text, VStack, Button, HStack, Stack } from '@chakra-ui/react';
+import { Box, Container, Heading, Text, VStack, Button, Stack } from '@chakra-ui/react';
 import { Logo } from '../components/Logo';
 
 const Home = () => {

@@ -39,6 +39,7 @@ const sendRudderStackEvent = ({
   try {
     const finalEventName = getAppendedPlatformEventName(eventName);
     // Append platform name to event name for cross-platform analytics tracking
+    // @ts-ignore - RudderStack types are complex, properties object is valid
     rudderAnalytics.track(finalEventName, properties);
   } catch (error) {
     console.error('Event failed to track on RudderStack -', eventName, 'Error -', error);

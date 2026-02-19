@@ -69,6 +69,7 @@ export interface Game {
   ticket?: number[][];
   playerId?: string;
   markedNumbers?: number[];
+  winners?: Array<{ playerId: string; category: string; userName?: string }>;
 }
 
 export interface CreateGameRequest {
