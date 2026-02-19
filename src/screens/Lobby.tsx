@@ -58,8 +58,9 @@ export default function Lobby() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [tempName, setTempName] = useState('');
+  const [pendingGameToJoin, setPendingGameToJoin] = useState<Game | null>(null);
 
-  // Separate effect for name modal check
+  // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
     // Helper function to check if name is in default format
     const isDefaultName = (name: string | null | undefined): boolean => {
@@ -68,25 +69,14 @@ export default function Lobby() {
       return name.startsWith('User ') || name.startsWith('user_');
     };
 
-    // Only show name modal for players, not organizers
-    console.log('[Lobby] ===== NAME MODAL CHECK =====');
+    console.log('[Lobby] ===== INIT NAME CHECK =====');
     console.log('[Lobby] User role:', user?.role);
     console.log('[Lobby] User name:', user?.name);
     console.log('[Lobby] localStorage playerName:', localStorage.getItem('playerName'));
 
-    if (user?.role === 'ORGANIZER') {
-      // This is an organizer, skip name modal
-      console.log('[Lobby] ✓ User is ORGANIZER, skipping name modal');
-      setShowNameModal(false);
-      return;
-    }
-
-    // This is a player (role is 'PLAYER' or undefined)
     // Check name from: 1) user object (from backend), 2) localStorage
     const userName = user?.name;
     const savedName = localStorage.getItem('playerName');
-    console.log('[Lobby] User name from backend:', userName);
-    console.log('[Lobby] Saved name from localStorage:', savedName);
 
     // Priority: backend userName > localStorage
     const finalName = userName || savedName;
@@ -97,11 +87,9 @@ export default function Lobby() {
       if (userName && !isDefaultName(userName)) {
         localStorage.setItem('playerName', userName);
       }
-      setShowNameModal(false);
       console.log('[Lobby] ✓ Using name:', finalName);
     } else {
-      setShowNameModal(true);
-      console.log('[Lobby] ✗ NO VALID NAME (empty or default format) - Showing modal');
+      console.log('[Lobby] No valid name found, will ask when joining game');
     }
   }, [user?.name, user?.role]); // Re-run when user name or role changes
 
@@ -268,9 +256,30 @@ export default function Lobby() {
     console.log('[Lobby] Game Status:', game.status);
     console.log('[Lobby] playerName state:', playerName);
 
-    // Join game directly - works for both LOBBY and ACTIVE games
+    // Helper function to check if name is valid
+    const isValidName = (name: string | null | undefined): boolean => {
+      if (!name) return false;
+      // Check if name matches default pattern
+      return !(name.startsWith('User ') || name.startsWith('user_'));
+    };
+
+    const currentName = playerName || localStorage.getItem('playerName') || user?.name;
+
+    // If no valid name, show modal first
+    if (!isValidName(currentName)) {
+      console.log('[Lobby] No valid name - showing modal first');
+      setPendingGameToJoin(game);
+      setShowNameModal(true);
+      return;
+    }
+
+    // Proceed with joining game
+    await proceedWithJoinGame(game, currentName!);
+  };
+
+  const proceedWithJoinGame = async (game: Game, userName: string) => {
+    console.log('[Lobby] Proceeding to join game with name:', userName);
     setJoiningGameId(game.id);
-    const userName = playerName || localStorage.getItem('playerName') || user?.name || 'Player';
 
     // Ensure WebSocket is connected
     if (!wsService.isConnected()) {
@@ -291,7 +300,7 @@ export default function Lobby() {
       });
     }
 
-    console.log('[Lobby] Calling joinGame - waiting lobby removed');
+    console.log('[Lobby] Calling joinGame');
     // Join game (backend handles both LOBBY and ACTIVE status)
     wsService.joinGame(game.id, userName);
     // onGameJoined handler will navigate to /game/{gameId}
@@ -382,6 +391,7 @@ export default function Lobby() {
       setPlayerName(name);
       localStorage.setItem('playerName', name);
       setShowNameModal(false);
+      setTempName(''); // Clear temp name
       console.log('[Lobby] ✓ Name saved to state and localStorage');
 
       // Save to database and update authStore
@@ -407,6 +417,14 @@ export default function Lobby() {
           user_name: name,
         },
       });
+
+      // If there's a pending game to join, proceed with joining it
+      if (pendingGameToJoin) {
+        console.log('[Lobby] ✓ Proceeding to join pending game:', pendingGameToJoin.id);
+        const gameToJoin = pendingGameToJoin;
+        setPendingGameToJoin(null);
+        await proceedWithJoinGame(gameToJoin, name);
+      }
     } else {
       console.log('[Lobby] ✗ Empty name, not saving');
     }
@@ -554,7 +572,7 @@ export default function Lobby() {
 
         {/* Welcome Message */}
         <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">
-          स्वागत है, {playerName || user?.name}!
+          स्वागत है, {playerName || 'STAGE VIP MEMBER'}!
         </Text>
 
         {/* Organizer Controls - Always show for organizers */}
