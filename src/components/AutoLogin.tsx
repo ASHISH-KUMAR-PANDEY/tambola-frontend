@@ -4,18 +4,60 @@ import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
 import { apiService } from '../services/api.service';
 import { useAuthStore } from '../stores/authStore';
+import { useFlutterBridge } from '../hooks/useFlutterBridge';
 
 export const AutoLogin = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { setUser, loadUser } = useAuthStore();
   const [status, setStatus] = useState('Initializing...');
+  const { userId: flutterUserId, isFlutterApp, error: flutterError } = useFlutterBridge();
 
   useEffect(() => {
     const handleAutoLogin = async () => {
       try {
         // Try to get userId from query params first (standard way: /?userId=123)
         let userId = searchParams.get('userId');
+
+        // If no userId in URL, check if Flutter app will provide one
+        if (!userId) {
+          // Wait a bit for Flutter bridge to initialize (max 2 seconds)
+          const checkFlutterStart = Date.now();
+          let flutterChecked = false;
+
+          console.log('[AutoLogin] No userId in URL, checking for Flutter bridge...');
+          setStatus('Checking for app authentication...');
+
+          while (Date.now() - checkFlutterStart < 2000 && !flutterChecked) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Check if Flutter bridge has initialized
+            if (isFlutterApp) {
+              console.log('[AutoLogin] Flutter app detected, waiting for userId from bridge...');
+              setStatus('Waiting for authentication from app...');
+
+              // Wait for Flutter to send userId (max 10 seconds)
+              const waitStart = Date.now();
+              while (!flutterUserId && !flutterError && Date.now() - waitStart < 10000) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+
+              if (flutterUserId) {
+                userId = flutterUserId;
+                console.log('[AutoLogin] ✅ Got userId from Flutter bridge:', userId);
+              } else if (flutterError) {
+                console.error('[AutoLogin] ❌ Flutter bridge error:', flutterError);
+              }
+
+              flutterChecked = true;
+              break;
+            }
+          }
+
+          if (!flutterChecked || !isFlutterApp) {
+            console.log('[AutoLogin] Not a Flutter app, proceeding with web flow');
+          }
+        }
 
         // If not found in query params, try to parse from URL path
         if (!userId) {
