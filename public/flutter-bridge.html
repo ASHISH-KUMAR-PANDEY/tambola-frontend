@@ -47,30 +47,61 @@
       color: white;
       margin-top: 20px;
     }
+    .debug {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 12px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 20px;
+      font-size: 12px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="loader"></div>
+    <div class="loader" id="loader"></div>
     <h1>🎮 Loading Tambola...</h1>
     <div class="status" id="status">Initializing...</div>
     <div id="error" class="error" style="display: none;"></div>
+    <div id="debug" class="debug"></div>
   </div>
 
   <script>
     console.log('🚀 Flutter Bridge initialized');
 
+    // Debug logger
+    const debugLogs = [];
+    function debugLog(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      const logMessage = `[${timestamp}] ${message}`;
+      debugLogs.push(logMessage);
+      console.log(logMessage);
+
+      const debugDiv = document.getElementById('debug');
+      debugDiv.innerHTML = debugLogs.slice(-10).join('<br>');
+    }
+
     function updateStatus(message) {
       document.getElementById('status').textContent = message;
-      console.log('📝', message);
+      debugLog('📝 ' + message);
     }
 
     function showError(message) {
       const errorDiv = document.getElementById('error');
       errorDiv.textContent = '❌ ' + message;
       errorDiv.style.display = 'block';
-      console.error('❌', message);
+      document.getElementById('loader').style.display = 'none';
+      debugLog('❌ ERROR: ' + message);
     }
+
+    // Check what's available in window
+    debugLog('Checking window.Flutter: ' + (typeof window.Flutter));
+    debugLog('Checking Flutter global: ' + (typeof Flutter));
+    debugLog('Window keys: ' + Object.keys(window).filter(k => k.toLowerCase().includes('flutter')).join(', '));
 
     // Decode JWT without library (simple base64 decode)
     function decodeJWT(token) {
@@ -104,6 +135,7 @@
       // Check if userId is already in URL
       const urlParams = new URLSearchParams(window.location.search);
       const userIdFromUrl = urlParams.get('userId');
+      const testToken = urlParams.get('testToken'); // For browser testing
 
       if (userIdFromUrl) {
         console.log('✅ userId found in URL:', userIdFromUrl);
@@ -112,49 +144,80 @@
         return;
       }
 
+      // TEST MODE: Allow testing in browser with mock token
+      if (testToken) {
+        console.log('🧪 Test mode: Using provided token');
+        updateStatus('Test mode: Decoding token...');
+        try {
+          const decoded = decodeJWT(testToken);
+          if (!decoded.userId) {
+            throw new Error('userId not found in token');
+          }
+          console.log('✅ Test mode: Extracted userId:', decoded.userId);
+          updateStatus('Test successful!');
+          redirectToTambola(decoded.userId);
+          return;
+        } catch (error) {
+          showError('Test mode: Failed to decode token - ' + error.message);
+          setTimeout(() => redirectToTambola(null), 3000);
+          return;
+        }
+      }
+
       console.log('⏳ No userId in URL, waiting for Flutter token...');
       updateStatus('Waiting for authentication token...');
 
       // Wait for Flutter bridge
       waitForFlutter(function() {
         updateStatus('Requesting authentication token...');
+        debugLog('Sending requestAuthToken to Flutter');
 
         // Register listener for Flutter messages
         Flutter.onMessage(function(message) {
-          console.log('📥 Received from Flutter:', message);
+          debugLog('📥 Received message from Flutter: ' + JSON.stringify(message).substring(0, 100));
 
           if (message.type === 'auth_token' && message.token) {
+            debugLog('Got auth_token, length: ' + message.token.length);
             updateStatus('Decoding authentication token...');
 
             try {
               // Decode JWT and extract userId
               const decoded = decodeJWT(message.token);
+              debugLog('Decoded JWT: ' + JSON.stringify(decoded));
 
               if (!decoded.userId) {
                 throw new Error('userId not found in token payload');
               }
 
-              console.log('✅ Extracted userId:', decoded.userId);
+              debugLog('✅ Extracted userId: ' + decoded.userId);
               updateStatus('Authentication successful!');
 
               // Redirect with userId
               redirectToTambola(decoded.userId);
             } catch (error) {
+              debugLog('Decode error: ' + error.message);
               showError('Failed to decode token: ' + error.message);
               // Fallback: redirect without userId (will show login)
               setTimeout(() => redirectToTambola(null), 3000);
             }
           } else if (message.type === 'error') {
+            debugLog('Received error from Flutter: ' + message.message);
             showError(message.message || 'Unknown error from Flutter');
+          } else {
+            debugLog('Unknown message type: ' + message.type);
           }
         });
 
         // Request token from Flutter
-        Flutter.postMessage('requestAuthToken', {
-          timestamp: new Date().toISOString()
-        });
-
-        console.log('✅ Token request sent to Flutter');
+        try {
+          Flutter.postMessage('requestAuthToken', {
+            timestamp: new Date().toISOString()
+          });
+          debugLog('✅ requestAuthToken sent successfully');
+        } catch (error) {
+          debugLog('❌ Error sending request: ' + error.message);
+          showError('Failed to communicate with Flutter: ' + error.message);
+        }
       });
     }
 
@@ -163,14 +226,20 @@
       let attempts = 0;
 
       const checkFlutter = setInterval(() => {
+        attempts++;
+        if (attempts % 10 === 0) {
+          debugLog(`Waiting for Flutter... Attempt ${attempts}/${maxAttempts}`);
+        }
+
         if (typeof Flutter !== 'undefined' && Flutter.postMessage) {
           clearInterval(checkFlutter);
-          console.log('✅ Flutter bridge available!');
+          debugLog('✅ Flutter bridge found!');
           callback();
-        } else if (++attempts >= maxAttempts) {
+        } else if (attempts >= maxAttempts) {
           clearInterval(checkFlutter);
-          console.error('❌ Timeout waiting for Flutter bridge');
-          showError('Flutter bridge not available. Redirecting to login...');
+          debugLog('❌ Flutter bridge timeout after ' + attempts + ' attempts');
+          debugLog('Flutter type: ' + typeof Flutter);
+          showError('Flutter bridge not available after 5 seconds. Check Flutter WebView setup.');
           // Fallback: redirect to main Tambola without userId
           setTimeout(() => redirectToTambola(null), 3000);
         }
