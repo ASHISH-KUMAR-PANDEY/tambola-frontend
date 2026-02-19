@@ -10,7 +10,7 @@ frontend:
         - echo "VITE_WS_URL=${VITE_WS_URL}"
         - echo "VITE_RUDDERSTACK_ENDPOINT=${VITE_RUDDERSTACK_ENDPOINT}"
         - echo "VITE_RUDDERSTACK_WRITE_KEY set = $([ -n \"$VITE_RUDDERSTACK_WRITE_KEY\" ] && echo 'yes' || echo 'no')"
-        - npx vite build
+        - npm run build
   artifacts:
     baseDirectory: dist
     files:
