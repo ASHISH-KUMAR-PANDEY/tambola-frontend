@@ -1,6 +1,6 @@
-import { Box, Button, Text, VStack, HStack } from '@chakra-ui/react';
+import { Box, Button, Text, VStack } from '@chakra-ui/react';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
-import { RegistrationCard as RegistrationCardType } from '../services/api.service';
+import type { RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { useState } from 'react';
 
