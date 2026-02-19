@@ -103,30 +103,20 @@
     debugLog('Checking Flutter global: ' + (typeof Flutter));
     debugLog('Window keys: ' + Object.keys(window).filter(k => k.toLowerCase().includes('flutter')).join(', '));
 
-    // Decode JWT without library (simple base64 decode)
-    function decodeJWT(token) {
+    // Decode base64 token from Flutter
+    function decodeToken(token) {
       try {
-        // JWT format: header.payload.signature
-        const parts = token.split('.');
-        if (parts.length !== 3) {
-          throw new Error('Invalid JWT format');
-        }
+        debugLog('Decoding token, length: ' + token.length);
 
-        // Decode payload (second part)
-        const payload = parts[1];
-        // Replace URL-safe chars and add padding if needed
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-        const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
-
-        // Decode base64
-        const jsonStr = atob(paddedBase64);
+        // Token is base64 encoded, decode it
+        const jsonStr = atob(token);
         const decoded = JSON.parse(jsonStr);
 
-        console.log('✅ JWT decoded:', decoded);
+        debugLog('✅ Token decoded successfully');
         return decoded;
       } catch (error) {
-        console.error('❌ JWT decode failed:', error);
-        throw new Error('Failed to decode JWT: ' + error.message);
+        debugLog('❌ Token decode failed: ' + error.message);
+        throw new Error('Failed to decode token: ' + error.message);
       }
     }
 
@@ -144,16 +134,16 @@
         return;
       }
 
-      // TEST MODE: Allow testing in browser with mock token
+      // TEST MODE: Allow testing in browser with mock base64 token
       if (testToken) {
-        console.log('🧪 Test mode: Using provided token');
+        debugLog('🧪 Test mode: Using provided token');
         updateStatus('Test mode: Decoding token...');
         try {
-          const decoded = decodeJWT(testToken);
+          const decoded = decodeToken(testToken);
           if (!decoded.userId) {
             throw new Error('userId not found in token');
           }
-          console.log('✅ Test mode: Extracted userId:', decoded.userId);
+          debugLog('✅ Test mode: Extracted userId: ' + decoded.userId);
           updateStatus('Test successful!');
           redirectToTambola(decoded.userId);
           return;
@@ -169,24 +159,24 @@
 
       // Wait for Flutter bridge
       waitForFlutter(function() {
-        updateStatus('Requesting authentication token...');
-        debugLog('Sending requestAuthToken to Flutter');
+        updateStatus('Waiting for data from Flutter...');
+        debugLog('Flutter bridge ready, waiting for dataUpdate message');
 
         // Register listener for Flutter messages
         Flutter.onMessage(function(message) {
-          debugLog('📥 Received message from Flutter: ' + JSON.stringify(message).substring(0, 100));
+          debugLog('📥 Received message type: ' + message.type);
 
-          if (message.type === 'auth_token' && message.token) {
-            debugLog('Got auth_token, length: ' + message.token.length);
+          if (message.type === 'dataUpdate' && message.data && message.data.token) {
+            debugLog('Got dataUpdate with token, length: ' + message.data.token.length);
             updateStatus('Decoding authentication token...');
 
             try {
-              // Decode JWT and extract userId
-              const decoded = decodeJWT(message.token);
-              debugLog('Decoded JWT: ' + JSON.stringify(decoded));
+              // Decode base64 token and extract userId
+              const decoded = decodeToken(message.data.token);
+              debugLog('Decoded token: ' + JSON.stringify(decoded).substring(0, 100));
 
               if (!decoded.userId) {
-                throw new Error('userId not found in token payload');
+                throw new Error('userId not found in token data');
               }
 
               debugLog('✅ Extracted userId: ' + decoded.userId);
@@ -204,19 +194,20 @@
             debugLog('Received error from Flutter: ' + message.message);
             showError(message.message || 'Unknown error from Flutter');
           } else {
-            debugLog('Unknown message type: ' + message.type);
+            debugLog('Message received but not dataUpdate. Type: ' + message.type);
+            // Still waiting for dataUpdate
           }
         });
 
-        // Request token from Flutter
+        // Tell Flutter we're ready
         try {
-          Flutter.postMessage('requestAuthToken', {
+          Flutter.postMessage('ready', {
+            status: 'initialized',
             timestamp: new Date().toISOString()
           });
-          debugLog('✅ requestAuthToken sent successfully');
+          debugLog('✅ Sent "ready" signal to Flutter');
         } catch (error) {
-          debugLog('❌ Error sending request: ' + error.message);
-          showError('Failed to communicate with Flutter: ' + error.message);
+          debugLog('❌ Error sending ready signal: ' + error.message);
         }
       });
     }

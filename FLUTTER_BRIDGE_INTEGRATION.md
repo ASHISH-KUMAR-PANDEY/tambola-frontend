@@ -21,8 +21,8 @@ final String url = "https://your-tambola-domain.com/?userId=$userId";
 // Open WebView with this URL
 ```
 
-### Option 2: JWT Token via Bridge
-If userId is not in URL, the bridge will request JWT token from Flutter:
+### Option 2: Base64 Token via Bridge
+If userId is not in URL, the bridge will receive base64-encoded token from Flutter:
 
 ```dart
 // Flutter WebView setup
@@ -33,16 +33,30 @@ WebView(
     JavascriptChannel(
       name: 'Flutter',
       onMessageReceived: (JavascriptMessage message) {
-        // Bridge will send: requestAuthToken
+        // Bridge will send: 'ready' signal when initialized
         final data = jsonDecode(message.message);
 
-        if (data['type'] == 'requestAuthToken') {
-          // Send JWT token back to bridge
+        if (data['type'] == 'ready') {
+          // Prepare token data
+          final tokenData = {
+            'userId': 'your_user_id_here', // e.g., '66d82fddce84f9482889e0d1'
+            // Add any other data you need
+          };
+
+          // Encode to base64
+          final jsonString = jsonEncode(tokenData);
+          final base64Token = base64Encode(utf8.encode(jsonString));
+
+          // Send dataUpdate message with token
           _webViewController.runJavascript('''
-            Flutter.onMessage({
-              type: 'auth_token',
-              token: '${yourJwtToken}'
-            });
+            if (window.flutterMessageCallback) {
+              window.flutterMessageCallback({
+                type: 'dataUpdate',
+                data: {
+                  token: '$base64Token'
+                }
+              });
+            }
           ''');
         }
       },
@@ -55,7 +69,7 @@ WebView(
     controller.runJavascript('''
       window.Flutter = {
         postMessage: function(type, data) {
-          window.FlutterChannel.postMessage(JSON.stringify({
+          window.Flutter.postMessage(JSON.stringify({
             type: type,
             ...data
           }));
@@ -64,59 +78,59 @@ WebView(
           window.flutterMessageCallback = callback;
         }
       };
-
-      // Call the registered callback when Flutter sends message
-      function handleFlutterMessage(message) {
-        if (window.flutterMessageCallback) {
-          window.flutterMessageCallback(message);
-        }
-      }
     ''');
   },
 )
 ```
 
-## JWT Token Format
+## Token Format
 
-The JWT token should contain `userId` in its payload:
+The token should be **base64-encoded JSON** containing `userId`:
 
+### Step 1: Prepare JSON data
 ```json
 {
-  "userId": "user123",
-  "exp": 1234567890,
-  ... other claims
+  "userId": "66d82fddce84f9482889e0d1"
 }
 ```
 
-### Example JWT Structure:
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyMTIzIiwiZXhwIjoxNzA4MzQ1Njc4fQ.signature
+### Step 2: Encode to base64
+```dart
+final tokenData = {'userId': '66d82fddce84f9482889e0d1'};
+final jsonString = jsonEncode(tokenData);
+final base64Token = base64Encode(utf8.encode(jsonString));
+// Result: eyJ1c2VySWQiOiI2NmQ4MmZkZGNlODRmOTQ4Mjg4OWUwZDEifQ==
 ```
 
-Decoded payload:
-```json
-{
-  "userId": "user123",
-  "exp": 1708345678
-}
+### Step 3: Send via dataUpdate
+```javascript
+Flutter.onMessage({
+  type: 'dataUpdate',
+  data: {
+    token: 'eyJ1c2VySWQiOiI2NmQ4MmZkZGNlODRmOTQ4Mjg4OWUwZDEifQ=='
+  }
+});
 ```
 
 ## Message Protocol
 
 ### From Bridge to Flutter:
 ```javascript
-// Request auth token
-Flutter.postMessage('requestAuthToken', {
+// Bridge sends 'ready' signal when initialized
+Flutter.postMessage('ready', {
+  status: 'initialized',
   timestamp: '2024-02-19T12:00:00.000Z'
 });
 ```
 
 ### From Flutter to Bridge:
 ```javascript
-// Send auth token
+// Send dataUpdate with base64-encoded token
 Flutter.onMessage({
-  type: 'auth_token',
-  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  type: 'dataUpdate',
+  data: {
+    token: 'eyJ1c2VySWQiOiI2NmQ4MmZkZGNlODRmOTQ4Mjg4OWUwZDEifQ==' // base64 encoded
+  }
 });
 
 // Or send error
@@ -151,13 +165,19 @@ Flutter.onMessage({
        │                       │
        │                       ▼
        │              ┌────────────────────┐
-       │              │ Request JWT from   │
+       │              │ Send 'ready' to    │
        │              │ Flutter via bridge │
        │              └────────┬───────────┘
        │                       │
        │                       ▼
        │              ┌────────────────────┐
-       │              │ Decode JWT         │
+       │              │ Flutter sends      │
+       │              │ dataUpdate + token │
+       │              └────────┬───────────┘
+       │                       │
+       │                       ▼
+       │              ┌────────────────────┐
+       │              │ Decode base64      │
        │              │ Extract userId     │
        │              └────────┬───────────┘
        │                       │
@@ -183,16 +203,27 @@ https://your-tambola-domain.com/flutter-bridge.html?userId=testuser123
 ```
 Should immediately redirect to `/?userId=testuser123` and auto-login should work.
 
-### Test with JWT token:
+### Test with base64 token:
 1. Open: `https://your-tambola-domain.com/flutter-bridge.html`
 2. Open browser console
 3. Simulate Flutter sending token:
 ```javascript
-// Manually trigger the flow for testing
+// Create base64 token for testing
+const tokenData = {userId: '66d82fddce84f9482889e0d1'};
+const base64Token = btoa(JSON.stringify(tokenData));
+
+// Manually trigger the flow
 Flutter.onMessage({
-  type: 'auth_token',
-  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0dXNlcjEyMyJ9.signature'
+  type: 'dataUpdate',
+  data: {
+    token: base64Token
+  }
 });
+```
+
+Or use testToken parameter directly:
+```
+https://your-tambola-domain.com/flutter-bridge.html?testToken=eyJ1c2VySWQiOiI2NmQ4MmZkZGNlODRmOTQ4Mjg4OWUwZDEifQ==
 ```
 
 ## Error Handling
@@ -211,10 +242,10 @@ The bridge handles these error cases:
 
 ## Security Notes
 
-1. **JWT Validation**: The bridge only decodes the JWT on client-side to extract userId. The backend still validates the JWT for security.
+1. **Token Decoding**: The bridge only decodes the base64 token on client-side to extract userId. The backend validates the userId for security.
 2. **HTTPS Required**: Always use HTTPS in production for secure token transmission.
-3. **Token Expiry**: Ensure your JWT has reasonable expiry time (e.g., 1 hour).
-4. **No Token Storage**: The bridge doesn't store the token - it only extracts userId and redirects.
+3. **No Token Storage**: The bridge doesn't store the token - it only extracts userId and redirects.
+4. **Backend Validation**: The auto-login endpoint on backend should validate the userId before granting access.
 
 ## Support
 
