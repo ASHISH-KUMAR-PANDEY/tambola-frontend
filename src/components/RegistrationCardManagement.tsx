@@ -32,6 +32,7 @@ export function RegistrationCardManagement({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +144,31 @@ export function RegistrationCardManagement({
     }
   };
 
+  const handleResetReminders = async () => {
+    if (!currentCard) return;
+
+    setIsResetting(true);
+    try {
+      const updatedCard = await apiService.resetAllReminders(currentCard.id);
+      toast({
+        title: 'Reminders Reset',
+        description: 'All user reminders have been reset. Users will need to register again.',
+        status: 'success',
+        duration: 5000,
+      });
+      onCreateSuccess(updatedCard);
+    } catch (error: any) {
+      toast({
+        title: 'Reset Failed',
+        description: error.message || 'Failed to reset reminders',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <Box
       p={{ base: 4, md: 6 }}
@@ -203,6 +229,19 @@ export function RegistrationCardManagement({
               Remove Card
             </Button>
           </HStack>
+          <Button
+            colorScheme="orange"
+            size={{ base: 'sm', md: 'md' }}
+            onClick={handleResetReminders}
+            isLoading={isResetting}
+            loadingText="Resetting..."
+            w="100%"
+          >
+            Reset All Reminders
+          </Button>
+          <Text fontSize="xs" color="grey.600" textAlign="center">
+            This will force all users to register again and fire new RudderStack events
+          </Text>
         </VStack>
       ) : (
         <form onSubmit={handleSubmit}>

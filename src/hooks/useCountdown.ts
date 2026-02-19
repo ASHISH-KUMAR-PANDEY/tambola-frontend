@@ -62,8 +62,9 @@ export function formatCountdown(timeRemaining: TimeRemaining): string {
 
   const { days, hours, minutes, seconds } = timeRemaining;
 
+  // Always include seconds for proper countdown feel
   if (days > 0) {
-    return `${days}d ${hours}h ${minutes}m`;
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   } else if (hours > 0) {
     return `${hours}h ${minutes}m ${seconds}s`;
   } else if (minutes > 0) {

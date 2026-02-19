@@ -558,6 +558,12 @@ class ApiService {
     });
   }
 
+  async resetAllReminders(id: string): Promise<RegistrationCard> {
+    return this.request<RegistrationCard>(`/api/v1/registration-card/${id}/reset-reminders`, {
+      method: 'POST',
+    });
+  }
+
   /**
    * Delete YouTube live stream
    */
@@ -656,6 +662,7 @@ export interface RegistrationCard {
   message: string;
   targetDateTime: string;
   isActive: boolean;
+  lastResetAt: string;
   createdAt: string;
 }
 

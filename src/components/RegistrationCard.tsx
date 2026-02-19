@@ -13,9 +13,18 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
   const countdownText = formatCountdown(timeRemaining);
   const { trackEvent } = useTambolaTracking();
   const [reminderSet, setReminderSet] = useState(() => {
-    // Check if reminder was already set in localStorage
+    // Check if reminder was already set AND if it's still valid (not reset by admin)
     const key = `reminder_${card.id}`;
-    return localStorage.getItem(key) === 'true';
+    const registeredAtStr = localStorage.getItem(key);
+
+    if (!registeredAtStr) return false;
+
+    // Compare user's registration timestamp with card's lastResetAt
+    const registeredAt = new Date(registeredAtStr);
+    const lastResetAt = new Date(card.lastResetAt);
+
+    // If admin reset after user registered, show register button again
+    return registeredAt > lastResetAt;
   });
 
   const handleSetReminder = () => {
@@ -42,10 +51,11 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       });
     }
 
-    // Mark reminder as set
+    // Mark reminder as set with current timestamp
     setReminderSet(true);
     const key = `reminder_${card.id}`;
-    localStorage.setItem(key, 'true');
+    const now = new Date().toISOString();
+    localStorage.setItem(key, now);
   };
 
   return (
@@ -61,36 +71,39 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       borderColor="brand.500"
     >
       <VStack spacing={{ base: 4, md: 5 }} align="stretch">
-        {/* Message - Primary Focus (White with proper hierarchy) */}
+        {/* Message - Primary Focus with multi-line support */}
         <Text
           fontSize={{ base: '2xl', md: '3xl' }}
           fontWeight="bold"
           color="white"
           textAlign="center"
           lineHeight="1.3"
+          whiteSpace="pre-line"
         >
           {card.message}
         </Text>
 
-        {/* Countdown Timer - Subtle highlight with golden accent */}
+        {/* Countdown Timer - Prominent and highlighted */}
         <Box
-          py={2}
-          borderBottom="2px solid"
+          py={3}
+          px={4}
+          bg="rgba(234, 158, 4, 0.15)"
+          borderRadius="md"
+          border="2px solid"
           borderColor="#ea9e04"
         >
-          <HStack justify="center" spacing={2}>
-            {!timeRemaining.isExpired && (
-              <Text fontSize={{ base: 'sm', md: 'md' }} color="#b6b6b6">
-                ⏱️ Time remaining:
-              </Text>
-            )}
-            <Text fontSize={{ base: 'sm', md: 'md' }} color="#ea9e04" fontWeight="semibold">
-              {timeRemaining.isExpired ? '⏱️ जल्द शुरू होगा' : countdownText}
-            </Text>
-          </HStack>
+          <Text
+            fontSize={{ base: 'xl', md: '2xl' }}
+            color="#ea9e04"
+            fontWeight="bold"
+            textAlign="center"
+            letterSpacing="wide"
+          >
+            {timeRemaining.isExpired ? '⏱️ जल्द शुरू होगा' : countdownText}
+          </Text>
         </Box>
 
-        {/* Set Reminder Button - Clean state management */}
+        {/* Set Reminder Button - Updated text */}
         <Button
           bg={reminderSet ? 'green.600' : 'brand.500'}
           color="white"
@@ -112,7 +125,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             bg: 'brand.600'
           }}
         >
-          {reminderSet ? 'रिमाइंडर सेट किया' : 'रिमाइंडर सेट करें'}
+          {reminderSet ? 'आप रजिस्टर्ड हैं' : 'इस Sunday के लिए रजिस्टर करें'}
         </Button>
       </VStack>
     </Box>
