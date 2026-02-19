@@ -184,8 +184,8 @@
 
       let targetUrl;
       if (userId) {
-        // Redirect to auto-login with userId
-        targetUrl = `${origin}/auto-login?userId=${encodeURIComponent(userId)}`;
+        // Redirect to root with userId parameter (auto-login works on root)
+        targetUrl = `${origin}/?userId=${encodeURIComponent(userId)}`;
         console.log('🎯 Redirecting to:', targetUrl);
       } else {
         // Fallback: redirect to main page (will show normal login)

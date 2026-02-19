@@ -16,7 +16,7 @@ If you already have the userId, just pass it directly:
 ```dart
 // Flutter code
 final String userId = "user123";
-final String url = "https://your-tambola-domain.com/auto-login?userId=$userId";
+final String url = "https://your-tambola-domain.com/?userId=$userId";
 
 // Open WebView with this URL
 ```
@@ -165,12 +165,12 @@ Flutter.onMessage({
                       │
                       ▼
        ┌──────────────────────────────────┐
-       │ Redirect to /auto-login?userId=  │
+       │ Redirect to /?userId=...         │
        └──────┬───────────────────────────┘
               │
               ▼
        ┌──────────────────────────────────┐
-       │ AutoLogin component handles auth │
+       │ Auto-login works on root URL     │
        │ User is logged in to Tambola     │
        └──────────────────────────────────┘
 ```
@@ -181,7 +181,7 @@ Flutter.onMessage({
 ```
 https://your-tambola-domain.com/flutter-bridge.html?userId=testuser123
 ```
-Should immediately redirect to auto-login.
+Should immediately redirect to `/?userId=testuser123` and auto-login should work.
 
 ### Test with JWT token:
 1. Open: `https://your-tambola-domain.com/flutter-bridge.html`
