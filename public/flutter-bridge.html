@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 400px;
+      text-align: center;
+    }
+    .loader {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 {
+      color: white;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    .status {
+      color: rgba(255,255,255,0.9);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .error {
+      background: rgba(255,0,0,0.2);
+      border: 1px solid rgba(255,0,0,0.4);
+      border-radius: 8px;
+      padding: 16px;
+      color: white;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="loader"></div>
+    <h1>🎮 Loading Tambola...</h1>
+    <div class="status" id="status">Initializing...</div>
+    <div id="error" class="error" style="display: none;"></div>
+  </div>
+
+  <script>
+    console.log('🚀 Flutter Bridge initialized');
+
+    function updateStatus(message) {
+      document.getElementById('status').textContent = message;
+      console.log('📝', message);
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = '❌ ' + message;
+      errorDiv.style.display = 'block';
+      console.error('❌', message);
+    }
+
+    // Decode JWT without library (simple base64 decode)
+    function decodeJWT(token) {
+      try {
+        // JWT format: header.payload.signature
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('Invalid JWT format');
+        }
+
+        // Decode payload (second part)
+        const payload = parts[1];
+        // Replace URL-safe chars and add padding if needed
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+
+        // Decode base64
+        const jsonStr = atob(paddedBase64);
+        const decoded = JSON.parse(jsonStr);
+
+        console.log('✅ JWT decoded:', decoded);
+        return decoded;
+      } catch (error) {
+        console.error('❌ JWT decode failed:', error);
+        throw new Error('Failed to decode JWT: ' + error.message);
+      }
+    }
+
+    // Get userId from URL or wait for Flutter token
+    function getUserId() {
+      // Check if userId is already in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const userIdFromUrl = urlParams.get('userId');
+
+      if (userIdFromUrl) {
+        console.log('✅ userId found in URL:', userIdFromUrl);
+        updateStatus('Found user ID in URL');
+        redirectToTambola(userIdFromUrl);
+        return;
+      }
+
+      console.log('⏳ No userId in URL, waiting for Flutter token...');
+      updateStatus('Waiting for authentication token...');
+
+      // Wait for Flutter bridge
+      waitForFlutter(function() {
+        updateStatus('Requesting authentication token...');
+
+        // Register listener for Flutter messages
+        Flutter.onMessage(function(message) {
+          console.log('📥 Received from Flutter:', message);
+
+          if (message.type === 'auth_token' && message.token) {
+            updateStatus('Decoding authentication token...');
+
+            try {
+              // Decode JWT and extract userId
+              const decoded = decodeJWT(message.token);
+
+              if (!decoded.userId) {
+                throw new Error('userId not found in token payload');
+              }
+
+              console.log('✅ Extracted userId:', decoded.userId);
+              updateStatus('Authentication successful!');
+
+              // Redirect with userId
+              redirectToTambola(decoded.userId);
+            } catch (error) {
+              showError('Failed to decode token: ' + error.message);
+              // Fallback: redirect without userId (will show login)
+              setTimeout(() => redirectToTambola(null), 3000);
+            }
+          } else if (message.type === 'error') {
+            showError(message.message || 'Unknown error from Flutter');
+          }
+        });
+
+        // Request token from Flutter
+        Flutter.postMessage('requestAuthToken', {
+          timestamp: new Date().toISOString()
+        });
+
+        console.log('✅ Token request sent to Flutter');
+      });
+    }
+
+    // Wait for Flutter bridge to be available
+    function waitForFlutter(callback, maxAttempts = 50) {
+      let attempts = 0;
+
+      const checkFlutter = setInterval(() => {
+        if (typeof Flutter !== 'undefined' && Flutter.postMessage) {
+          clearInterval(checkFlutter);
+          console.log('✅ Flutter bridge available!');
+          callback();
+        } else if (++attempts >= maxAttempts) {
+          clearInterval(checkFlutter);
+          console.error('❌ Timeout waiting for Flutter bridge');
+          showError('Flutter bridge not available. Redirecting to login...');
+          // Fallback: redirect to main Tambola without userId
+          setTimeout(() => redirectToTambola(null), 3000);
+        }
+      }, 100);
+    }
+
+    // Redirect to Tambola app with userId
+    function redirectToTambola(userId) {
+      // Get current origin (protocol + host)
+      const origin = window.location.origin;
+
+      let targetUrl;
+      if (userId) {
+        // Redirect to auto-login with userId
+        targetUrl = `${origin}/auto-login?userId=${encodeURIComponent(userId)}`;
+        console.log('🎯 Redirecting to:', targetUrl);
+      } else {
+        // Fallback: redirect to main page (will show normal login)
+        targetUrl = `${origin}/`;
+        console.log('🎯 Redirecting to main page (no userId)');
+      }
+
+      // Small delay to show final status
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 500);
+    }
+
+    // Start the flow
+    getUserId();
+  </script>
+</body>
+</html>
