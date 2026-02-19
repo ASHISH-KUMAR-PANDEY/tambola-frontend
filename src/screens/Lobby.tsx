@@ -635,8 +635,7 @@ export default function Lobby() {
                     src={currentBanner.imageUrl}
                     alt="Promotional banner"
                     w="100%"
-                    objectFit="cover"
-                    aspectRatio={16 / 9}
+                    objectFit="contain"
                   />
                 </Box>
               )}
@@ -878,8 +877,7 @@ export default function Lobby() {
                 src={currentBanner.imageUrl}
                 alt="Promotional banner"
                 w="100%"
-                objectFit="cover"
-                aspectRatio={16 / 9}
+                objectFit="contain"
               />
             </Box>
           </Box>
