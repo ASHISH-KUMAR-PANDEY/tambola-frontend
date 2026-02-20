@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Box, Center, Text, VStack, Progress, keyframes } from '@chakra-ui/react';
+import { Box, Center, Text, VStack, Progress } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { wsService } from '../services/websocket.service';
 import { apiService } from '../services/api.service';
 import { useAuthStore } from '../stores/authStore';
