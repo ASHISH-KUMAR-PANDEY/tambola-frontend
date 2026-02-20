@@ -40,41 +40,34 @@ export const AutoLogin = () => {
 
         // If no userId in URL, check if Flutter app will provide one
         if (!userId) {
-          // Wait a bit for Flutter bridge to initialize (max 2 seconds)
-          const checkFlutterStart = Date.now();
-          let flutterChecked = false;
-
           console.log('[AutoLogin] No userId in URL, checking for Flutter bridge...');
           setStatus('Checking for app authentication...');
 
-          while (Date.now() - checkFlutterStart < 2000 && !flutterChecked) {
+          // Poll for Flutter userId (stored on window by useFlutterBridge)
+          // This bypasses React state closure issues
+          const waitStart = Date.now();
+          const maxWait = 5000; // 5 seconds max wait
+
+          while (Date.now() - waitStart < maxWait) {
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Check if Flutter bridge has initialized
-            if (isFlutterApp) {
-              console.log('[AutoLogin] Flutter app detected, waiting for userId from bridge...');
-              setStatus('Waiting for authentication from app...');
-
-              // Wait for Flutter to send userId (max 10 seconds)
-              const waitStart = Date.now();
-              while (!flutterUserId && !flutterError && Date.now() - waitStart < 10000) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-              }
-
-              if (flutterUserId) {
-                userId = flutterUserId;
-                logToBackend('USERID_SOURCE_FLUTTER_JWT', { userId, source: 'Flutter JWT Token' });
-              } else if (flutterError) {
-                logToBackend('FLUTTER_BRIDGE_ERROR', { error: flutterError });
-              }
-
-              flutterChecked = true;
+            // Check window.__flutterUserId (set by useFlutterBridge when JWT is decoded)
+            const windowFlutterUserId = (window as any).__flutterUserId;
+            if (windowFlutterUserId) {
+              userId = windowFlutterUserId;
+              logToBackend('USERID_SOURCE_FLUTTER_JWT', { userId, source: 'Flutter JWT Token' });
+              // Clear after use
+              delete (window as any).__flutterUserId;
               break;
             }
-          }
 
-          if (!flutterChecked || !isFlutterApp) {
-            console.log('[AutoLogin] Not a Flutter app, proceeding with web flow');
+            // Also check if FlutterChannel exists (indicates Flutter WebView)
+            const hasFlutterChannel = !!(window as any).FlutterChannel;
+            if (!hasFlutterChannel && Date.now() - waitStart > 2000) {
+              // No Flutter detected after 2 seconds, stop waiting
+              console.log('[AutoLogin] Not a Flutter app, proceeding with web flow');
+              break;
+            }
           }
         }
 

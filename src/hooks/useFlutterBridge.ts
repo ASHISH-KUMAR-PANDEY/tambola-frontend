@@ -102,6 +102,8 @@ export function useFlutterBridge() {
           logToBackend('userId_found', { userId: decoded.userId });
           setUserId(decoded.userId);
           setIsFlutterApp(true);
+          // Also store on window for AutoLogin to poll (bypasses React closure issues)
+          (window as any).__flutterUserId = decoded.userId;
         } else {
           logToBackend('no_userId_in_token', { decoded });
           setError('userId not found in token');
