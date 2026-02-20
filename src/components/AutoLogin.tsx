@@ -6,6 +6,25 @@ import { apiService } from '../services/api.service';
 import { useAuthStore } from '../stores/authStore';
 import { useFlutterBridge } from '../hooks/useFlutterBridge';
 
+const DEBUG_API_URL = 'https://api.tambola.me';
+
+// Send debug logs to backend
+const logToBackend = (event: string, data: any = {}) => {
+  const payload = {
+    source: 'AutoLogin',
+    event,
+    data,
+    timestamp: new Date().toISOString(),
+    url: window.location.href,
+  };
+  console.log('[AutoLogin]', event, data);
+  fetch(`${DEBUG_API_URL}/api/debug/flutter-bridge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+};
+
 export const AutoLogin = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -44,9 +63,9 @@ export const AutoLogin = () => {
 
               if (flutterUserId) {
                 userId = flutterUserId;
-                console.log('[AutoLogin] ✅ Got userId from Flutter bridge:', userId);
+                logToBackend('USERID_SOURCE_FLUTTER_JWT', { userId, source: 'Flutter JWT Token' });
               } else if (flutterError) {
-                console.error('[AutoLogin] ❌ Flutter bridge error:', flutterError);
+                logToBackend('FLUTTER_BRIDGE_ERROR', { error: flutterError });
               }
 
               flutterChecked = true;
@@ -84,7 +103,7 @@ export const AutoLogin = () => {
             }
           }
         } else {
-          console.log('[AutoLogin] ✅ Found userId in query params (format 1):', userId);
+          logToBackend('USERID_SOURCE_URL_QUERY', { userId, source: 'URL Query Params' });
         }
 
         // Validate userId - reject invalid values
@@ -140,7 +159,11 @@ export const AutoLogin = () => {
 
               if (authState.isAuthenticated && authState.user) {
                 // User has existing session, redirect based on role
-                console.log('[AutoLogin] Session restored, redirecting...');
+                logToBackend('USERID_SOURCE_LOCALSTORAGE', {
+                  userId: authState.user.id,
+                  source: 'LocalStorage Session',
+                  userName: authState.user.name
+                });
                 if (authState.user.role === 'ORGANIZER') {
                   navigate('/organizer', { replace: true });
                 } else {
@@ -251,6 +274,9 @@ export const AutoLogin = () => {
         await waitForConnection;
         console.log('[AutoLogin] WebSocket status:', wsService.isConnected() ? 'Connected' : 'Not connected');
         setStatus('Redirecting to lobby...');
+
+        // Log successful login
+        logToBackend('LOGIN_SUCCESS', { userId, userName, wsConnected: wsService.isConnected() });
 
         // Small delay to ensure connection is stable
         setTimeout(() => {
