@@ -1,5 +1,30 @@
 import { useEffect, useState } from 'react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.tambolagame.com';
+
+// Send debug logs to backend
+const logToBackend = (event: string, data: any = {}) => {
+  const payload = {
+    event,
+    data,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    url: window.location.href,
+    windowKeys: {
+      Flutter: typeof (window as any).Flutter,
+      FlutterChannel: typeof (window as any).FlutterChannel,
+    },
+  };
+  console.log('[FlutterBridge]', event, data);
+
+  // Fire and forget - send to backend
+  fetch(`${API_URL}/api/debug/flutter-bridge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+};
+
 declare global {
   interface Window {
     Flutter?: any;
@@ -19,81 +44,83 @@ export function useFlutterBridge() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('[FlutterBridge] Initializing...');
-    console.log('[FlutterBridge] window.Flutter:', typeof window.Flutter);
-    console.log('[FlutterBridge] window.FlutterChannel:', typeof window.FlutterChannel);
-    console.log('[FlutterBridge] User Agent:', navigator.userAgent);
+    logToBackend('init', {
+      windowFlutter: typeof window.Flutter,
+      windowFlutterChannel: typeof (window as any).FlutterChannel,
+    });
 
     // Global message handler that Flutter can call directly
     const handleMessage = (message: any) => {
-      console.log('[FlutterBridge] 📥 Received message:', JSON.stringify(message));
+      logToBackend('message_received', { message });
 
       // Handle dataUpdate with token
       if (message.type === 'dataUpdate' && message.data?.token) {
-        console.log('[FlutterBridge] Got dataUpdate with token');
+        logToBackend('got_dataUpdate_with_token', { tokenLength: message.data.token.length });
         decodeAndSetUserId(message.data.token);
       }
       // Also handle direct token in message
       else if (message.token) {
-        console.log('[FlutterBridge] Got direct token in message');
+        logToBackend('got_direct_token', { tokenLength: message.token.length });
         decodeAndSetUserId(message.token);
       }
       // Handle if data.token exists at top level
       else if (message.data && typeof message.data === 'string') {
-        console.log('[FlutterBridge] Got string data, trying to decode as token');
+        logToBackend('got_string_data', { dataLength: message.data.length });
         decodeAndSetUserId(message.data);
+      } else {
+        logToBackend('unknown_message_format', { message });
       }
     };
 
     // Decode token and extract userId
     const decodeAndSetUserId = (token: string) => {
       try {
-        console.log('[FlutterBridge] Decoding token, length:', token.length);
-        console.log('[FlutterBridge] Token preview:', token.substring(0, 50) + '...');
+        logToBackend('decoding_token', { tokenLength: token.length, preview: token.substring(0, 50) });
 
         // Try base64 decode
         const decoded = JSON.parse(atob(token));
-        console.log('[FlutterBridge] Decoded:', JSON.stringify(decoded));
+        logToBackend('token_decoded', { decoded });
 
         if (decoded.userId) {
-          console.log('[FlutterBridge] ✅ Found userId:', decoded.userId);
+          logToBackend('userId_found', { userId: decoded.userId });
           setUserId(decoded.userId);
           setIsFlutterApp(true);
         } else {
-          console.error('[FlutterBridge] ❌ No userId in decoded token');
+          logToBackend('no_userId_in_token', { decoded });
           setError('userId not found in token');
         }
       } catch (err: any) {
-        console.error('[FlutterBridge] ❌ Decode error:', err.message);
+        logToBackend('decode_error', { error: err.message, token: token.substring(0, 100) });
         setError('Failed to decode: ' + err.message);
       }
     };
 
     // Register global handlers that Flutter can call via runJavaScript
-    // Flutter typically calls: window.handleMessage({...}) or similar
     window.flutterMessageCallback = handleMessage;
     window.handleFlutterMessage = handleMessage;
     window.receiveMessageFromFlutter = handleMessage;
     window.onFlutterMessage = handleMessage;
     window.handleMessage = handleMessage;
 
-    console.log('[FlutterBridge] ✅ Registered global handlers: flutterMessageCallback, handleFlutterMessage, receiveMessageFromFlutter, onFlutterMessage, handleMessage');
+    logToBackend('handlers_registered', { handlers: ['flutterMessageCallback', 'handleFlutterMessage', 'receiveMessageFromFlutter', 'onFlutterMessage', 'handleMessage'] });
 
     // Send message to Flutter via JavaScript channel
     const sendToFlutter = (type: string, data: Record<string, any> = {}) => {
       const message = JSON.stringify({ type, ...data });
-      console.log('[FlutterBridge] 📤 Sending to Flutter:', message);
 
       // Try FlutterChannel first (webview_flutter uses this)
       if ((window as any).FlutterChannel?.postMessage) {
+        logToBackend('sending_via_FlutterChannel', { type, message });
         (window as any).FlutterChannel.postMessage(message);
         return true;
       }
       // Try Flutter.postMessage
       if (window.Flutter?.postMessage) {
+        logToBackend('sending_via_Flutter', { type, message });
         window.Flutter.postMessage(message);
         return true;
       }
+      logToBackend('no_channel_to_send', { type });
       return false;
     };
 
@@ -101,17 +128,15 @@ export function useFlutterBridge() {
     const checkFlutterBridge = () => {
       // Pattern 1: Check for FlutterChannel (webview_flutter's JavaScriptChannel)
       if ((window as any).FlutterChannel?.postMessage) {
-        console.log('[FlutterBridge] ✅ Found window.FlutterChannel.postMessage');
+        logToBackend('found_FlutterChannel');
         setIsFlutterApp(true);
 
         // Step 1: Send ready signal
         sendToFlutter('ready', { status: 'initialized', timestamp: new Date().toISOString() });
-        console.log('[FlutterBridge] ✅ Sent ready signal');
 
         // Step 2: Request data (token) from Flutter - THIS IS THE KEY!
         setTimeout(() => {
           sendToFlutter('requestData', {});
-          console.log('[FlutterBridge] ✅ Sent requestData to Flutter');
         }, 100);
 
         return true;
@@ -119,22 +144,20 @@ export function useFlutterBridge() {
 
       // Pattern 2: window.Flutter with postMessage
       if (window.Flutter && typeof window.Flutter.postMessage === 'function') {
-        console.log('[FlutterBridge] ✅ Found window.Flutter.postMessage');
+        logToBackend('found_Flutter_postMessage');
         setIsFlutterApp(true);
 
         if (typeof window.Flutter.onMessage === 'function') {
-          console.log('[FlutterBridge] Setting up Flutter.onMessage listener');
+          logToBackend('setting_up_Flutter_onMessage');
           window.Flutter.onMessage(handleMessage);
         }
 
         // Step 1: Send ready signal
         sendToFlutter('ready', { status: 'initialized', timestamp: new Date().toISOString() });
-        console.log('[FlutterBridge] ✅ Sent ready signal');
 
         // Step 2: Request data (token) from Flutter
         setTimeout(() => {
           sendToFlutter('requestData', {});
-          console.log('[FlutterBridge] ✅ Sent requestData to Flutter');
         }, 100);
 
         return true;
@@ -143,7 +166,7 @@ export function useFlutterBridge() {
       // Pattern 3: Check user agent for WebView indicators
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('flutter') || ua.includes('dart') || ua.includes('wv')) {
-        console.log('[FlutterBridge] ✅ Flutter/WebView detected in user agent');
+        logToBackend('detected_via_userAgent', { ua });
         setIsFlutterApp(true);
         return true;
       }
@@ -165,9 +188,10 @@ export function useFlutterBridge() {
 
       if (checkFlutterBridge()) {
         clearInterval(interval);
+        logToBackend('bridge_found_after_attempts', { attempts });
       } else if (attempts >= maxAttempts) {
         clearInterval(interval);
-        console.log('[FlutterBridge] No Flutter bridge found after', attempts, 'attempts');
+        logToBackend('no_bridge_found', { attempts });
       }
     }, 100);
 
