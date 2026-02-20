@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
-// Use direct App Runner URL for debug endpoint (bypasses any DNS caching)
-const DEBUG_API_URL = 'https://v2y6qsksfx.ap-south-1.awsapprunner.com';
+const DEBUG_API_URL = 'https://api.tambola.me';
 
 // Send debug logs to backend
 const logToBackend = (event: string, data: any = {}) => {
