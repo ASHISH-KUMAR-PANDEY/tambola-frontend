@@ -6,6 +6,10 @@ declare global {
     FlutterChannel?: any;
     flutterMessageCallback?: (message: any) => void;
     handleFlutterMessage?: (message: any) => void;
+    // Additional handlers that Flutter's runJavaScript might call
+    receiveMessageFromFlutter?: (message: any) => void;
+    onFlutterMessage?: (message: any) => void;
+    handleMessage?: (message: any) => void;
   }
 }
 
@@ -65,13 +69,55 @@ export function useFlutterBridge() {
       }
     };
 
-    // Register global handlers that Flutter can call
+    // Register global handlers that Flutter can call via runJavaScript
+    // Flutter typically calls: window.handleMessage({...}) or similar
     window.flutterMessageCallback = handleMessage;
     window.handleFlutterMessage = handleMessage;
+    window.receiveMessageFromFlutter = handleMessage;
+    window.onFlutterMessage = handleMessage;
+    window.handleMessage = handleMessage;
+
+    console.log('[FlutterBridge] ✅ Registered global handlers: flutterMessageCallback, handleFlutterMessage, receiveMessageFromFlutter, onFlutterMessage, handleMessage');
+
+    // Send message to Flutter via JavaScript channel
+    const sendToFlutter = (type: string, data: Record<string, any> = {}) => {
+      const message = JSON.stringify({ type, ...data });
+      console.log('[FlutterBridge] 📤 Sending to Flutter:', message);
+
+      // Try FlutterChannel first (webview_flutter uses this)
+      if ((window as any).FlutterChannel?.postMessage) {
+        (window as any).FlutterChannel.postMessage(message);
+        return true;
+      }
+      // Try Flutter.postMessage
+      if (window.Flutter?.postMessage) {
+        window.Flutter.postMessage(message);
+        return true;
+      }
+      return false;
+    };
 
     // Check for various Flutter bridge patterns
     const checkFlutterBridge = () => {
-      // Pattern 1: window.Flutter with postMessage and onMessage
+      // Pattern 1: Check for FlutterChannel (webview_flutter's JavaScriptChannel)
+      if ((window as any).FlutterChannel?.postMessage) {
+        console.log('[FlutterBridge] ✅ Found window.FlutterChannel.postMessage');
+        setIsFlutterApp(true);
+
+        // Step 1: Send ready signal
+        sendToFlutter('ready', { status: 'initialized', timestamp: new Date().toISOString() });
+        console.log('[FlutterBridge] ✅ Sent ready signal');
+
+        // Step 2: Request data (token) from Flutter - THIS IS THE KEY!
+        setTimeout(() => {
+          sendToFlutter('requestData', {});
+          console.log('[FlutterBridge] ✅ Sent requestData to Flutter');
+        }, 100);
+
+        return true;
+      }
+
+      // Pattern 2: window.Flutter with postMessage
       if (window.Flutter && typeof window.Flutter.postMessage === 'function') {
         console.log('[FlutterBridge] ✅ Found window.Flutter.postMessage');
         setIsFlutterApp(true);
@@ -81,36 +127,23 @@ export function useFlutterBridge() {
           window.Flutter.onMessage(handleMessage);
         }
 
-        // Send ready signal
-        try {
-          window.Flutter.postMessage('ready', { status: 'initialized', timestamp: new Date().toISOString() });
-          console.log('[FlutterBridge] ✅ Sent ready signal via Flutter.postMessage');
-        } catch (e) {
-          console.error('[FlutterBridge] Error sending ready:', e);
-        }
+        // Step 1: Send ready signal
+        sendToFlutter('ready', { status: 'initialized', timestamp: new Date().toISOString() });
+        console.log('[FlutterBridge] ✅ Sent ready signal');
 
-        return true;
-      }
-
-      // Pattern 2: window.FlutterChannel (common in flutter_inappwebview)
-      if (window.FlutterChannel && typeof window.FlutterChannel.postMessage === 'function') {
-        console.log('[FlutterBridge] ✅ Found window.FlutterChannel');
-        setIsFlutterApp(true);
-
-        try {
-          window.FlutterChannel.postMessage(JSON.stringify({ type: 'ready', status: 'initialized' }));
-          console.log('[FlutterBridge] ✅ Sent ready signal via FlutterChannel');
-        } catch (e) {
-          console.error('[FlutterBridge] Error sending ready:', e);
-        }
+        // Step 2: Request data (token) from Flutter
+        setTimeout(() => {
+          sendToFlutter('requestData', {});
+          console.log('[FlutterBridge] ✅ Sent requestData to Flutter');
+        }, 100);
 
         return true;
       }
 
       // Pattern 3: Check user agent for WebView indicators
       const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes('flutter') || ua.includes('dart')) {
-        console.log('[FlutterBridge] ✅ Flutter detected in user agent');
+      if (ua.includes('flutter') || ua.includes('dart') || ua.includes('wv')) {
+        console.log('[FlutterBridge] ✅ Flutter/WebView detected in user agent');
         setIsFlutterApp(true);
         return true;
       }
@@ -143,6 +176,9 @@ export function useFlutterBridge() {
       // Clean up global handlers
       delete window.flutterMessageCallback;
       delete window.handleFlutterMessage;
+      delete window.receiveMessageFromFlutter;
+      delete window.onFlutterMessage;
+      delete window.handleMessage;
     };
   }, []);
 
