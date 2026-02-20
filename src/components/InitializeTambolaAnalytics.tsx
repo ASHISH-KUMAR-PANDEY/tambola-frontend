@@ -26,6 +26,17 @@ const getOrCreateDeviceId = (): string => {
   return deviceId;
 };
 
+// Get app user ID from localStorage (set during auto-login from mobile app)
+const getAppUserId = (): string | null => {
+  const rawAppUserId = localStorage.getItem('app_user_id');
+  // Filter out invalid userId values
+  const invalidValues = ['lobby', 'login', 'signup', 'undefined', 'null'];
+  if (!rawAppUserId || invalidValues.includes(rawAppUserId.toLowerCase())) {
+    return null;
+  }
+  return rawAppUserId;
+};
+
 export const InitializeTambolaAnalytics = () => {
   useEffect(() => {
     (async () => {
@@ -52,12 +63,23 @@ export const InitializeTambolaAnalytics = () => {
             rudderanalytics.setAnonymousId(deviceId);
             console.log('Tambola RudderAnalytics initialized successfully');
 
-            // Track app open
+            const appUserId = getAppUserId();
+
+            // Track app open with app_user_id for user mapping
             rudderanalytics.track('tambola_app_opened', {
               deviceId,
+              app_user_id: appUserId,
               platform: 'WEB',
               timestamp: new Date().toISOString(),
             });
+
+            // Also identify user if app_user_id exists
+            if (appUserId) {
+              rudderanalytics.identify(appUserId, {
+                device_id: deviceId,
+                platform: 'WEB',
+              });
+            }
           });
         } catch (error) {
           console.error('RudderStack initialization failed:', error);
