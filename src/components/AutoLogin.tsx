@@ -30,7 +30,8 @@ export const AutoLogin = () => {
   const navigate = useNavigate();
   const { setUser, loadUser } = useAuthStore();
   const [status, setStatus] = useState('Initializing...');
-  const { userId: flutterUserId, isFlutterApp, error: flutterError } = useFlutterBridge();
+  // Initialize Flutter bridge (it will store userId on window.__flutterUserId when decoded)
+  useFlutterBridge();
 
   useEffect(() => {
     const handleAutoLogin = async () => {
