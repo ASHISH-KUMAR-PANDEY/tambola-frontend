@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.tambolagame.com';
+// Use direct App Runner URL for debug endpoint (bypasses any DNS caching)
+const DEBUG_API_URL = 'https://v2y6qsksfx.ap-south-1.awsapprunner.com';
 
 // Send debug logs to backend
 const logToBackend = (event: string, data: any = {}) => {
@@ -18,7 +19,7 @@ const logToBackend = (event: string, data: any = {}) => {
   console.log('[FlutterBridge]', event, data);
 
   // Fire and forget - send to backend
-  fetch(`${API_URL}/api/debug/flutter-bridge`, {
+  fetch(`${DEBUG_API_URL}/api/debug/flutter-bridge`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
