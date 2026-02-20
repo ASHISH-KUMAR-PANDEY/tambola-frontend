@@ -77,9 +77,26 @@ export function useFlutterBridge() {
       try {
         logToBackend('decoding_token', { tokenLength: token.length, preview: token.substring(0, 50) });
 
-        // Try base64 decode
-        const decoded = JSON.parse(atob(token));
-        logToBackend('token_decoded', { decoded });
+        let decoded: any;
+
+        // Check if it's a JWT (has 3 parts separated by dots)
+        if (token.includes('.') && token.split('.').length === 3) {
+          logToBackend('detected_jwt_format');
+          // JWT: header.payload.signature - decode the payload (middle part)
+          const parts = token.split('.');
+          const payload = parts[1];
+          // JWT uses base64url encoding, need to convert to standard base64
+          const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+          // Add padding if needed
+          const padded = base64 + '=='.slice(0, (4 - base64.length % 4) % 4);
+          decoded = JSON.parse(atob(padded));
+          logToBackend('jwt_payload_decoded', { decoded });
+        } else {
+          // Plain base64 encoded JSON
+          logToBackend('detected_base64_format');
+          decoded = JSON.parse(atob(token));
+          logToBackend('base64_decoded', { decoded });
+        }
 
         if (decoded.userId) {
           logToBackend('userId_found', { userId: decoded.userId });
