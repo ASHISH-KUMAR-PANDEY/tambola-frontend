@@ -70,15 +70,20 @@ const confettiColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '
 
 interface RegistrationCardProps {
   card: RegistrationCardType;
+  // Optional external state management
+  externalReminderSet?: boolean;
+  onReminderChange?: (isSet: boolean) => void;
 }
 
-export function RegistrationCard({ card }: RegistrationCardProps) {
+export function RegistrationCard({ card, externalReminderSet, onReminderChange }: RegistrationCardProps) {
   const timeRemaining = useCountdown(card.targetDateTime);
   const countdownText = formatCountdown(timeRemaining);
   const { trackEvent } = useTambolaTracking();
   const [showConfetti, setShowConfetti] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
-  const [reminderSet, setReminderSet] = useState(() => {
+
+  // Use internal state if no external state is provided
+  const [internalReminderSet, setInternalReminderSet] = useState(() => {
     const key = `reminder_${card.id}`;
     const registeredAtStr = localStorage.getItem(key);
     if (!registeredAtStr) return false;
@@ -86,6 +91,13 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
     const lastResetAt = new Date(card.lastResetAt);
     return registeredAt > lastResetAt;
   });
+
+  // Use external state if provided, otherwise use internal
+  const reminderSet = externalReminderSet !== undefined ? externalReminderSet : internalReminderSet;
+  const setReminderSet = (value: boolean) => {
+    setInternalReminderSet(value);
+    onReminderChange?.(value);
+  };
 
   const handleBuzzerPress = () => {
     if (reminderSet) return;

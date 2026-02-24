@@ -32,6 +32,7 @@ import { useGameStore } from '../stores/gameStore';
 import { useUIStore } from '../stores/uiStore';
 import { Logo } from '../components/Logo';
 import { RegistrationCard } from '../components/RegistrationCard';
+import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
@@ -59,6 +60,12 @@ export default function Lobby() {
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [tempName, setTempName] = useState('');
   const [pendingGameToJoin, setPendingGameToJoin] = useState<Game | null>(null);
+  const [showExitPopup, setShowExitPopup] = useState(false);
+  const [registrationReminderSet, setRegistrationReminderSet] = useState<boolean>(() => {
+    // Check if reminder is already set for current registration card
+    // We'll update this when we load the registration card
+    return false;
+  });
 
   // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
@@ -233,9 +240,56 @@ export default function Lobby() {
     try {
       const card = await apiService.getActiveRegistrationCard();
       setCurrentRegistrationCard(card);
+
+      // Check if reminder is already set for this card
+      if (card) {
+        const key = `reminder_${card.id}`;
+        const registeredAtStr = localStorage.getItem(key);
+        if (registeredAtStr) {
+          const registeredAt = new Date(registeredAtStr);
+          const lastResetAt = new Date(card.lastResetAt);
+          setRegistrationReminderSet(registeredAt > lastResetAt);
+        }
+      }
     } catch (error) {
       console.error('Failed to load registration card:', error);
     }
+  };
+
+  // Exit intent popup - history manipulation for back button
+  useEffect(() => {
+    // Only set up if there's a registration card and reminder is not set
+    if (!currentRegistrationCard || registrationReminderSet) return;
+
+    // Push a dummy state to trap the back button
+    window.history.pushState({ exitIntent: true }, '');
+
+    const handlePopState = () => {
+      // Only show popup if reminder is not set
+      if (!registrationReminderSet && currentRegistrationCard) {
+        // Show the popup
+        setShowExitPopup(true);
+        // Push state again to keep trapping
+        window.history.pushState({ exitIntent: true }, '');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [currentRegistrationCard, registrationReminderSet]);
+
+  const handleExitPopupClose = () => {
+    setShowExitPopup(false);
+    // Go back to actually navigate away
+    window.history.back();
+  };
+
+  const handleExitPopupRegister = () => {
+    setRegistrationReminderSet(true);
+    // Popup will auto-close after success animation
   };
 
   const handleJoinGame = async (game: Game) => {
@@ -605,7 +659,11 @@ export default function Lobby() {
           {games.length === 0 ? (
             <VStack spacing={{ base: 4, md: 6 }} w="100%">
               {currentRegistrationCard && (
-                <RegistrationCard card={currentRegistrationCard} />
+                <RegistrationCard
+                  card={currentRegistrationCard}
+                  externalReminderSet={registrationReminderSet}
+                  onReminderChange={setRegistrationReminderSet}
+                />
               )}
 
               {currentBanner && (
@@ -848,7 +906,11 @@ export default function Lobby() {
 
         {/* Registration Card - shown when games exist */}
         {games.length > 0 && currentRegistrationCard && (
-          <RegistrationCard card={currentRegistrationCard} />
+          <RegistrationCard
+            card={currentRegistrationCard}
+            externalReminderSet={registrationReminderSet}
+            onReminderChange={setRegistrationReminderSet}
+          />
         )}
 
         {/* Promotional Banner - shown when games exist */}
@@ -1124,6 +1186,16 @@ export default function Lobby() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Exit Intent Popup */}
+      {currentRegistrationCard && (
+        <ExitIntentPopup
+          isOpen={showExitPopup}
+          cardId={currentRegistrationCard.id}
+          onClose={handleExitPopupClose}
+          onRegister={handleExitPopupRegister}
+        />
+      )}
     </Box>
   );
 }
