@@ -632,7 +632,7 @@ export default function Lobby() {
                   borderColor="brand.500"
                 >
                   <Image
-                    src={currentBanner.imageUrl.replace('http://', 'https://')}
+                    src={currentBanner.imageUrl.replace('http://', 'https://').replace('13.235.186.229:3000', 'api.tambola.me')}
                     alt="Promotional banner"
                     w="100%"
                     objectFit="contain"
@@ -874,7 +874,7 @@ export default function Lobby() {
               borderColor="brand.500"
             >
               <Image
-                src={currentBanner.imageUrl.replace('http://', 'https://')}
+                src={currentBanner.imageUrl.replace('http://', 'https://').replace('13.235.186.229:3000', 'api.tambola.me')}
                 alt="Promotional banner"
                 w="100%"
                 objectFit="contain"
