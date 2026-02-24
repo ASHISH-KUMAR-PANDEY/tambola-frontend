@@ -166,7 +166,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
         </Box>
       )}
 
-      <VStack spacing={{ base: 6, md: 8 }} align="stretch" w="100%">
+      <VStack spacing={{ base: 8, md: 10 }} align="stretch" w="100%">
         {/* Message - Primary Focus */}
         <Text
           fontSize={{ base: '2xl', md: '4xl' }}
@@ -198,9 +198,6 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             {timeRemaining.isExpired ? '⏱️ जल्द शुरू होगा' : countdownText}
           </Text>
         </Box>
-
-        {/* Spacer for more gap */}
-        <Box h={{ base: 4, md: 6 }} />
 
         {/* Circular Buzzer Button with Hand Gesture */}
         <Center position="relative">
@@ -270,9 +267,9 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             <VStack spacing={1} position="relative" zIndex={1} justify="center" h="100%">
               {reminderSet ? (
                 <>
-                  <Text fontSize={{ base: '3xl', md: '4xl' }} color="white">✓</Text>
+                  <Text fontSize={{ base: '4xl', md: '5xl' }} color="white">✓</Text>
                   <Text
-                    fontSize={{ base: 'md', md: 'lg' }}
+                    fontSize={{ base: 'lg', md: 'xl' }}
                     fontWeight="bold"
                     color="white"
                     textAlign="center"
@@ -284,12 +281,12 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
                 </>
               ) : (
                 <Text
-                  fontSize={{ base: 'xl', md: '2xl' }}
+                  fontSize={{ base: '2xl', md: '3xl' }}
                   fontWeight="extrabold"
                   color="white"
                   textAlign="center"
                   textShadow="0 2px 4px rgba(0,0,0,0.4)"
-                  lineHeight="1.3"
+                  lineHeight="1.2"
                 >
                   रजिस्टर<br />करें
                 </Text>
