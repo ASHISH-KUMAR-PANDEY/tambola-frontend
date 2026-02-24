@@ -5,15 +5,15 @@ import type { RegistrationCard as RegistrationCardType } from '../services/api.s
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { useState } from 'react';
 
-// Pulse animation for the buzzer
+// Faster pulse animation for the buzzer
 const buzzerPulse = keyframes`
   0%, 100% {
     box-shadow: 0 0 30px rgba(37, 141, 88, 0.6), 0 0 60px rgba(37, 141, 88, 0.4), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
   50% {
-    box-shadow: 0 0 50px rgba(37, 141, 88, 0.8), 0 0 100px rgba(37, 141, 88, 0.5), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
-    transform: translateY(-2px);
+    box-shadow: 0 0 50px rgba(37, 141, 88, 0.9), 0 0 100px rgba(37, 141, 88, 0.6), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
+    transform: translateY(-3px) scale(1.03);
   }
 `;
 
@@ -32,19 +32,29 @@ const buzzerPress = keyframes`
   }
 `;
 
+// Hand pointing animation
+const handPoint = keyframes`
+  0%, 100% {
+    transform: translate(-50%, 0) rotate(-15deg);
+  }
+  50% {
+    transform: translate(-50%, 10px) rotate(-15deg);
+  }
+`;
+
 // Confetti animations
 const confettiFall = keyframes`
   0% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0) rotate(0deg) scale(1);
     opacity: 1;
   }
   100% {
-    transform: translateY(400px) rotate(720deg);
+    transform: translateY(500px) rotate(1080deg) scale(0.5);
     opacity: 0;
   }
 `;
 
-const confettiColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+const confettiColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#FF69B4', '#00FF7F', '#FF4500', '#7B68EE'];
 
 interface RegistrationCardProps {
   card: RegistrationCardType;
@@ -100,14 +110,15 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
     setTimeout(() => setIsPressed(false), 300);
   };
 
-  // Generate confetti pieces
-  const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
+  // Generate more confetti pieces (100 instead of 50)
+  const confettiPieces = Array.from({ length: 100 }, (_, i) => ({
     id: i,
     left: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 1.5 + Math.random() * 1,
+    delay: Math.random() * 0.8,
+    duration: 1.5 + Math.random() * 1.5,
     color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
-    size: 8 + Math.random() * 8,
+    size: 6 + Math.random() * 12,
+    shape: Math.random() > 0.5 ? 'full' : Math.random() > 0.5 ? 'sm' : 'none',
   }));
 
   return (
@@ -146,9 +157,9 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
               top="-20px"
               left={`${piece.left}%`}
               w={`${piece.size}px`}
-              h={`${piece.size}px`}
+              h={piece.shape === 'none' ? `${piece.size * 0.4}px` : `${piece.size}px`}
               bg={piece.color}
-              borderRadius={Math.random() > 0.5 ? 'full' : 'sm'}
+              borderRadius={piece.shape === 'none' ? '1px' : piece.shape}
               animation={`${confettiFall} ${piece.duration}s ease-out ${piece.delay}s forwards`}
             />
           ))}
@@ -191,8 +202,24 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
         {/* Spacer for more gap */}
         <Box h={{ base: 4, md: 6 }} />
 
-        {/* Circular Buzzer Button */}
-        <Center>
+        {/* Circular Buzzer Button with Hand Gesture */}
+        <Center position="relative">
+          {/* Pointing Hand Gesture */}
+          {!reminderSet && (
+            <Box
+              position="absolute"
+              top={{ base: '-50px', md: '-60px' }}
+              left="50%"
+              fontSize={{ base: '40px', md: '50px' }}
+              animation={`${handPoint} 0.8s ease-in-out infinite`}
+              zIndex={5}
+              pointerEvents="none"
+              filter="drop-shadow(0 4px 8px rgba(0,0,0,0.3))"
+            >
+              👆
+            </Box>
+          )}
+
           <Box
             as="button"
             onClick={handleBuzzerPress}
@@ -208,7 +235,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             borderColor={reminderSet ? '#276749' : '#1a5c3a'}
             cursor={reminderSet ? 'default' : 'pointer'}
             position="relative"
-            animation={reminderSet || isPressed ? undefined : `${buzzerPulse} 2s ease-in-out infinite`}
+            animation={reminderSet || isPressed ? undefined : `${buzzerPulse} 0.8s ease-in-out infinite`}
             sx={isPressed ? {
               animation: `${buzzerPress} 0.3s ease-out`,
             } : {}}
@@ -239,7 +266,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             />
 
             {/* Button Text */}
-            <VStack spacing={1} position="relative" zIndex={1}>
+            <VStack spacing={1} position="relative" zIndex={1} justify="center" h="100%">
               {reminderSet ? (
                 <>
                   <Text fontSize={{ base: '3xl', md: '4xl' }} color="white">✓</Text>
@@ -251,32 +278,20 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
                     textShadow="0 2px 4px rgba(0,0,0,0.4)"
                     px={4}
                   >
-                    आप रजिस्टर्ड हैं
+                    Registered!
                   </Text>
                 </>
               ) : (
-                <>
-                  <Text
-                    fontSize={{ base: 'lg', md: 'xl' }}
-                    fontWeight="bold"
-                    color="white"
-                    textAlign="center"
-                    textShadow="0 2px 4px rgba(0,0,0,0.4)"
-                    px={4}
-                    lineHeight="1.2"
-                  >
-                    इस Sunday के लिए
-                  </Text>
-                  <Text
-                    fontSize={{ base: 'xl', md: '2xl' }}
-                    fontWeight="extrabold"
-                    color="white"
-                    textAlign="center"
-                    textShadow="0 2px 4px rgba(0,0,0,0.4)"
-                  >
-                    रजिस्टर करें
-                  </Text>
-                </>
+                <Text
+                  fontSize={{ base: 'xl', md: '2xl' }}
+                  fontWeight="extrabold"
+                  color="white"
+                  textAlign="center"
+                  textShadow="0 2px 4px rgba(0,0,0,0.4)"
+                  lineHeight="1.3"
+                >
+                  Register<br />Karein
+                </Text>
               )}
             </VStack>
           </Box>
