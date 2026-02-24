@@ -42,7 +42,7 @@ const handPoint = keyframes`
   }
 `;
 
-// Confetti animations
+// Confetti animations - falling from top
 const confettiFall = keyframes`
   0% {
     transform: translateY(0) rotate(0deg) scale(1);
@@ -50,6 +50,18 @@ const confettiFall = keyframes`
   }
   100% {
     transform: translateY(500px) rotate(1080deg) scale(0.5);
+    opacity: 0;
+  }
+`;
+
+// Confetti animations - rising from bottom
+const confettiRise = keyframes`
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-500px) rotate(-1080deg) scale(0.5);
     opacity: 0;
   }
 `;
@@ -110,16 +122,30 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
     setTimeout(() => setIsPressed(false), 300);
   };
 
-  // Generate more confetti pieces (100 instead of 50)
-  const confettiPieces = Array.from({ length: 100 }, (_, i) => ({
-    id: i,
+  // Generate confetti pieces from top (70) and bottom (50)
+  const confettiFromTop = Array.from({ length: 70 }, (_, i) => ({
+    id: `top-${i}`,
     left: Math.random() * 100,
     delay: Math.random() * 0.8,
     duration: 1.5 + Math.random() * 1.5,
     color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
     size: 6 + Math.random() * 12,
     shape: Math.random() > 0.5 ? 'full' : Math.random() > 0.5 ? 'sm' : 'none',
+    fromBottom: false,
   }));
+
+  const confettiFromBottom = Array.from({ length: 50 }, (_, i) => ({
+    id: `bottom-${i}`,
+    left: Math.random() * 100,
+    delay: Math.random() * 0.6,
+    duration: 1.5 + Math.random() * 1.5,
+    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+    size: 6 + Math.random() * 12,
+    shape: Math.random() > 0.5 ? 'full' : Math.random() > 0.5 ? 'sm' : 'none',
+    fromBottom: true,
+  }));
+
+  const confettiPieces = [...confettiFromTop, ...confettiFromBottom];
 
   return (
     <Box
@@ -154,13 +180,14 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             <Box
               key={piece.id}
               position="absolute"
-              top="-20px"
+              top={piece.fromBottom ? 'auto' : '-20px'}
+              bottom={piece.fromBottom ? '-20px' : 'auto'}
               left={`${piece.left}%`}
               w={`${piece.size}px`}
               h={piece.shape === 'none' ? `${piece.size * 0.4}px` : `${piece.size}px`}
               bg={piece.color}
               borderRadius={piece.shape === 'none' ? '1px' : piece.shape}
-              animation={`${confettiFall} ${piece.duration}s ease-out ${piece.delay}s forwards`}
+              animation={`${piece.fromBottom ? confettiRise : confettiFall} ${piece.duration}s ease-out ${piece.delay}s forwards`}
             />
           ))}
         </Box>
@@ -205,9 +232,9 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
           {!reminderSet && (
             <Box
               position="absolute"
-              bottom={{ base: '-10px', md: '-15px' }}
-              right={{ base: 'calc(50% - 120px)', md: 'calc(50% - 150px)' }}
-              fontSize={{ base: '45px', md: '55px' }}
+              bottom={{ base: '-15px', md: '-20px' }}
+              right={{ base: 'calc(50% - 130px)', md: 'calc(50% - 160px)' }}
+              fontSize={{ base: '55px', md: '70px' }}
               animation={`${handPoint} 1s ease-in-out infinite`}
               zIndex={15}
               pointerEvents="none"
@@ -267,9 +294,9 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             <VStack spacing={1} position="relative" zIndex={1} justify="center" h="100%">
               {reminderSet ? (
                 <>
-                  <Text fontSize={{ base: '4xl', md: '5xl' }} color="white">✓</Text>
+                  <Text fontSize={{ base: '5xl', md: '6xl' }} color="white">✓</Text>
                   <Text
-                    fontSize={{ base: 'lg', md: 'xl' }}
+                    fontSize={{ base: 'xl', md: '2xl' }}
                     fontWeight="bold"
                     color="white"
                     textAlign="center"
@@ -281,7 +308,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
                 </>
               ) : (
                 <Text
-                  fontSize={{ base: '2xl', md: '3xl' }}
+                  fontSize={{ base: '3xl', md: '4xl' }}
                   fontWeight="extrabold"
                   color="white"
                   textAlign="center"
