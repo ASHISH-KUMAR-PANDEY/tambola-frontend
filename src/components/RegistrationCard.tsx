@@ -1,30 +1,50 @@
-import { Box, Button, Text, VStack } from '@chakra-ui/react';
+import { Box, Text, VStack, Center } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import type { RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { useState } from 'react';
 
-// Pulse animation for the CTA button
-const pulseGlow = keyframes`
+// Pulse animation for the buzzer
+const buzzerPulse = keyframes`
   0%, 100% {
-    box-shadow: 0 0 20px rgba(37, 141, 88, 0.6), 0 0 40px rgba(37, 141, 88, 0.4), 0 0 60px rgba(37, 141, 88, 0.2);
-    transform: scale(1);
+    box-shadow: 0 0 30px rgba(37, 141, 88, 0.6), 0 0 60px rgba(37, 141, 88, 0.4), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
+    transform: translateY(0);
   }
   50% {
-    box-shadow: 0 0 30px rgba(37, 141, 88, 0.8), 0 0 60px rgba(37, 141, 88, 0.6), 0 0 90px rgba(37, 141, 88, 0.4);
-    transform: scale(1.02);
+    box-shadow: 0 0 50px rgba(37, 141, 88, 0.8), 0 0 100px rgba(37, 141, 88, 0.5), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
   }
 `;
 
-const shimmer = keyframes`
+const buzzerPress = keyframes`
   0% {
-    background-position: -200% center;
+    transform: translateY(0);
+    box-shadow: 0 8px 0 #1a5c3a, 0 0 30px rgba(37, 141, 88, 0.6);
+  }
+  50% {
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 #1a5c3a, 0 0 50px rgba(37, 141, 88, 1);
   }
   100% {
-    background-position: 200% center;
+    transform: translateY(0);
+    box-shadow: 0 8px 0 #1a5c3a, 0 0 30px rgba(37, 141, 88, 0.6);
   }
 `;
+
+// Confetti animations
+const confettiFall = keyframes`
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(400px) rotate(720deg);
+    opacity: 0;
+  }
+`;
+
+const confettiColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE'];
 
 interface RegistrationCardProps {
   card: RegistrationCardType;
@@ -34,58 +54,68 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
   const timeRemaining = useCountdown(card.targetDateTime);
   const countdownText = formatCountdown(timeRemaining);
   const { trackEvent } = useTambolaTracking();
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
   const [reminderSet, setReminderSet] = useState(() => {
-    // Check if reminder was already set AND if it's still valid (not reset by admin)
     const key = `reminder_${card.id}`;
     const registeredAtStr = localStorage.getItem(key);
-
     if (!registeredAtStr) return false;
-
-    // Compare user's registration timestamp with card's lastResetAt
     const registeredAt = new Date(registeredAtStr);
     const lastResetAt = new Date(card.lastResetAt);
-
-    // If admin reset after user registered, show register button again
     return registeredAt > lastResetAt;
   });
 
-  const handleSetReminder = () => {
-    if (reminderSet) return; // Already set, do nothing
+  const handleBuzzerPress = () => {
+    if (reminderSet) return;
 
-    // Get userId from localStorage (stored by AutoLogin after initial auth)
-    const rawUserId = localStorage.getItem('app_user_id');
-    const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
+    setIsPressed(true);
 
-    // Get player name from sessionStorage
-    const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
+    // Show confetti after press animation
+    setTimeout(() => {
+      setShowConfetti(true);
+      setReminderSet(true);
 
-    // Track event in RudderStack only if userId is valid
-    if (userId) {
-      trackEvent({
-        eventName: 'registration_reminder_set',
-        properties: {
-          card_id: card.id,
-          user_name: playerName,
-          target_date_time: card.targetDateTime,
-          message: card.message,
-          // user_id, timestamp, app_user_id, device_id, platform are auto-added by useTambolaTracking
-        },
-      });
-    }
+      // Track event
+      const rawUserId = localStorage.getItem('app_user_id');
+      const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
+      const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
 
-    // Mark reminder as set with current timestamp
-    setReminderSet(true);
-    const key = `reminder_${card.id}`;
-    const now = new Date().toISOString();
-    localStorage.setItem(key, now);
+      if (userId) {
+        trackEvent({
+          eventName: 'registration_reminder_set',
+          properties: {
+            card_id: card.id,
+            user_name: playerName,
+            target_date_time: card.targetDateTime,
+            message: card.message,
+          },
+        });
+      }
+
+      // Save to localStorage
+      const key = `reminder_${card.id}`;
+      localStorage.setItem(key, new Date().toISOString());
+    }, 300);
+
+    setTimeout(() => setIsPressed(false), 300);
   };
+
+  // Generate confetti pieces
+  const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 1.5 + Math.random() * 1,
+    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+    size: 8 + Math.random() * 8,
+  }));
 
   return (
     <Box
       w="100%"
       maxW={{ base: '100%', md: '800px', lg: '1000px' }}
       mx="auto"
-      minH={{ base: '45vh', md: '50vh' }}
+      minH={{ base: '75vh', md: '80vh' }}
       p={{ base: 6, md: 8 }}
       bg="grey.700"
       borderRadius="lg"
@@ -95,9 +125,38 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       display="flex"
       alignItems="center"
       justifyContent="center"
+      position="relative"
+      overflow="hidden"
     >
-      <VStack spacing={{ base: 5, md: 6 }} align="stretch" w="100%">
-        {/* Message - Primary Focus with multi-line support */}
+      {/* Confetti Animation */}
+      {showConfetti && (
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          pointerEvents="none"
+          zIndex={10}
+        >
+          {confettiPieces.map((piece) => (
+            <Box
+              key={piece.id}
+              position="absolute"
+              top="-20px"
+              left={`${piece.left}%`}
+              w={`${piece.size}px`}
+              h={`${piece.size}px`}
+              bg={piece.color}
+              borderRadius={Math.random() > 0.5 ? 'full' : 'sm'}
+              animation={`${confettiFall} ${piece.duration}s ease-out ${piece.delay}s forwards`}
+            />
+          ))}
+        </Box>
+      )}
+
+      <VStack spacing={{ base: 6, md: 8 }} align="stretch" w="100%">
+        {/* Message - Primary Focus */}
         <Text
           fontSize={{ base: '2xl', md: '4xl' }}
           fontWeight="bold"
@@ -109,7 +168,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
           {card.message}
         </Text>
 
-        {/* Countdown Timer - Prominent and highlighted */}
+        {/* Countdown Timer */}
         <Box
           py={{ base: 4, md: 5 }}
           px={{ base: 4, md: 6 }}
@@ -129,55 +188,99 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
           </Text>
         </Box>
 
-        {/* Set Reminder Button - Glamorous CTA */}
-        <Button
-          bg={reminderSet ? 'green.600' : 'linear-gradient(135deg, #258D58 0%, #1a6b42 50%, #258D58 100%)'}
-          color="white"
-          size="lg"
-          onClick={handleSetReminder}
-          isDisabled={reminderSet}
-          w="100%"
-          h={{ base: '60px', md: '70px' }}
-          fontWeight="bold"
-          fontSize={{ base: 'lg', md: 'xl' }}
-          leftIcon={reminderSet ? <Text fontSize="xl">✓</Text> : undefined}
-          animation={reminderSet ? undefined : `${pulseGlow} 2s ease-in-out infinite`}
-          position="relative"
-          overflow="hidden"
-          borderRadius="xl"
-          textShadow="0 2px 4px rgba(0,0,0,0.3)"
-          _before={reminderSet ? undefined : {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-            backgroundSize: '200% 100%',
-            animation: `${shimmer} 2s linear infinite`,
-          }}
-          _disabled={{
-            bg: 'green.600',
-            color: 'white',
-            opacity: 1,
-            cursor: 'default',
-            animation: 'none',
-            boxShadow: '0 0 15px rgba(56, 161, 105, 0.5)',
-          }}
-          _hover={reminderSet ? {
-            bg: 'green.600'
-          } : {
-            bg: 'linear-gradient(135deg, #2da366 0%, #1f7a4a 50%, #2da366 100%)',
-            transform: 'scale(1.03)',
-          }}
-          _active={{
-            transform: 'scale(0.98)',
-          }}
-          transition="all 0.2s ease-out"
-        >
-          {reminderSet ? 'आप रजिस्टर्ड हैं' : 'इस Sunday के लिए रजिस्टर करें'}
-        </Button>
+        {/* Spacer for more gap */}
+        <Box h={{ base: 4, md: 6 }} />
+
+        {/* Circular Buzzer Button */}
+        <Center>
+          <Box
+            as="button"
+            onClick={handleBuzzerPress}
+            disabled={reminderSet}
+            w={{ base: '180px', md: '220px' }}
+            h={{ base: '180px', md: '220px' }}
+            borderRadius="full"
+            bg={reminderSet
+              ? 'linear-gradient(180deg, #38A169 0%, #276749 100%)'
+              : 'linear-gradient(180deg, #38A169 0%, #258D58 50%, #1a6b42 100%)'
+            }
+            border="6px solid"
+            borderColor={reminderSet ? '#276749' : '#1a5c3a'}
+            cursor={reminderSet ? 'default' : 'pointer'}
+            position="relative"
+            animation={reminderSet || isPressed ? undefined : `${buzzerPulse} 2s ease-in-out infinite`}
+            sx={isPressed ? {
+              animation: `${buzzerPress} 0.3s ease-out`,
+            } : {}}
+            boxShadow={reminderSet
+              ? '0 4px 0 #1a5c3a, 0 0 30px rgba(56, 161, 105, 0.5), inset 0 -5px 15px rgba(0,0,0,0.2)'
+              : '0 8px 0 #1a5c3a, 0 0 30px rgba(37, 141, 88, 0.6), inset 0 -8px 20px rgba(0,0,0,0.3)'
+            }
+            transition="all 0.1s ease-out"
+            _hover={reminderSet ? {} : {
+              transform: 'scale(1.05)',
+              boxShadow: '0 10px 0 #1a5c3a, 0 0 50px rgba(37, 141, 88, 0.8), inset 0 -8px 20px rgba(0,0,0,0.3)',
+            }}
+            _active={reminderSet ? {} : {
+              transform: 'translateY(6px)',
+              boxShadow: '0 2px 0 #1a5c3a, 0 0 50px rgba(37, 141, 88, 1), inset 0 -8px 20px rgba(0,0,0,0.3)',
+            }}
+          >
+            {/* Inner circle highlight */}
+            <Box
+              position="absolute"
+              top="15%"
+              left="15%"
+              right="15%"
+              bottom="15%"
+              borderRadius="full"
+              bg="linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%)"
+              pointerEvents="none"
+            />
+
+            {/* Button Text */}
+            <VStack spacing={1} position="relative" zIndex={1}>
+              {reminderSet ? (
+                <>
+                  <Text fontSize={{ base: '3xl', md: '4xl' }} color="white">✓</Text>
+                  <Text
+                    fontSize={{ base: 'md', md: 'lg' }}
+                    fontWeight="bold"
+                    color="white"
+                    textAlign="center"
+                    textShadow="0 2px 4px rgba(0,0,0,0.4)"
+                    px={4}
+                  >
+                    आप रजिस्टर्ड हैं
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text
+                    fontSize={{ base: 'lg', md: 'xl' }}
+                    fontWeight="bold"
+                    color="white"
+                    textAlign="center"
+                    textShadow="0 2px 4px rgba(0,0,0,0.4)"
+                    px={4}
+                    lineHeight="1.2"
+                  >
+                    इस Sunday के लिए
+                  </Text>
+                  <Text
+                    fontSize={{ base: 'xl', md: '2xl' }}
+                    fontWeight="extrabold"
+                    color="white"
+                    textAlign="center"
+                    textShadow="0 2px 4px rgba(0,0,0,0.4)"
+                  >
+                    रजिस्टर करें
+                  </Text>
+                </>
+              )}
+            </VStack>
+          </Box>
+        </Center>
       </VStack>
     </Box>
   );
