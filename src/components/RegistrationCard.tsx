@@ -152,7 +152,8 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
       w="100%"
       maxW={{ base: '100%', md: '800px', lg: '1000px' }}
       mx="auto"
-      py={{ base: 8, md: 10 }}
+      minH={{ base: '60vh', md: '65vh' }}
+      py={{ base: 10, md: 12 }}
       px={{ base: 6, md: 8 }}
       bg="grey.700"
       borderRadius="lg"
@@ -296,15 +297,14 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
                 <>
                   <Text fontSize={{ base: '5xl', md: '6xl' }} color="white">✓</Text>
                   <Text
-                    fontSize={{ base: 'lg', md: 'xl' }}
+                    fontSize={{ base: 'md', md: 'lg' }}
                     fontWeight="bold"
                     color="white"
                     textAlign="center"
                     textShadow="0 2px 4px rgba(0,0,0,0.4)"
                     px={2}
-                    lineHeight="1.2"
                   >
-                    आप registered<br />हैं
+                    आप रजिस्टर्ड हैं
                   </Text>
                 </>
               ) : (
