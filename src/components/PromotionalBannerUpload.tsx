@@ -173,7 +173,7 @@ export function PromotionalBannerUpload({
             borderColor="grey.300"
           >
             <Image
-              src={currentBanner.imageUrl}
+              src={currentBanner.imageUrl.replace('http://', 'https://').replace('13.235.186.229:3000', 'api.tambola.me')}
               alt="Current promotional banner"
               w="100%"
               objectFit="cover"
