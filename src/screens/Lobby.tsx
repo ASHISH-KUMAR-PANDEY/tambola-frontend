@@ -105,21 +105,9 @@ export default function Lobby() {
     wsService.on({
       onConnected: () => {
         setConnected(true);
-        toast({
-          title: 'Connected',
-          description: 'Real-time connection established',
-          status: 'success',
-          duration: 3000,
-        });
       },
       onDisconnected: () => {
         setConnected(false);
-        toast({
-          title: 'Disconnected',
-          description: 'Connection lost. Reconnecting...',
-          status: 'warning',
-          duration: 3000,
-        });
       },
       onGameJoined: (data) => {
         setTicket(data.playerId, data.ticket, data.gameId);
