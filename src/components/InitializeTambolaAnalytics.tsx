@@ -26,15 +26,38 @@ const getOrCreateDeviceId = (): string => {
   return deviceId;
 };
 
-// Get app user ID from localStorage (set during auto-login from mobile app)
+// Get app user ID from localStorage OR URL params (fallback for first load)
 const getAppUserId = (): string | null => {
-  const rawAppUserId = localStorage.getItem('app_user_id');
   // Filter out invalid userId values
-  const invalidValues = ['lobby', 'login', 'signup', 'undefined', 'null'];
-  if (!rawAppUserId || invalidValues.includes(rawAppUserId.toLowerCase())) {
-    return null;
+  const invalidValues = ['lobby', 'login', 'signup', 'organizer', 'game', 'waiting-lobby', 'undefined', 'null', 'admin'];
+
+  const isValidUserId = (id: string | null): boolean => {
+    if (!id) return false;
+    if (invalidValues.includes(id.toLowerCase())) return false;
+    if (id.length < 10) return false; // Valid user IDs are longer
+    return true;
+  };
+
+  // First check localStorage
+  const storedUserId = localStorage.getItem('app_user_id');
+  if (isValidUserId(storedUserId)) {
+    return storedUserId;
   }
-  return rawAppUserId;
+
+  // Fallback: Check URL params (analytics fires before AutoLogin stores it)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlUserId = urlParams.get('userId');
+    if (isValidUserId(urlUserId)) {
+      // Also store it for future events
+      localStorage.setItem('app_user_id', urlUserId!);
+      return urlUserId;
+    }
+  } catch (e) {
+    // Ignore URL parsing errors
+  }
+
+  return null;
 };
 
 export const InitializeTambolaAnalytics = () => {
