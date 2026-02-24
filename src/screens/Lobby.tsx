@@ -632,7 +632,7 @@ export default function Lobby() {
                   borderColor="brand.500"
                 >
                   <Image
-                    src={currentBanner.imageUrl}
+                    src={currentBanner.imageUrl.replace('http://', 'https://')}
                     alt="Promotional banner"
                     w="100%"
                     objectFit="contain"
@@ -874,7 +874,7 @@ export default function Lobby() {
               borderColor="brand.500"
             >
               <Image
-                src={currentBanner.imageUrl}
+                src={currentBanner.imageUrl.replace('http://', 'https://')}
                 alt="Promotional banner"
                 w="100%"
                 objectFit="contain"
