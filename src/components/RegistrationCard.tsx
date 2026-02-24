@@ -204,17 +204,18 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
 
         {/* Circular Buzzer Button with Hand Gesture */}
         <Center position="relative">
-          {/* Pointing Hand Gesture */}
+          {/* Pointing Hand Gesture - bottom right of button */}
           {!reminderSet && (
             <Box
               position="absolute"
-              top={{ base: '-50px', md: '-60px' }}
-              left="50%"
-              fontSize={{ base: '40px', md: '50px' }}
-              animation={`${handPoint} 0.8s ease-in-out infinite`}
-              zIndex={5}
+              bottom={{ base: '-10px', md: '-15px' }}
+              right={{ base: 'calc(50% - 120px)', md: 'calc(50% - 150px)' }}
+              fontSize={{ base: '45px', md: '55px' }}
+              animation={`${handPoint} 1s ease-in-out infinite`}
+              zIndex={15}
               pointerEvents="none"
               filter="drop-shadow(0 4px 8px rgba(0,0,0,0.3))"
+              transform="rotate(30deg)"
             >
               👆
             </Box>
@@ -235,7 +236,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
             borderColor={reminderSet ? '#276749' : '#1a5c3a'}
             cursor={reminderSet ? 'default' : 'pointer'}
             position="relative"
-            animation={reminderSet || isPressed ? undefined : `${buzzerPulse} 0.8s ease-in-out infinite`}
+            animation={reminderSet || isPressed ? undefined : `${buzzerPulse} 1.2s ease-in-out infinite`}
             sx={isPressed ? {
               animation: `${buzzerPress} 0.3s ease-out`,
             } : {}}
@@ -278,7 +279,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
                     textShadow="0 2px 4px rgba(0,0,0,0.4)"
                     px={4}
                   >
-                    Registered!
+                    रजिस्टर्ड!
                   </Text>
                 </>
               ) : (
@@ -290,7 +291,7 @@ export function RegistrationCard({ card }: RegistrationCardProps) {
                   textShadow="0 2px 4px rgba(0,0,0,0.4)"
                   lineHeight="1.3"
                 >
-                  Register<br />Karein
+                  रजिस्टर<br />करें
                 </Text>
               )}
             </VStack>
