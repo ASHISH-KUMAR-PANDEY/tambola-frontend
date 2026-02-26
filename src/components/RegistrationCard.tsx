@@ -1,9 +1,46 @@
-import { Box, Text, VStack, Center } from '@chakra-ui/react';
+import { Box, Text, VStack, Center, HStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import type { RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+// Helper to generate fake ticket numbers
+const generateTicketStats = (cardId: string): { sold: number; left: number; lastVisit: number } => {
+  const storageKey = `ticket_stats_${cardId}`;
+  const stored = localStorage.getItem(storageKey);
+  const now = Date.now();
+
+  if (stored) {
+    const data = JSON.parse(stored);
+    const timeSinceLastVisit = now - data.lastVisit;
+    const hoursPassed = timeSinceLastVisit / (1000 * 60 * 60);
+
+    // Increase sold and decrease left based on time passed
+    // More aggressive changes for longer time gaps
+    const soldIncrease = Math.floor(Math.random() * 200 + 50 + hoursPassed * 30);
+    const leftDecrease = Math.floor(Math.random() * 30 + 10 + hoursPassed * 5);
+
+    const newSold = data.sold + soldIncrease;
+    const newLeft = Math.max(50 + Math.floor(Math.random() * 50), data.left - leftDecrease); // Never below ~50-100
+
+    const newData = { sold: newSold, left: newLeft, lastVisit: now };
+    localStorage.setItem(storageKey, JSON.stringify(newData));
+    return newData;
+  } else {
+    // First visit - generate initial numbers
+    const initialSold = 10000 + Math.floor(Math.random() * 5000); // 10,000 - 15,000
+    const initialLeft = 400 + Math.floor(Math.random() * 200); // 400 - 600
+    const newData = { sold: initialSold, left: initialLeft, lastVisit: now };
+    localStorage.setItem(storageKey, JSON.stringify(newData));
+    return newData;
+  }
+};
+
+// Format number with commas (Indian style)
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('en-IN');
+};
 
 // Faster pulse animation for the buzzer
 const buzzerPulse = keyframes`
@@ -81,6 +118,14 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
   const { trackEvent } = useTambolaTracking();
   const [showConfetti, setShowConfetti] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+
+  // Fake ticket scarcity stats
+  const [ticketStats, setTicketStats] = useState<{ sold: number; left: number }>({ sold: 0, left: 0 });
+
+  useEffect(() => {
+    const stats = generateTicketStats(card.id);
+    setTicketStats({ sold: stats.sold, left: stats.left });
+  }, [card.id]);
 
   // Use internal state if no external state is provided
   const [internalReminderSet, setInternalReminderSet] = useState(() => {
@@ -334,6 +379,34 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
             </VStack>
           </Box>
         </Center>
+
+        {/* Fake Ticket Scarcity Stats */}
+        <VStack spacing={2} pt={4}>
+          <HStack spacing={2} justify="center">
+            <Text fontSize={{ base: 'lg', md: 'xl' }} color="grey.300">
+              🎫
+            </Text>
+            <Text
+              fontSize={{ base: 'lg', md: 'xl' }}
+              fontWeight="bold"
+              color="white"
+            >
+              {formatNumber(ticketStats.sold)} टिकट बिक चुके
+            </Text>
+          </HStack>
+          <HStack spacing={2} justify="center">
+            <Text fontSize={{ base: 'lg', md: 'xl' }} color="orange.400">
+              ⚡
+            </Text>
+            <Text
+              fontSize={{ base: 'lg', md: 'xl' }}
+              fontWeight="bold"
+              color="orange.400"
+            >
+              केवल {formatNumber(ticketStats.left)} टिकट बचे!
+            </Text>
+          </HStack>
+        </VStack>
       </VStack>
     </Box>
   );
