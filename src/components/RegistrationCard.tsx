@@ -383,27 +383,27 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
         {/* Fake Ticket Scarcity Stats */}
         <VStack spacing={2} pt={4}>
           <HStack spacing={2} justify="center">
-            <Text fontSize={{ base: 'lg', md: 'xl' }} color="grey.300">
-              🎫
-            </Text>
-            <Text
-              fontSize={{ base: 'lg', md: 'xl' }}
-              fontWeight="bold"
-              color="white"
-            >
-              {formatNumber(ticketStats.sold)} टिकट बुक हो चुके हैं
-            </Text>
-          </HStack>
-          <HStack spacing={2} justify="center">
             <Text fontSize={{ base: 'lg', md: 'xl' }} color="orange.400">
               ⚡
             </Text>
             <Text
               fontSize={{ base: 'lg', md: 'xl' }}
               fontWeight="bold"
-              color="orange.400"
+              color="white"
             >
-              केवल {formatNumber(ticketStats.left)} टिकट बचे हैं
+              केवल <Text as="span" color="yellow.400">{formatNumber(ticketStats.left)}</Text> टिकट बचे हैं
+            </Text>
+          </HStack>
+          <HStack spacing={2} justify="center">
+            <Text fontSize={{ base: 'lg', md: 'xl' }} color="grey.300">
+              🎫
+            </Text>
+            <Text
+              fontSize={{ base: 'lg', md: 'xl' }}
+              fontWeight="bold"
+              color="grey.400"
+            >
+              {formatNumber(ticketStats.sold)} टिकट बुक हो चुके हैं
             </Text>
           </HStack>
         </VStack>
