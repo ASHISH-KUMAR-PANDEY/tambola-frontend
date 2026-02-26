@@ -391,7 +391,7 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
               fontWeight="bold"
               color="white"
             >
-              {formatNumber(ticketStats.sold)} टिकट बिक चुके
+              {formatNumber(ticketStats.sold)} टिकट बुक हो चुके हैं
             </Text>
           </HStack>
           <HStack spacing={2} justify="center">
@@ -403,7 +403,7 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
               fontWeight="bold"
               color="orange.400"
             >
-              केवल {formatNumber(ticketStats.left)} टिकट बचे!
+              केवल {formatNumber(ticketStats.left)} टिकट बचे हैं
             </Text>
           </HStack>
         </VStack>
