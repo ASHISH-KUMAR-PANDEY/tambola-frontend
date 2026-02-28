@@ -225,6 +225,17 @@ export default function Game() {
           totalCalled: calledNumbers.length + 1
         });
 
+        // Show toast when first number is called (game started)
+        if (calledNumbers.length === 0) {
+          toast({
+            title: 'गेम शुरू हो गया है!',
+            description: 'अपने टिकट पर नंबर मार्क करें और जीतें',
+            status: 'success',
+            duration: 4000,
+            isClosable: true,
+          });
+        }
+
         addCalledNumber(data.number);
       },
       onWinner: (data) => {
