@@ -685,19 +685,6 @@ export default function Game() {
           </Alert>
         )}
 
-        {/* Keep Screen On Warning */}
-        <Alert status="info" variant="solid" borderRadius="md">
-          <AlertIcon />
-          <VStack align="start" spacing={0} flex={1}>
-            <Text fontSize="sm" fontWeight="bold">
-              स्क्रीन जलाए रखें
-            </Text>
-            <Text fontSize="xs">
-              गेम के दौरान कनेक्शन बनाए रखने के लिए कृपया अपनी स्क्रीन ऑन रखें
-            </Text>
-          </VStack>
-        </Alert>
-
         {/* YouTube Live Stream */}
         {liveStream && (
           <Box w="100%" maxW="600px" mx="auto">
