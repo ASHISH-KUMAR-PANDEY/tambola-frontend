@@ -66,6 +66,10 @@ export default function Lobby() {
     // We'll update this when we load the registration card
     return false;
   });
+  const [isVipVerified, setIsVipVerified] = useState<boolean>(() => {
+    // Check if VIP status was already verified in this session
+    return localStorage.getItem('vip_verified') === 'true';
+  });
 
   // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
@@ -298,7 +302,34 @@ export default function Lobby() {
     console.log('[Lobby] Game Status:', game.status);
     console.log('[Lobby] playerName state:', playerName);
 
-    // Helper function to check if name is valid
+    // STEP 1: Check VIP status (only if not already verified)
+    if (!isVipVerified) {
+      console.log('[Lobby] Checking VIP status...');
+      try {
+        const isVIP = await apiService.checkVipStatus();
+        console.log('[Lobby] VIP status:', isVIP);
+        if (!isVIP) {
+          toast({
+            title: 'VIP सदस्यता आवश्यक',
+            description: 'आप STAGE के VIP member नहीं हैं',
+            status: 'warning',
+            duration: 5000,
+          });
+          return;
+        }
+        // Cache VIP status
+        setIsVipVerified(true);
+        localStorage.setItem('vip_verified', 'true');
+        console.log('[Lobby] VIP verified and cached');
+      } catch (error) {
+        console.error('[Lobby] VIP check failed:', error);
+        // Fail open - allow join on error
+      }
+    } else {
+      console.log('[Lobby] VIP already verified (cached)');
+    }
+
+    // STEP 2: Helper function to check if name is valid
     const isValidName = (name: string | null | undefined): boolean => {
       if (!name) return false;
       // Check if name matches default pattern

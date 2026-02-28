@@ -634,6 +634,14 @@ class ApiService {
       '/api/v1/vip-cohort/stats'
     );
   }
+
+  /**
+   * Check if current user is VIP
+   */
+  async checkVipStatus(): Promise<boolean> {
+    const response = await this.request<{ isVIP: boolean }>('/api/v1/vip-cohort/check');
+    return response.isVIP;
+  }
 }
 
 export interface PromotionalBanner {
