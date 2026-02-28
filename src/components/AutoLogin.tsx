@@ -148,15 +148,6 @@ export const AutoLogin = () => {
         // Store userId for analytics
         localStorage.setItem('app_user_id', userId);
 
-        // Validate user and get auth token (required for VIP check and other authenticated APIs)
-        try {
-          await apiService.validateUser(userId);
-          logToBackend('AUTH_TOKEN_OBTAINED', { userId });
-        } catch (error) {
-          logToBackend('AUTH_TOKEN_FAILED', { userId, error: String(error) });
-          // Continue anyway - some features may still work
-        }
-
         // Start WebSocket connection early (parallel with profile fetch)
         wsService.connect(userId);
 

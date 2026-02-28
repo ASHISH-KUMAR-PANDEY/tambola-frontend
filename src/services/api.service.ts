@@ -636,11 +636,20 @@ class ApiService {
   }
 
   /**
-   * Check if current user is VIP
+   * Check if user is VIP
+   * Uses userId from localStorage (no auth token required)
    */
   async checkVipStatus(): Promise<boolean> {
-    const response = await this.request<{ isVIP: boolean }>('/api/v1/vip-cohort/check');
-    return response.isVIP;
+    const userId = localStorage.getItem('app_user_id');
+    if (!userId) {
+      return false; // No userId means not VIP
+    }
+    const response = await fetch(`${API_URL}/api/v1/vip-cohort/check?userId=${encodeURIComponent(userId)}`);
+    if (!response.ok) {
+      return false;
+    }
+    const data = await response.json();
+    return data.isVIP;
   }
 }
 
