@@ -323,7 +323,14 @@ export default function Lobby() {
         console.log('[Lobby] VIP verified and cached');
       } catch (error) {
         console.error('[Lobby] VIP check failed:', error);
-        // Fail open - allow join on error
+        // Fail closed - block join on error (including auth failures)
+        toast({
+          title: 'VIP सदस्यता आवश्यक',
+          description: 'आप STAGE के VIP member नहीं हैं',
+          status: 'warning',
+          duration: 5000,
+        });
+        return;
       }
     } else {
       console.log('[Lobby] VIP already verified (cached)');
