@@ -76,12 +76,6 @@ export default function GameControl() {
       },
       onPlayerJoined: (data) => {
         setPlayers((prev) => [...prev, { playerId: data.playerId, userName: data.userName }]);
-        toast({
-          title: 'Player Joined',
-          description: `${data.userName} joined the game`,
-          status: 'info',
-          duration: 3000,
-        });
       },
       onNumberCalled: (data) => {
         setCalledNumbers((prev) => [...prev, data.number]);

@@ -199,12 +199,6 @@ export default function Game() {
         });
 
         addPlayer({ playerId: data.playerId, userName: data.userName });
-        toast({
-          title: 'खिलाड़ी शामिल हुए',
-          description: `${data.userName} गेम में शामिल हुए`,
-          status: 'info',
-          duration: 3000,
-        });
       },
       onGameStarted: () => {
         frontendLogger.playerAction('GAME_STARTED_EVENT', { gameId, playerId });
