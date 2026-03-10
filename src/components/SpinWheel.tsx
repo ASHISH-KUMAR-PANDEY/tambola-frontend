@@ -11,10 +11,10 @@ interface SpinWheelProps {
   onSpinComplete?: (number: number) => void;
 }
 
-// Two alternating aesthetic colors - Gold and Deep Purple
+// Two alternating aesthetic colors - Classic Red and Black
 const COLORS = [
-  '#D4AF37', // Gold
-  '#4A1A6B', // Deep Purple
+  '#E63946', // Vibrant Red
+  '#1D3557', // Dark Navy Blue
 ];
 
 export default function SpinWheel({
@@ -97,9 +97,9 @@ export default function SpinWheel({
         Z
       `;
 
-      // Calculate text position (middle of segment, 60% from center)
+      // Calculate text position (closer to edge, 82% from center for more space)
       const textAngle = (startAngle + segmentAngle / 2 - 90) * (Math.PI / 180);
-      const textRadius = radius * 0.65;
+      const textRadius = radius * 0.82;
       const textX = centerX + textRadius * Math.cos(textAngle);
       const textY = centerY + textRadius * Math.sin(textAngle);
 
@@ -124,12 +124,12 @@ export default function SpinWheel({
             x={textX}
             y={textY}
             fill="white"
-            fontSize={Math.max(10, Math.min(24, 400 / numbers.length))}
+            fontSize={Math.max(12, Math.min(28, size / numbers.length * 1.2))}
             fontWeight="bold"
             textAnchor="middle"
             dominantBaseline="middle"
             transform={`rotate(${textRotation}, ${textX}, ${textY})`}
-            style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
+            style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}
           >
             {num}
           </text>
@@ -185,15 +185,15 @@ export default function SpinWheel({
           cx={size / 2}
           cy={size / 2}
           r={size / 10}
-          fill="#1a1a2e"
-          stroke="#D4AF37"
+          fill="#0a0a0a"
+          stroke="#E63946"
           strokeWidth="4"
         />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={size / 16}
-          fill="#D4AF37"
+          fill="#E63946"
         />
       </svg>
 

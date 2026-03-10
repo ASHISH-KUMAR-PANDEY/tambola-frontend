@@ -1,6 +1,6 @@
 import { Box, Text, VStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SpinWheel from '../components/SpinWheel';
 import { wsService } from '../services/websocket.service';
@@ -13,8 +13,8 @@ const pulseKeyframes = keyframes`
 
 // Glow animation for the number display
 const glowKeyframes = keyframes`
-  0%, 100% { text-shadow: 0 0 20px rgba(212, 175, 55, 0.5), 0 0 40px rgba(212, 175, 55, 0.3); }
-  50% { text-shadow: 0 0 40px rgba(212, 175, 55, 0.8), 0 0 80px rgba(212, 175, 55, 0.5); }
+  0%, 100% { text-shadow: 0 0 20px rgba(230, 57, 70, 0.5), 0 0 40px rgba(230, 57, 70, 0.3); }
+  50% { text-shadow: 0 0 40px rgba(230, 57, 70, 0.8), 0 0 80px rgba(230, 57, 70, 0.5); }
 `;
 
 export default function WheelDisplay() {
@@ -29,16 +29,18 @@ export default function WheelDisplay() {
   const [targetNumber, setTargetNumber] = useState<number | null>(null);
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isRoomJoined, setIsRoomJoined] = useState(false);
   const [showNumber, setShowNumber] = useState(false);
   const [wheelSize, setWheelSize] = useState(600);
 
-  const socketListenersAdded = useRef(false);
+  const socketRef = useRef<any>(null);
+  const spinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Calculate wheel size based on viewport
   useEffect(() => {
     const updateSize = () => {
       const maxWidth = window.innerWidth * 0.85;
-      const maxHeight = window.innerHeight * 0.75;
+      const maxHeight = window.innerHeight * 0.70;
       setWheelSize(Math.min(maxWidth, maxHeight, 800));
     };
 
@@ -55,8 +57,47 @@ export default function WheelDisplay() {
     setRemainingNumbers(remaining);
   }, [calledNumbers]);
 
+  // Handle wheel spin event
+  const handleWheelSpin = useCallback((data: { targetNumber: number; spinDuration: number; gameId: string }) => {
+    console.log('[WheelDisplay] Received wheel:spin', data);
+
+    // Clear any existing timeout
+    if (spinTimeoutRef.current) {
+      clearTimeout(spinTimeoutRef.current);
+    }
+
+    setTargetNumber(data.targetNumber);
+    setIsSpinning(true);
+    setShowNumber(false);
+
+    // Show number after spin completes
+    spinTimeoutRef.current = setTimeout(() => {
+      setIsSpinning(false);
+      setLastCalledNumber(data.targetNumber);
+      setShowNumber(true);
+    }, data.spinDuration);
+  }, []);
+
+  // Handle wheel sync event
+  const handleWheelSync = useCallback((data: { calledNumbers: number[]; remainingNumbers: number[] }) => {
+    console.log('[WheelDisplay] Received wheel:sync', data);
+    setCalledNumbers(data.calledNumbers);
+    if (data.calledNumbers.length > 0) {
+      setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
+      setShowNumber(true);
+    }
+    setIsRoomJoined(true);
+  }, []);
+
   // Connect to WebSocket and setup listeners
   useEffect(() => {
+    if (!gameId) {
+      console.log('[WheelDisplay] No gameId provided');
+      return;
+    }
+
+    console.log('[WheelDisplay] Initializing for gameId:', gameId);
+
     // Connect with a special wheel-display user ID
     const wheelUserId = `wheel-display-${Date.now()}`;
     wsService.connect(wheelUserId);
@@ -66,11 +107,36 @@ export default function WheelDisplay() {
       onConnected: () => {
         console.log('[WheelDisplay] Connected to WebSocket');
         setIsConnected(true);
+
+        // Get raw socket and add wheel-specific listeners
+        const socket = (wsService as any).socket;
+        if (socket) {
+          socketRef.current = socket;
+
+          // Remove any existing listeners first
+          socket.off('wheel:spin');
+          socket.off('wheel:sync');
+
+          // Add wheel-specific listeners
+          socket.on('wheel:spin', handleWheelSpin);
+          socket.on('wheel:sync', handleWheelSync);
+
+          console.log('[WheelDisplay] Added wheel listeners, joining game room:', gameId);
+
+          // Join game room
+          wsService.joinGame(gameId, 'Wheel Display');
+
+          // Request sync after short delay to ensure room is joined
+          setTimeout(() => {
+            console.log('[WheelDisplay] Requesting wheel sync');
+            wsService.requestWheelSync(gameId);
+          }, 500);
+        }
       },
       onDisconnected: () => {
         console.log('[WheelDisplay] Disconnected from WebSocket');
         setIsConnected(false);
-        socketListenersAdded.current = false;
+        setIsRoomJoined(false);
       },
       onNumberCalled: (data) => {
         console.log('[WheelDisplay] Received game:numberCalled', data);
@@ -84,6 +150,7 @@ export default function WheelDisplay() {
       onStateSync: (data) => {
         console.log('[WheelDisplay] Received state sync', data);
         setCalledNumbers(data.calledNumbers);
+        setIsRoomJoined(true);
         if (data.calledNumbers.length > 0) {
           setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
           setShowNumber(true);
@@ -91,73 +158,42 @@ export default function WheelDisplay() {
       },
     });
 
-    // Poll for socket and add wheel-specific listeners
-    const addWheelListeners = () => {
-      const socket = (wsService as any).socket;
-      if (socket && !socketListenersAdded.current) {
-        console.log('[WheelDisplay] Adding wheel:spin listener');
-        socketListenersAdded.current = true;
-
-        socket.on('wheel:spin', (data: { targetNumber: number; spinDuration: number; gameId: string }) => {
-          console.log('[WheelDisplay] Received wheel:spin', data);
-          setTargetNumber(data.targetNumber);
-          setIsSpinning(true);
-          setShowNumber(false);
-
-          // Show number after spin completes
-          setTimeout(() => {
-            setIsSpinning(false);
-            setLastCalledNumber(data.targetNumber);
-            setShowNumber(true);
-          }, data.spinDuration);
-        });
-
-        socket.on('wheel:sync', (data: { calledNumbers: number[]; remainingNumbers: number[] }) => {
-          console.log('[WheelDisplay] Received wheel:sync', data);
-          setCalledNumbers(data.calledNumbers);
-          if (data.calledNumbers.length > 0) {
-            setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
-            setShowNumber(true);
-          }
-        });
-
-        // Join game room and request sync
-        if (gameId) {
-          console.log('[WheelDisplay] Joining game room:', gameId);
-          wsService.joinGame(gameId, 'Wheel Display');
-
-          // Request wheel sync after a short delay
-          setTimeout(() => {
-            console.log('[WheelDisplay] Requesting wheel sync');
-            wsService.requestWheelSync(gameId);
-          }, 500);
-        }
-      }
-    };
-
-    // Try immediately
-    addWheelListeners();
-
-    // Also poll in case socket isn't ready yet
-    const interval = setInterval(() => {
-      if (!socketListenersAdded.current) {
-        addWheelListeners();
-      } else {
-        clearInterval(interval);
-      }
-    }, 200);
-
     return () => {
-      clearInterval(interval);
-      const socket = (wsService as any).socket;
-      if (socket) {
-        socket.off('wheel:spin');
-        socket.off('wheel:sync');
+      console.log('[WheelDisplay] Cleanup');
+      if (spinTimeoutRef.current) {
+        clearTimeout(spinTimeoutRef.current);
+      }
+      if (socketRef.current) {
+        socketRef.current.off('wheel:spin');
+        socketRef.current.off('wheel:sync');
       }
       wsService.off();
       wsService.disconnect();
     };
-  }, [gameId]);
+  }, [gameId, handleWheelSpin, handleWheelSync]);
+
+  // Show error if no gameId
+  if (!gameId) {
+    return (
+      <Box
+        bg="#0d0d1a"
+        minH="100vh"
+        minW="100vw"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <VStack spacing={4}>
+          <Text color="red.400" fontSize="2xl" fontWeight="bold">
+            Missing Game ID
+          </Text>
+          <Text color="gray.400" fontSize="lg">
+            Please use URL: /wheel?gameId=YOUR_GAME_ID
+          </Text>
+        </VStack>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -183,11 +219,11 @@ export default function WheelDisplay() {
           w={3}
           h={3}
           borderRadius="full"
-          bg={isConnected ? 'green.500' : 'red.500'}
-          boxShadow={isConnected ? '0 0 10px green' : '0 0 10px red'}
+          bg={isRoomJoined ? 'green.500' : isConnected ? 'yellow.500' : 'red.500'}
+          boxShadow={isRoomJoined ? '0 0 10px green' : isConnected ? '0 0 10px yellow' : '0 0 10px red'}
         />
         <Text color="gray.500" fontSize="sm">
-          {isConnected ? 'Live' : 'Connecting...'}
+          {isRoomJoined ? 'Synced' : isConnected ? 'Connecting to game...' : 'Connecting...'}
         </Text>
       </Box>
 
@@ -207,11 +243,11 @@ export default function WheelDisplay() {
         {showNumber && lastCalledNumber && !isSpinning && (
           <Box
             animation={`${pulseKeyframes} 2s ease-in-out infinite`}
-            bg="linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)"
+            bg="linear-gradient(135deg, #E63946 0%, #B91C2C 100%)"
             borderRadius="full"
             px={{ base: 12, md: 20 }}
             py={{ base: 6, md: 10 }}
-            boxShadow="0 0 60px rgba(212, 175, 55, 0.6), inset 0 0 20px rgba(255,255,255,0.1)"
+            boxShadow="0 0 60px rgba(230, 57, 70, 0.6), inset 0 0 20px rgba(255,255,255,0.1)"
             border="4px solid rgba(255,255,255,0.2)"
           >
             <Text
@@ -237,7 +273,7 @@ export default function WheelDisplay() {
 
         {/* Spinning state */}
         {isSpinning && (
-          <Text color="#D4AF37" fontSize="2xl" fontWeight="bold">
+          <Text color="#E63946" fontSize="2xl" fontWeight="bold">
             Spinning...
           </Text>
         )}
