@@ -1,6 +1,6 @@
 import { Box, Text, VStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SpinWheel from '../components/SpinWheel';
 import { wsService } from '../services/websocket.service';
@@ -36,6 +36,17 @@ export default function WheelDisplay() {
 
   const socketRef = useRef<any>(null);
   const spinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSpinningRef = useRef(false);
+  const gameIdRef = useRef(gameId);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isSpinningRef.current = isSpinning;
+  }, [isSpinning]);
+
+  useEffect(() => {
+    gameIdRef.current = gameId;
+  }, [gameId]);
 
   // Calculate wheel size based on viewport
   useEffect(() => {
@@ -50,70 +61,6 @@ export default function WheelDisplay() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Handle wheel spin trigger from organizer
-  const handleWheelSpinTrigger = useCallback((data: {
-    gameId: string;
-    remainingNumbers: number[];
-  }) => {
-    console.log('[WheelDisplay] Received wheel:spin trigger', data);
-
-    if (isSpinning) {
-      console.log('[WheelDisplay] Already spinning, ignoring');
-      return;
-    }
-
-    // Clear any existing timeout
-    if (spinTimeoutRef.current) {
-      clearTimeout(spinTimeoutRef.current);
-    }
-
-    const numbers = data.remainingNumbers;
-    if (!numbers || numbers.length === 0) {
-      console.log('[WheelDisplay] No numbers to spin');
-      return;
-    }
-
-    // THIS wheel picks the random number
-    const randomIndex = Math.floor(Math.random() * numbers.length);
-    const selectedNumber = numbers[randomIndex];
-
-    console.log('[WheelDisplay] Selected number:', selectedNumber);
-
-    // Update state and start spinning
-    setRemainingNumbers(numbers);
-    setTargetNumber(selectedNumber);
-    setIsSpinning(true);
-    setShowNumber(false);
-
-    // After spin completes, emit result back to organizer
-    spinTimeoutRef.current = setTimeout(() => {
-      setIsSpinning(false);
-      setLastCalledNumber(selectedNumber);
-      setShowNumber(true);
-
-      // Remove the number from remaining
-      setRemainingNumbers(prev => prev.filter(n => n !== selectedNumber));
-
-      // Emit result back to game room (organizer will receive this)
-      console.log('[WheelDisplay] Emitting wheel:result', selectedNumber);
-      const socket = socketRef.current;
-      if (socket && gameId) {
-        socket.emit('wheel:result', { gameId, number: selectedNumber });
-      }
-    }, SPIN_DURATION);
-  }, [isSpinning, gameId]);
-
-  // Handle wheel sync event
-  const handleWheelSync = useCallback((data: { calledNumbers: number[]; remainingNumbers: number[] }) => {
-    console.log('[WheelDisplay] Received wheel:sync', data);
-    setRemainingNumbers(data.remainingNumbers);
-    if (data.calledNumbers.length > 0) {
-      setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
-      setShowNumber(true);
-    }
-    setIsRoomJoined(true);
-  }, []);
-
   // Connect to WebSocket and setup listeners
   useEffect(() => {
     if (!gameId) {
@@ -126,6 +73,70 @@ export default function WheelDisplay() {
     // Connect with a special wheel-display user ID
     const wheelUserId = `wheel-display-${Date.now()}`;
     wsService.connect(wheelUserId);
+
+    // Handle wheel spin trigger - defined here to use refs for stable closure
+    const handleWheelSpinTrigger = (data: { gameId: string; remainingNumbers: number[] }) => {
+      console.log('[WheelDisplay] Received wheel:spin trigger', data);
+
+      if (isSpinningRef.current) {
+        console.log('[WheelDisplay] Already spinning, ignoring');
+        return;
+      }
+
+      // Clear any existing timeout
+      if (spinTimeoutRef.current) {
+        clearTimeout(spinTimeoutRef.current);
+      }
+
+      const numbers = data.remainingNumbers;
+      if (!numbers || numbers.length === 0) {
+        console.log('[WheelDisplay] No numbers to spin');
+        return;
+      }
+
+      // THIS wheel picks the random number
+      const randomIndex = Math.floor(Math.random() * numbers.length);
+      const selectedNumber = numbers[randomIndex];
+
+      console.log('[WheelDisplay] Selected number:', selectedNumber);
+
+      // Update state and start spinning
+      setRemainingNumbers(numbers);
+      setTargetNumber(selectedNumber);
+      setIsSpinning(true);
+      setShowNumber(false);
+
+      // After spin completes, emit result back to organizer
+      spinTimeoutRef.current = setTimeout(() => {
+        setIsSpinning(false);
+        setLastCalledNumber(selectedNumber);
+        setShowNumber(true);
+
+        // Remove the number from remaining
+        setRemainingNumbers(prev => prev.filter(n => n !== selectedNumber));
+
+        // Emit result back to game room (organizer will receive this)
+        console.log('[WheelDisplay] Emitting wheel:result', selectedNumber);
+        const socket = socketRef.current;
+        const currentGameId = gameIdRef.current;
+        if (socket && currentGameId) {
+          socket.emit('wheel:result', { gameId: currentGameId, number: selectedNumber });
+        } else {
+          console.error('[WheelDisplay] Cannot emit result - socket or gameId missing', { socket: !!socket, gameId: currentGameId });
+        }
+      }, SPIN_DURATION);
+    };
+
+    // Handle wheel sync event
+    const handleWheelSync = (data: { calledNumbers: number[]; remainingNumbers: number[] }) => {
+      console.log('[WheelDisplay] Received wheel:sync', data);
+      setRemainingNumbers(data.remainingNumbers);
+      if (data.calledNumbers.length > 0) {
+        setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
+        setShowNumber(true);
+      }
+      setIsRoomJoined(true);
+    };
 
     // Setup standard event handlers
     wsService.on({
@@ -196,7 +207,7 @@ export default function WheelDisplay() {
       wsService.off();
       wsService.disconnect();
     };
-  }, [gameId, handleWheelSpinTrigger, handleWheelSync]);
+  }, [gameId]); // Only depend on gameId - handlers use refs for other state
 
   // Show error if no gameId
   if (!gameId) {
