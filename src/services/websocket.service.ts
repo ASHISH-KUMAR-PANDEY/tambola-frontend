@@ -404,6 +404,54 @@ class WebSocketService {
   }
 
   /**
+   * Emit wheel spin event (organizer only)
+   * Broadcasts to all clients in the game room including /wheel display
+   */
+  emitWheelSpin(gameId: string, targetNumber: number, spinDuration: number): void {
+    if (!this.socket?.connected) {
+      frontendLogger.error('WEBSOCKET_WHEEL_SPIN', new Error('WebSocket not connected'), {
+        gameId,
+        targetNumber,
+        spinDuration,
+        userId: this.userId
+      });
+      return;
+    }
+
+    frontendLogger.websocketEvent('wheel:spin', {
+      gameId,
+      targetNumber,
+      spinDuration,
+      userId: this.userId,
+      socketId: this.socket.id
+    });
+
+    this.socket.emit('wheel:spin', { gameId, targetNumber, spinDuration });
+  }
+
+  /**
+   * Request wheel sync (for /wheel display page)
+   * Gets current game state to sync the wheel
+   */
+  requestWheelSync(gameId: string): void {
+    if (!this.socket?.connected) {
+      frontendLogger.error('WEBSOCKET_WHEEL_SYNC', new Error('WebSocket not connected'), {
+        gameId,
+        userId: this.userId
+      });
+      return;
+    }
+
+    frontendLogger.websocketEvent('wheel:sync (request)', {
+      gameId,
+      userId: this.userId,
+      socketId: this.socket.id
+    });
+
+    this.socket.emit('wheel:requestSync', { gameId });
+  }
+
+  /**
    * Get connection status
    */
   isConnected(): boolean {

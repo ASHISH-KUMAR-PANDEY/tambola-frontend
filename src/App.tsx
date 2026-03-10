@@ -10,6 +10,7 @@ import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
 import BannerManagement from './screens/BannerManagement';
 import CohortManagement from './screens/CohortManagement';
+import WheelDisplay from './screens/WheelDisplay';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
 import { InactivityHandler } from './components/InactivityHandler';
@@ -39,6 +40,7 @@ export const App = () => {
           <Route path="/" element={<AutoLogin />} />
           <Route path="/flutter-auth" element={<FlutterAuth />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/wheel" element={<WheelDisplay />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route

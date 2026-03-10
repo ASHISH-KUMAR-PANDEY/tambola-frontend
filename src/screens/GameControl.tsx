@@ -13,6 +13,7 @@ import {
   useToast,
   NumberInput,
   NumberInputField,
+  Tooltip,
 } from '@chakra-ui/react';
 import { apiService } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
@@ -20,6 +21,7 @@ import { Logo } from '../components/Logo';
 import { GameSummaryModal } from '../components/GameSummaryModal';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { frontendLogger } from '../utils/logger';
+import SpinWheel from '../components/SpinWheel';
 
 interface Winner {
   playerId: string;
@@ -44,6 +46,13 @@ export default function GameControl() {
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
   const [isCallingNumber, setIsCallingNumber] = useState(false);
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
+
+  // Spin wheel state
+  const [isWheelSpinning, setIsWheelSpinning] = useState(false);
+  const [wheelTargetNumber, setWheelTargetNumber] = useState<number | null>(null);
+  const [remainingNumbers, setRemainingNumbers] = useState<number[]>(
+    Array.from({ length: 90 }, (_, i) => i + 1)
+  );
 
   // Track in-flight number calls to prevent duplicates
   const pendingNumberCalls = useRef<Set<number>>(new Set());
@@ -173,6 +182,48 @@ export default function GameControl() {
     console.log('[GameControl] RENDER - Winners count:', winners.length);
     console.log('[GameControl] RENDER - Winners:', JSON.stringify(winners));
   }, [winners]);
+
+  // Update remaining numbers when called numbers change
+  useEffect(() => {
+    const remaining = Array.from({ length: 90 }, (_, i) => i + 1).filter(
+      (n) => !calledNumbers.includes(n)
+    );
+    setRemainingNumbers(remaining);
+  }, [calledNumbers]);
+
+  // Handle spin wheel
+  const handleSpin = () => {
+    if (isWheelSpinning || isCallingNumber) return;
+
+    const uncalledNumbers = remainingNumbers.filter((n) => !calledNumbers.includes(n));
+    if (uncalledNumbers.length === 0) {
+      toast({
+        title: 'All Numbers Called',
+        description: 'No more numbers left to call!',
+        status: 'info',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Pick a random number
+    const randomIndex = Math.floor(Math.random() * uncalledNumbers.length);
+    const targetNumber = uncalledNumbers[randomIndex];
+
+    console.log('[GameControl] Spinning wheel, target:', targetNumber);
+
+    setIsWheelSpinning(true);
+    setWheelTargetNumber(targetNumber);
+
+    // Broadcast to /wheel viewers
+    wsService.emitWheelSpin(gameId!, targetNumber, 3000);
+
+    // After animation completes, fill the input
+    setTimeout(() => {
+      setIsWheelSpinning(false);
+      setNumberToCall(targetNumber.toString());
+    }, 3000);
+  };
 
   const loadGameData = async () => {
     frontendLogger.organizerLoadStart();
@@ -397,9 +448,54 @@ export default function GameControl() {
         </Box>
 
         <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6} maxW="1600px" w="100%" mx="auto">
-          {/* Left Column - Call Number & Grid */}
+          {/* Left Column - Wheel, Call Number & Grid */}
           <GridItem>
             <VStack align="stretch" spacing={6}>
+              {/* Spin Wheel Section */}
+              <Box p={6} bg="white" borderRadius="lg" boxShadow="md">
+                <HStack justify="space-between" mb={4}>
+                  <Heading size="md" color="grey.900">Spin Wheel</Heading>
+                  <Tooltip label="Open wheel in new tab for projection" hasArrow>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      colorScheme="brand"
+                      onClick={() => window.open(`/wheel?gameId=${gameId}`, '_blank')}
+                    >
+                      Open Full Screen
+                    </Button>
+                  </Tooltip>
+                </HStack>
+                <VStack spacing={4}>
+                  <Box display="flex" justifyContent="center">
+                    <SpinWheel
+                      numbers={remainingNumbers}
+                      isSpinning={isWheelSpinning}
+                      targetNumber={wheelTargetNumber}
+                      size={300}
+                      spinDuration={3000}
+                      onSpinComplete={(num) => {
+                        console.log('[GameControl] Wheel spin complete:', num);
+                      }}
+                    />
+                  </Box>
+                  <Button
+                    colorScheme="brand"
+                    size="lg"
+                    w="200px"
+                    onClick={handleSpin}
+                    isLoading={isWheelSpinning}
+                    loadingText="Spinning..."
+                    isDisabled={isWheelSpinning || isCallingNumber || remainingNumbers.length === 0}
+                  >
+                    🎯 SPIN
+                  </Button>
+                  <Text fontSize="sm" color="grey.500">
+                    {remainingNumbers.length} numbers remaining
+                  </Text>
+                </VStack>
+              </Box>
+
               {/* Call Number Section */}
               <Box p={6} bg="white" borderRadius="lg" boxShadow="md">
                 <Heading size="md" mb={4} color="grey.900">Call Number</Heading>
