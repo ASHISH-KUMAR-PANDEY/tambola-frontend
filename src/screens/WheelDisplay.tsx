@@ -35,9 +35,9 @@ export default function WheelDisplay() {
   const [wheelSize, setWheelSize] = useState(600);
 
   const socketRef = useRef<any>(null);
-  const spinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSpinningRef = useRef(false);
   const gameIdRef = useRef(gameId);
+  const pendingNumberRef = useRef<number | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -47,6 +47,31 @@ export default function WheelDisplay() {
   useEffect(() => {
     gameIdRef.current = gameId;
   }, [gameId]);
+
+  // Handle spin complete - called when SpinWheel animation actually finishes
+  const handleSpinComplete = (number: number) => {
+    console.log('[WheelDisplay] Spin complete, number:', number);
+
+    setIsSpinning(false);
+    setLastCalledNumber(number);
+    setShowNumber(true);
+
+    // Remove the number from remaining
+    setRemainingNumbers(prev => prev.filter(n => n !== number));
+
+    // Emit result back to game room (organizer will receive this)
+    console.log('[WheelDisplay] Emitting wheel:result', number);
+    const socket = socketRef.current;
+    const currentGameId = gameIdRef.current;
+    if (socket && currentGameId) {
+      socket.emit('wheel:result', { gameId: currentGameId, number });
+      console.log('[WheelDisplay] wheel:result emitted successfully');
+    } else {
+      console.error('[WheelDisplay] Cannot emit result - socket or gameId missing', { socket: !!socket, gameId: currentGameId });
+    }
+
+    pendingNumberRef.current = null;
+  };
 
   // Calculate wheel size based on viewport
   useEffect(() => {
@@ -83,11 +108,6 @@ export default function WheelDisplay() {
         return;
       }
 
-      // Clear any existing timeout
-      if (spinTimeoutRef.current) {
-        clearTimeout(spinTimeoutRef.current);
-      }
-
       const numbers = data.remainingNumbers;
       if (!numbers || numbers.length === 0) {
         console.log('[WheelDisplay] No numbers to spin');
@@ -100,31 +120,14 @@ export default function WheelDisplay() {
 
       console.log('[WheelDisplay] Selected number:', selectedNumber);
 
-      // Update state and start spinning
+      // Store the pending number for when spin completes
+      pendingNumberRef.current = selectedNumber;
+
+      // Update state and start spinning - SpinWheel will call onSpinComplete when done
       setRemainingNumbers(numbers);
       setTargetNumber(selectedNumber);
       setIsSpinning(true);
       setShowNumber(false);
-
-      // After spin completes, emit result back to organizer
-      spinTimeoutRef.current = setTimeout(() => {
-        setIsSpinning(false);
-        setLastCalledNumber(selectedNumber);
-        setShowNumber(true);
-
-        // Remove the number from remaining
-        setRemainingNumbers(prev => prev.filter(n => n !== selectedNumber));
-
-        // Emit result back to game room (organizer will receive this)
-        console.log('[WheelDisplay] Emitting wheel:result', selectedNumber);
-        const socket = socketRef.current;
-        const currentGameId = gameIdRef.current;
-        if (socket && currentGameId) {
-          socket.emit('wheel:result', { gameId: currentGameId, number: selectedNumber });
-        } else {
-          console.error('[WheelDisplay] Cannot emit result - socket or gameId missing', { socket: !!socket, gameId: currentGameId });
-        }
-      }, SPIN_DURATION);
     };
 
     // Handle wheel sync event
@@ -197,9 +200,6 @@ export default function WheelDisplay() {
 
     return () => {
       console.log('[WheelDisplay] Cleanup');
-      if (spinTimeoutRef.current) {
-        clearTimeout(spinTimeoutRef.current);
-      }
       if (socketRef.current) {
         socketRef.current.off('wheel:spin');
         socketRef.current.off('wheel:sync');
@@ -273,6 +273,7 @@ export default function WheelDisplay() {
             targetNumber={targetNumber}
             size={wheelSize}
             spinDuration={SPIN_DURATION}
+            onSpinComplete={handleSpinComplete}
           />
         </Box>
 
