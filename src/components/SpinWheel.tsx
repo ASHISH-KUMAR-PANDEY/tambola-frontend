@@ -11,16 +11,10 @@ interface SpinWheelProps {
   onSpinComplete?: (number: number) => void;
 }
 
-// Color palette for wheel segments
+// Two alternating aesthetic colors - Gold and Deep Purple
 const COLORS = [
-  '#258D58', // brand green
-  '#EFA73F', // highlight orange
-  '#E10D37', // accent red
-  '#3B82F6', // blue
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#14B8A6', // teal
-  '#F59E0B', // amber
+  '#D4AF37', // Gold
+  '#4A1A6B', // Deep Purple
 ];
 
 export default function SpinWheel({
@@ -186,26 +180,21 @@ export default function SpinWheel({
         {/* Segments */}
         {generateSegments()}
 
-        {/* Center circle */}
+        {/* Center circle - decorative only */}
         <circle
           cx={size / 2}
           cy={size / 2}
-          r={size / 8}
-          fill="#333"
-          stroke="#fff"
-          strokeWidth="3"
+          r={size / 10}
+          fill="#1a1a2e"
+          stroke="#D4AF37"
+          strokeWidth="4"
         />
-        <text
-          x={size / 2}
-          y={size / 2}
-          fill="white"
-          fontSize="14"
-          fontWeight="bold"
-          textAnchor="middle"
-          dominantBaseline="middle"
-        >
-          {numbers.length}
-        </text>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={size / 16}
+          fill="#D4AF37"
+        />
       </svg>
 
       {/* Spinning overlay */}
