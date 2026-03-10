@@ -27,6 +27,7 @@ export default function WheelDisplay() {
   const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [targetNumber, setTargetNumber] = useState<number | null>(null);
+  const [syncRotation, setSyncRotation] = useState<number | null>(null);
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isRoomJoined, setIsRoomJoined] = useState(false);
@@ -66,18 +67,17 @@ export default function WheelDisplay() {
     spinDuration: number;
     gameId: string;
     remainingNumbers: number[];
+    rotation: number;
   }) => {
     console.log('[WheelDisplay] Received wheel:spin', data);
-    console.log('[WheelDisplay] remainingNumbers count:', data.remainingNumbers?.length);
-    console.log('[WheelDisplay] targetNumber:', data.targetNumber);
+    console.log('[WheelDisplay] rotation:', data.rotation);
 
     // Clear any existing timeout
     if (spinTimeoutRef.current) {
       clearTimeout(spinTimeoutRef.current);
     }
 
-    // IMPORTANT: Store synced numbers in ref AND state
-    // The ref is used immediately for the spin, state is for React re-render
+    // Sync numbers from organizer
     if (data.remainingNumbers && data.remainingNumbers.length > 0) {
       syncedNumbersRef.current = data.remainingNumbers;
       setRemainingNumbers(data.remainingNumbers);
@@ -85,20 +85,20 @@ export default function WheelDisplay() {
 
     setShowNumber(false);
 
-    // Use requestAnimationFrame to ensure state is settled before starting spin
-    requestAnimationFrame(() => {
-      setTargetNumber(data.targetNumber);
-      setIsSpinning(true);
+    // Set the exact rotation from organizer for perfect sync
+    setSyncRotation(data.rotation);
+    setTargetNumber(data.targetNumber);
+    setIsSpinning(true);
 
-      // Show number after spin completes
-      spinTimeoutRef.current = setTimeout(() => {
-        setIsSpinning(false);
-        setLastCalledNumber(data.targetNumber);
-        setShowNumber(true);
-        // Remove the called number from remaining after spin completes
-        setRemainingNumbers(prev => prev.filter(n => n !== data.targetNumber));
-      }, data.spinDuration);
-    });
+    // Show number after spin completes
+    spinTimeoutRef.current = setTimeout(() => {
+      setIsSpinning(false);
+      setLastCalledNumber(data.targetNumber);
+      setShowNumber(true);
+      setSyncRotation(null); // Reset for next spin
+      // Remove the called number from remaining after spin completes
+      setRemainingNumbers(prev => prev.filter(n => n !== data.targetNumber));
+    }, data.spinDuration);
   }, []);
 
   // Handle wheel sync event
@@ -259,6 +259,7 @@ export default function WheelDisplay() {
             targetNumber={targetNumber}
             size={wheelSize}
             spinDuration={3000}
+            syncRotation={syncRotation}
           />
         </Box>
 

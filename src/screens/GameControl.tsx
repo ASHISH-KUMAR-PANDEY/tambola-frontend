@@ -191,6 +191,9 @@ export default function GameControl() {
     setRemainingNumbers(remaining);
   }, [calledNumbers]);
 
+  // Track wheel rotation for sync
+  const wheelRotationRef = useRef(0);
+
   // Handle spin wheel
   const handleSpin = () => {
     if (isWheelSpinning || isCallingNumber) return;
@@ -210,13 +213,22 @@ export default function GameControl() {
     const randomIndex = Math.floor(Math.random() * uncalledNumbers.length);
     const targetNumber = uncalledNumbers[randomIndex];
 
-    console.log('[GameControl] Spinning wheel, target:', targetNumber);
+    // Calculate the rotation (same logic as SpinWheel component)
+    const segmentAngle = 360 / uncalledNumbers.length;
+    const targetIndex = uncalledNumbers.indexOf(targetNumber);
+    const segmentMiddle = targetIndex * segmentAngle + segmentAngle / 2;
+    const targetRotationAngle = 270 - segmentMiddle;
+    const fullRotations = 5 * 360;
+    const newRotation = wheelRotationRef.current + fullRotations + (targetRotationAngle - (wheelRotationRef.current % 360) + 360) % 360;
+    wheelRotationRef.current = newRotation;
+
+    console.log('[GameControl] Spinning wheel, target:', targetNumber, 'rotation:', newRotation);
 
     setIsWheelSpinning(true);
     setWheelTargetNumber(targetNumber);
 
-    // Broadcast to /wheel viewers with the current remaining numbers for sync
-    wsService.emitWheelSpin(gameId!, targetNumber, 3000, uncalledNumbers);
+    // Broadcast to /wheel viewers with rotation for exact sync
+    wsService.emitWheelSpin(gameId!, targetNumber, 3000, uncalledNumbers, newRotation);
 
     // After animation completes, fill the input
     setTimeout(() => {

@@ -8,7 +8,9 @@ interface SpinWheelProps {
   spinDuration?: number;
   size?: number;
   disabled?: boolean;
-  onSpinComplete?: (number: number) => void;
+  onSpinComplete?: (number: number, finalRotation: number) => void;
+  // When provided, use this exact rotation instead of calculating
+  syncRotation?: number | null;
 }
 
 // Two alternating aesthetic colors - Classic Red and Black
@@ -24,6 +26,7 @@ export default function SpinWheel({
   spinDuration = 3000,
   size = 400,
   onSpinComplete,
+  syncRotation,
 }: SpinWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -39,30 +42,38 @@ export default function SpinWheel({
       prevTargetRef.current = targetNumber;
       setIsAnimating(true);
 
-      const targetIndex = numbers.indexOf(targetNumber);
-      if (targetIndex === -1) return;
+      let newRotation: number;
 
-      // Calculate rotation to land on target
-      // Pointer is at top (12 o'clock), segments are drawn clockwise from right (3 o'clock)
-      // So we need to rotate the wheel so the target segment aligns with the top
-      const segmentMiddle = targetIndex * segmentAngle + segmentAngle / 2;
-      // We want this segment to end up at 270° (top of wheel, since 0° is right)
-      const targetRotation = 270 - segmentMiddle;
-      // Add multiple full rotations for effect
-      const fullRotations = 5 * 360;
-      const newRotation = rotation + fullRotations + (targetRotation - (rotation % 360) + 360) % 360;
+      // If syncRotation is provided, use it directly (for /wheel display sync)
+      if (syncRotation !== null && syncRotation !== undefined) {
+        newRotation = syncRotation;
+      } else {
+        // Calculate rotation locally (for organizer's wheel)
+        const targetIndex = numbers.indexOf(targetNumber);
+        if (targetIndex === -1) return;
+
+        // Calculate rotation to land on target
+        // Pointer is at top (12 o'clock), segments are drawn clockwise from right (3 o'clock)
+        // So we need to rotate the wheel so the target segment aligns with the top
+        const segmentMiddle = targetIndex * segmentAngle + segmentAngle / 2;
+        // We want this segment to end up at 270° (top of wheel, since 0° is right)
+        const targetRotationAngle = 270 - segmentMiddle;
+        // Add multiple full rotations for effect
+        const fullRotations = 5 * 360;
+        newRotation = rotation + fullRotations + (targetRotationAngle - (rotation % 360) + 360) % 360;
+      }
 
       setRotation(newRotation);
 
       // Call onSpinComplete after animation
       const timer = setTimeout(() => {
         setIsAnimating(false);
-        onSpinComplete?.(targetNumber);
+        onSpinComplete?.(targetNumber, newRotation);
       }, spinDuration);
 
       return () => clearTimeout(timer);
     }
-  }, [isSpinning, targetNumber, numbers, segmentAngle, spinDuration, onSpinComplete, rotation]);
+  }, [isSpinning, targetNumber, numbers, segmentAngle, spinDuration, onSpinComplete, rotation, syncRotation]);
 
   // Generate SVG paths for segments
   const generateSegments = () => {
