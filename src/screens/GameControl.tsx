@@ -21,7 +21,6 @@ import { Logo } from '../components/Logo';
 import { GameSummaryModal } from '../components/GameSummaryModal';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { frontendLogger } from '../utils/logger';
-import SpinWheel from '../components/SpinWheel';
 
 interface Winner {
   playerId: string;
@@ -47,9 +46,9 @@ export default function GameControl() {
   const [isCallingNumber, setIsCallingNumber] = useState(false);
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
 
-  // Spin wheel state
+  // Spin wheel state (wheel is on /wheel page, we just trigger it)
   const [isWheelSpinning, setIsWheelSpinning] = useState(false);
-  const [wheelTargetNumber, setWheelTargetNumber] = useState<number | null>(null);
+  const [spinResultNumber, setSpinResultNumber] = useState<number | null>(null);
   const [remainingNumbers, setRemainingNumbers] = useState<number[]>(
     Array.from({ length: 90 }, (_, i) => i + 1)
   );
@@ -169,9 +168,42 @@ export default function GameControl() {
       },
     });
 
+    // Listen for wheel:result from /wheel page
+    const handleWheelResult = (data: { number: number; gameId: string }) => {
+      console.log('[GameControl] Received wheel:result', data);
+      if (data.gameId === gameId) {
+        setIsWheelSpinning(false);
+        setSpinResultNumber(data.number);
+        setNumberToCall(data.number.toString());
+      }
+    };
+
+    // Poll for socket to be ready
+    const addWheelListener = () => {
+      const sock = (wsService as any).socket;
+      if (sock) {
+        sock.off('wheel:result'); // Remove any existing listener
+        sock.on('wheel:result', handleWheelResult);
+        return true;
+      }
+      return false;
+    };
+
+    if (!addWheelListener()) {
+      const interval = setInterval(() => {
+        if (addWheelListener()) {
+          clearInterval(interval);
+        }
+      }, 200);
+    }
+
     return () => {
       if (gameId) {
         wsService.leaveGame(gameId);
+      }
+      const sock = (wsService as any).socket;
+      if (sock) {
+        sock.off('wheel:result');
       }
       wsService.off();
     };
@@ -191,10 +223,7 @@ export default function GameControl() {
     setRemainingNumbers(remaining);
   }, [calledNumbers]);
 
-  // Track wheel rotation for sync
-  const wheelRotationRef = useRef(0);
-
-  // Handle spin wheel
+  // Handle spin wheel - triggers the wheel on /wheel page
   const handleSpin = () => {
     if (isWheelSpinning || isCallingNumber) return;
 
@@ -209,32 +238,12 @@ export default function GameControl() {
       return;
     }
 
-    // Pick a random number
-    const randomIndex = Math.floor(Math.random() * uncalledNumbers.length);
-    const targetNumber = uncalledNumbers[randomIndex];
-
-    // Calculate the rotation (same logic as SpinWheel component)
-    const segmentAngle = 360 / uncalledNumbers.length;
-    const targetIndex = uncalledNumbers.indexOf(targetNumber);
-    const segmentMiddle = targetIndex * segmentAngle + segmentAngle / 2;
-    const targetRotationAngle = 270 - segmentMiddle;
-    const fullRotations = 5 * 360;
-    const newRotation = wheelRotationRef.current + fullRotations + (targetRotationAngle - (wheelRotationRef.current % 360) + 360) % 360;
-    wheelRotationRef.current = newRotation;
-
-    console.log('[GameControl] Spinning wheel, target:', targetNumber, 'rotation:', newRotation);
-
+    console.log('[GameControl] Triggering wheel spin');
     setIsWheelSpinning(true);
-    setWheelTargetNumber(targetNumber);
+    setSpinResultNumber(null);
 
-    // Broadcast to /wheel viewers with rotation for exact sync
-    wsService.emitWheelSpin(gameId!, targetNumber, 3000, uncalledNumbers, newRotation);
-
-    // After animation completes, fill the input
-    setTimeout(() => {
-      setIsWheelSpinning(false);
-      setNumberToCall(targetNumber.toString());
-    }, 3000);
+    // Tell /wheel page to spin with the remaining numbers
+    wsService.emitWheelSpin(gameId!, uncalledNumbers);
   };
 
   const loadGameData = async () => {
@@ -479,18 +488,32 @@ export default function GameControl() {
                   </Tooltip>
                 </HStack>
                 <VStack spacing={4}>
-                  <Box display="flex" justifyContent="center">
-                    <SpinWheel
-                      numbers={remainingNumbers}
-                      isSpinning={isWheelSpinning}
-                      targetNumber={wheelTargetNumber}
-                      size={300}
-                      spinDuration={3000}
-                      onSpinComplete={(num) => {
-                        console.log('[GameControl] Wheel spin complete:', num);
-                      }}
-                    />
-                  </Box>
+                  {/* Show spin result number */}
+                  {spinResultNumber && !isWheelSpinning && (
+                    <Box
+                      p={6}
+                      bg="linear-gradient(135deg, #E63946 0%, #B91C2C 100%)"
+                      borderRadius="xl"
+                      boxShadow="0 0 30px rgba(230, 57, 70, 0.4)"
+                    >
+                      <Text
+                        fontSize="6xl"
+                        fontWeight="bold"
+                        color="white"
+                        textAlign="center"
+                        lineHeight="1"
+                      >
+                        {spinResultNumber}
+                      </Text>
+                    </Box>
+                  )}
+                  {isWheelSpinning && (
+                    <Box p={6}>
+                      <Text fontSize="2xl" color="brand.500" fontWeight="bold">
+                        Spinning...
+                      </Text>
+                    </Box>
+                  )}
                   <Button
                     colorScheme="brand"
                     size="lg"
@@ -500,10 +523,13 @@ export default function GameControl() {
                     loadingText="Spinning..."
                     isDisabled={isWheelSpinning || isCallingNumber || remainingNumbers.length === 0}
                   >
-                    🎯 SPIN
+                    SPIN WHEEL
                   </Button>
                   <Text fontSize="sm" color="grey.500">
                     {remainingNumbers.length} numbers remaining
+                  </Text>
+                  <Text fontSize="xs" color="grey.400">
+                    Open the full screen wheel for projection
                   </Text>
                 </VStack>
               </Box>

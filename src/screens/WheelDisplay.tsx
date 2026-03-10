@@ -17,6 +17,8 @@ const glowKeyframes = keyframes`
   50% { text-shadow: 0 0 40px rgba(230, 57, 70, 0.8), 0 0 80px rgba(230, 57, 70, 0.5); }
 `;
 
+const SPIN_DURATION = 3000;
+
 export default function WheelDisplay() {
   const [searchParams] = useSearchParams();
   const gameId = searchParams.get('gameId');
@@ -24,10 +26,8 @@ export default function WheelDisplay() {
   const [remainingNumbers, setRemainingNumbers] = useState<number[]>(
     Array.from({ length: 90 }, (_, i) => i + 1)
   );
-  const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [targetNumber, setTargetNumber] = useState<number | null>(null);
-  const [syncRotation, setSyncRotation] = useState<number | null>(null);
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isRoomJoined, setIsRoomJoined] = useState(false);
@@ -50,61 +50,63 @@ export default function WheelDisplay() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Update remaining numbers when called numbers change
-  useEffect(() => {
-    const remaining = Array.from({ length: 90 }, (_, i) => i + 1).filter(
-      (n) => !calledNumbers.includes(n)
-    );
-    setRemainingNumbers(remaining);
-  }, [calledNumbers]);
-
-  // Ref to store synced numbers for the current spin (avoids React state timing issues)
-  const syncedNumbersRef = useRef<number[]>([]);
-
-  // Handle wheel spin event
-  const handleWheelSpin = useCallback((data: {
-    targetNumber: number;
-    spinDuration: number;
+  // Handle wheel spin trigger from organizer
+  const handleWheelSpinTrigger = useCallback((data: {
     gameId: string;
     remainingNumbers: number[];
-    rotation: number;
   }) => {
-    console.log('[WheelDisplay] Received wheel:spin', data);
-    console.log('[WheelDisplay] rotation:', data.rotation);
+    console.log('[WheelDisplay] Received wheel:spin trigger', data);
+
+    if (isSpinning) {
+      console.log('[WheelDisplay] Already spinning, ignoring');
+      return;
+    }
 
     // Clear any existing timeout
     if (spinTimeoutRef.current) {
       clearTimeout(spinTimeoutRef.current);
     }
 
-    // Sync numbers from organizer
-    if (data.remainingNumbers && data.remainingNumbers.length > 0) {
-      syncedNumbersRef.current = data.remainingNumbers;
-      setRemainingNumbers(data.remainingNumbers);
+    const numbers = data.remainingNumbers;
+    if (!numbers || numbers.length === 0) {
+      console.log('[WheelDisplay] No numbers to spin');
+      return;
     }
 
+    // THIS wheel picks the random number
+    const randomIndex = Math.floor(Math.random() * numbers.length);
+    const selectedNumber = numbers[randomIndex];
+
+    console.log('[WheelDisplay] Selected number:', selectedNumber);
+
+    // Update state and start spinning
+    setRemainingNumbers(numbers);
+    setTargetNumber(selectedNumber);
+    setIsSpinning(true);
     setShowNumber(false);
 
-    // Set the exact rotation from organizer for perfect sync
-    setSyncRotation(data.rotation);
-    setTargetNumber(data.targetNumber);
-    setIsSpinning(true);
-
-    // Show number after spin completes
+    // After spin completes, emit result back to organizer
     spinTimeoutRef.current = setTimeout(() => {
       setIsSpinning(false);
-      setLastCalledNumber(data.targetNumber);
+      setLastCalledNumber(selectedNumber);
       setShowNumber(true);
-      setSyncRotation(null); // Reset for next spin
-      // Remove the called number from remaining after spin completes
-      setRemainingNumbers(prev => prev.filter(n => n !== data.targetNumber));
-    }, data.spinDuration);
-  }, []);
+
+      // Remove the number from remaining
+      setRemainingNumbers(prev => prev.filter(n => n !== selectedNumber));
+
+      // Emit result back to game room (organizer will receive this)
+      console.log('[WheelDisplay] Emitting wheel:result', selectedNumber);
+      const socket = socketRef.current;
+      if (socket && gameId) {
+        socket.emit('wheel:result', { gameId, number: selectedNumber });
+      }
+    }, SPIN_DURATION);
+  }, [isSpinning, gameId]);
 
   // Handle wheel sync event
   const handleWheelSync = useCallback((data: { calledNumbers: number[]; remainingNumbers: number[] }) => {
     console.log('[WheelDisplay] Received wheel:sync', data);
-    setCalledNumbers(data.calledNumbers);
+    setRemainingNumbers(data.remainingNumbers);
     if (data.calledNumbers.length > 0) {
       setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
       setShowNumber(true);
@@ -141,7 +143,7 @@ export default function WheelDisplay() {
           socket.off('wheel:sync');
 
           // Add wheel-specific listeners
-          socket.on('wheel:spin', handleWheelSpin);
+          socket.on('wheel:spin', handleWheelSpinTrigger);
           socket.on('wheel:sync', handleWheelSync);
 
           console.log('[WheelDisplay] Added wheel listeners, joining game room:', gameId);
@@ -163,16 +165,17 @@ export default function WheelDisplay() {
       },
       onNumberCalled: (data) => {
         console.log('[WheelDisplay] Received game:numberCalled', data);
-        setCalledNumbers((prev) => {
-          if (prev.includes(data.number)) return prev;
-          return [...prev, data.number];
-        });
+        // Update remaining numbers when a number is called
+        setRemainingNumbers(prev => prev.filter(n => n !== data.number));
         setLastCalledNumber(data.number);
         setShowNumber(true);
       },
       onStateSync: (data) => {
         console.log('[WheelDisplay] Received state sync', data);
-        setCalledNumbers(data.calledNumbers);
+        const remaining = Array.from({ length: 90 }, (_, i) => i + 1).filter(
+          (n) => !data.calledNumbers.includes(n)
+        );
+        setRemainingNumbers(remaining);
         setIsRoomJoined(true);
         if (data.calledNumbers.length > 0) {
           setLastCalledNumber(data.calledNumbers[data.calledNumbers.length - 1]);
@@ -193,7 +196,7 @@ export default function WheelDisplay() {
       wsService.off();
       wsService.disconnect();
     };
-  }, [gameId, handleWheelSpin, handleWheelSync]);
+  }, [gameId, handleWheelSpinTrigger, handleWheelSync]);
 
   // Show error if no gameId
   if (!gameId) {
@@ -246,20 +249,19 @@ export default function WheelDisplay() {
           boxShadow={isRoomJoined ? '0 0 10px green' : isConnected ? '0 0 10px yellow' : '0 0 10px red'}
         />
         <Text color="gray.500" fontSize="sm">
-          {isRoomJoined ? 'Synced' : isConnected ? 'Connecting to game...' : 'Connecting...'}
+          {isRoomJoined ? 'Ready' : isConnected ? 'Connecting to game...' : 'Connecting...'}
         </Text>
       </Box>
 
       <VStack spacing={6}>
-        {/* Wheel - Much bigger now */}
+        {/* Wheel */}
         <Box position="relative">
           <SpinWheel
             numbers={remainingNumbers}
             isSpinning={isSpinning}
             targetNumber={targetNumber}
             size={wheelSize}
-            spinDuration={3000}
-            syncRotation={syncRotation}
+            spinDuration={SPIN_DURATION}
           />
         </Box>
 

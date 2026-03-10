@@ -404,16 +404,15 @@ class WebSocketService {
   }
 
   /**
-   * Emit wheel spin event (organizer only)
-   * Broadcasts to all clients in the game room including /wheel display
-   * Includes remainingNumbers array and rotation for exact sync between wheels
+   * Emit wheel spin trigger (organizer only)
+   * Tells the /wheel display to spin and pick a number from remaining numbers
+   * The /wheel display will emit wheel:result back with the selected number
    */
-  emitWheelSpin(gameId: string, targetNumber: number, spinDuration: number, remainingNumbers: number[], rotation: number): void {
+  emitWheelSpin(gameId: string, remainingNumbers: number[]): void {
     if (!this.socket?.connected) {
       frontendLogger.error('WEBSOCKET_WHEEL_SPIN', new Error('WebSocket not connected'), {
         gameId,
-        targetNumber,
-        spinDuration,
+        remainingCount: remainingNumbers.length,
         userId: this.userId
       });
       return;
@@ -421,15 +420,12 @@ class WebSocketService {
 
     frontendLogger.websocketEvent('wheel:spin', {
       gameId,
-      targetNumber,
-      spinDuration,
       remainingCount: remainingNumbers.length,
-      rotation,
       userId: this.userId,
       socketId: this.socket.id
     });
 
-    this.socket.emit('wheel:spin', { gameId, targetNumber, spinDuration, remainingNumbers, rotation });
+    this.socket.emit('wheel:spin', { gameId, remainingNumbers });
   }
 
   /**
