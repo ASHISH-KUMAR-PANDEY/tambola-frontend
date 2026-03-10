@@ -58,12 +58,22 @@ export default function WheelDisplay() {
   }, [calledNumbers]);
 
   // Handle wheel spin event
-  const handleWheelSpin = useCallback((data: { targetNumber: number; spinDuration: number; gameId: string }) => {
+  const handleWheelSpin = useCallback((data: {
+    targetNumber: number;
+    spinDuration: number;
+    gameId: string;
+    remainingNumbers: number[];
+  }) => {
     console.log('[WheelDisplay] Received wheel:spin', data);
 
     // Clear any existing timeout
     if (spinTimeoutRef.current) {
       clearTimeout(spinTimeoutRef.current);
+    }
+
+    // IMPORTANT: Sync the remaining numbers from organizer to ensure wheel alignment
+    if (data.remainingNumbers && data.remainingNumbers.length > 0) {
+      setRemainingNumbers(data.remainingNumbers);
     }
 
     setTargetNumber(data.targetNumber);
@@ -75,6 +85,8 @@ export default function WheelDisplay() {
       setIsSpinning(false);
       setLastCalledNumber(data.targetNumber);
       setShowNumber(true);
+      // Remove the called number from remaining after spin completes
+      setRemainingNumbers(prev => prev.filter(n => n !== data.targetNumber));
     }, data.spinDuration);
   }, []);
 

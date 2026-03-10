@@ -215,8 +215,8 @@ export default function GameControl() {
     setIsWheelSpinning(true);
     setWheelTargetNumber(targetNumber);
 
-    // Broadcast to /wheel viewers
-    wsService.emitWheelSpin(gameId!, targetNumber, 3000);
+    // Broadcast to /wheel viewers with the current remaining numbers for sync
+    wsService.emitWheelSpin(gameId!, targetNumber, 3000, uncalledNumbers);
 
     // After animation completes, fill the input
     setTimeout(() => {
