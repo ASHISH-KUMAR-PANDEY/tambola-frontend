@@ -9,8 +9,6 @@ interface SpinWheelProps {
   size?: number;
   disabled?: boolean;
   onSpinComplete?: (number: number, finalRotation: number) => void;
-  // When provided, use this exact rotation instead of calculating
-  syncRotation?: number | null;
 }
 
 // Two alternating aesthetic colors - Classic Red and Black
@@ -26,7 +24,6 @@ export default function SpinWheel({
   spinDuration = 3000,
   size = 400,
   onSpinComplete,
-  syncRotation,
 }: SpinWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -38,34 +35,31 @@ export default function SpinWheel({
 
   // Handle spin animation
   useEffect(() => {
-    if (isSpinning && targetNumber !== null && targetNumber !== prevTargetRef.current) {
+    const prevTarget = prevTargetRef.current;
+    
+    if (isSpinning && targetNumber !== null && targetNumber !== prevTarget) {
+      // Update ref FIRST to prevent duplicate triggers
       prevTargetRef.current = targetNumber;
+      
+      // If number not found in array, still call onSpinComplete but skip animation
+      if (numbers.indexOf(targetNumber) === -1) {
+        console.warn('[SpinWheel] Target number not found in numbers array:', targetNumber);
+        onSpinComplete?.(targetNumber, rotation);
+        return;
+      }
+
       setIsAnimating(true);
 
-      let newRotation: number;
-
-      // If syncRotation is provided, use it directly (for /wheel display sync)
-      if (syncRotation !== null && syncRotation !== undefined) {
-        newRotation = syncRotation;
-      } else {
-        // Calculate rotation locally (for organizer's wheel)
-        const targetIndex = numbers.indexOf(targetNumber);
-        if (targetIndex === -1) {
-          console.warn('[SpinWheel] Target number not found in numbers array:', targetNumber, numbers);
-          onSpinComplete?.(targetNumber, rotation);
-          return;
-        }
-
-        // Calculate rotation to land on target
-        // Pointer is at top (12 o'clock), segments are drawn clockwise from right (3 o'clock)
-        // So we need to rotate the wheel so the target segment aligns with the top
-        const segmentMiddle = targetIndex * segmentAngle + segmentAngle / 2;
-        // We want this segment to end up at 270° (top of wheel, since 0° is right)
-        const targetRotationAngle = 270 - segmentMiddle;
-        // Add multiple full rotations for effect
-        const fullRotations = 5 * 360;
-        newRotation = rotation + fullRotations + (targetRotationAngle - (rotation % 360) + 360) % 360;
-      }
+      // Calculate rotation to land on target
+      // Pointer is at top (12 o'clock), segments are drawn clockwise from right (3 o'clock)
+      // So we need to rotate the wheel so the target segment aligns with the top
+      const targetIndex = numbers.indexOf(targetNumber);
+      const segmentMiddle = targetIndex * segmentAngle + segmentAngle / 2;
+      // We want this segment to end up at 270° (top of wheel, since 0° is right)
+      const targetRotationAngle = 270 - segmentMiddle;
+      // Add multiple full rotations for effect
+      const fullRotations = 5 * 360;
+      const newRotation = rotation + fullRotations + (targetRotationAngle - (rotation % 360) + 360) % 360;
 
       setRotation(newRotation);
 
@@ -77,7 +71,7 @@ export default function SpinWheel({
 
       return () => clearTimeout(timer);
     }
-  }, [isSpinning, targetNumber, numbers, segmentAngle, spinDuration, onSpinComplete, rotation, syncRotation]);
+  }, [isSpinning, targetNumber, numbers, segmentAngle, spinDuration, onSpinComplete, rotation]);
 
   // Generate SVG paths for segments
   const generateSegments = () => {
