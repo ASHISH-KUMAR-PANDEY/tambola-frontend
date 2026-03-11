@@ -50,7 +50,11 @@ export default function SpinWheel({
       } else {
         // Calculate rotation locally (for organizer's wheel)
         const targetIndex = numbers.indexOf(targetNumber);
-        if (targetIndex === -1) return;
+        if (targetIndex === -1) {
+          console.warn('[SpinWheel] Target number not found in numbers array:', targetNumber, numbers);
+          onSpinComplete?.(targetNumber, rotation);
+          return;
+        }
 
         // Calculate rotation to land on target
         // Pointer is at top (12 o'clock), segments are drawn clockwise from right (3 o'clock)
