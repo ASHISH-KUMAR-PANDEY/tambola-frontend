@@ -209,7 +209,7 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
       w="100%"
       maxW={{ base: '100%', md: '800px', lg: '1000px' }}
       mx="auto"
-      minH={{ base: '60vh', md: '65vh' }}
+      minH={{ base: '45vh', md: '50vh' }}
       py={{ base: 10, md: 12 }}
       px={{ base: 6, md: 8 }}
       bg="grey.700"

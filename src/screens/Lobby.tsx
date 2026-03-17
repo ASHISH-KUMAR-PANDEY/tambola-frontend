@@ -32,6 +32,7 @@ import { useGameStore } from '../stores/gameStore';
 import { useUIStore } from '../stores/uiStore';
 import { Logo } from '../components/Logo';
 import { RegistrationCard } from '../components/RegistrationCard';
+import { SoloGameCTA } from '../components/solo/SoloGameCTA';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
@@ -739,6 +740,8 @@ export default function Lobby() {
                 />
               )}
 
+              <SoloGameCTA />
+
               {currentBanner && (
                 <Box
                   w="100%"
@@ -985,6 +988,9 @@ export default function Lobby() {
             onReminderChange={setRegistrationReminderSet}
           />
         )}
+
+        {/* Solo Game CTA - shown when games exist */}
+        {games.length > 0 && <SoloGameCTA />}
 
         {/* Promotional Banner - shown when games exist */}
         {games.length > 0 && currentBanner && (

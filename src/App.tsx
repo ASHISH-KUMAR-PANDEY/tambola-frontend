@@ -8,6 +8,8 @@ import Lobby from './screens/Lobby';
 import Game from './screens/Game';
 import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
+import SoloGame from './screens/SoloGame';
+import SoloManagement from './screens/SoloManagement';
 import BannerManagement from './screens/BannerManagement';
 import CohortManagement from './screens/CohortManagement';
 import WheelDisplay from './screens/WheelDisplay';
@@ -60,6 +62,14 @@ export const App = () => {
             }
           />
           <Route
+            path="/soloGame"
+            element={
+              <ProtectedRoute>
+                <SoloGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/organizer"
             element={
               <OrganizerRoute>
@@ -88,6 +98,14 @@ export const App = () => {
             element={
               <OrganizerRoute>
                 <GameControl />
+              </OrganizerRoute>
+            }
+          />
+          <Route
+            path="/solo-management"
+            element={
+              <OrganizerRoute>
+                <SoloManagement />
               </OrganizerRoute>
             }
           />

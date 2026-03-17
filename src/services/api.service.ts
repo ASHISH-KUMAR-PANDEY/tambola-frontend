@@ -651,6 +651,76 @@ class ApiService {
     const data = await response.json();
     return data.isVIP;
   }
+
+  // ========== Solo Game API ==========
+
+  async getSoloCurrentWeek(): Promise<SoloWeekResponse> {
+    return this.request<SoloWeekResponse>('/api/v1/solo/current-week');
+  }
+
+  async startSoloGame(): Promise<StartSoloGameResponse> {
+    return this.request<StartSoloGameResponse>('/api/v1/solo/start-game', {
+      method: 'POST',
+    });
+  }
+
+  async claimSoloCategory(data: {
+    soloGameId: string;
+    category: string;
+    currentNumberIndex: number;
+  }): Promise<SoloClaimResponse> {
+    return this.request<SoloClaimResponse>('/api/v1/solo/claim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMySoloGame(): Promise<MySoloGameResponse> {
+    return this.request<MySoloGameResponse>('/api/v1/solo/my-game');
+  }
+
+  async getSoloLeaderboard(weekId?: string): Promise<SoloLeaderboardResponse> {
+    const query = weekId ? `?weekId=${weekId}` : '';
+    return this.request<SoloLeaderboardResponse>(`/api/v1/solo/leaderboard${query}`);
+  }
+
+  async updateSoloProgress(data: {
+    soloGameId: string;
+    currentIndex: number;
+    markedNumbers: number[];
+  }): Promise<void> {
+    await this.request('/api/v1/solo/update-progress', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeSoloGame(data: {
+    soloGameId: string;
+    markedNumbers: number[];
+  }): Promise<void> {
+    await this.request('/api/v1/solo/complete-game', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ========== Solo Week Configuration (Organizer) ==========
+
+  async configureSoloWeek(data: {
+    videoUrl: string;
+    numberSequence: number[];
+    numberTimestamps: number[];
+  }): Promise<ConfigureSoloWeekResponse> {
+    return this.request<ConfigureSoloWeekResponse>('/api/v1/solo/configure-week', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSoloWeekConfig(): Promise<SoloWeekConfigResponse> {
+    return this.request<SoloWeekConfigResponse>('/api/v1/solo/week-config');
+  }
 }
 
 export interface PromotionalBanner {
@@ -682,6 +752,129 @@ export interface RegistrationCard {
   isActive: boolean;
   lastResetAt: string;
   createdAt: string;
+}
+
+// Solo Game Types
+export interface SoloWeekResponse {
+  week: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: 'ACTIVE' | 'FINALIZED';
+    finalizedAt?: string;
+    videoUrl?: string;
+    videoId?: string;
+    isConfigured?: boolean;
+  };
+  stats: { playerCount: number };
+  userStatus: { hasPlayed: boolean; gameStatus: string | null };
+  flags: { isSoloGameDay: boolean; isSunday: boolean };
+}
+
+export interface StartSoloGameResponse {
+  soloGameId: string;
+  weekId: string;
+  ticket: number[][];
+  numberSequence: number[];
+  status: string;
+  videoUrl: string | null;
+  videoId: string | null;
+  numberTimestamps: number[];
+}
+
+export interface SoloClaimResponse {
+  claim: {
+    id: string;
+    category: string;
+    numberCountAtClaim: number;
+    claimedAt: string;
+  };
+  gameComplete: boolean;
+}
+
+export interface MySoloGameResponse {
+  game: {
+    id: string;
+    weekId: string;
+    ticket: number[][];
+    numberSequence: number[];
+    markedNumbers: number[];
+    currentIndex: number;
+    status: 'IN_PROGRESS' | 'COMPLETED';
+    startedAt: string;
+    completedAt?: string;
+    claims: Array<{
+      id: string;
+      category: string;
+      numberCountAtClaim: number;
+      claimedAt: string;
+    }>;
+  } | null;
+  videoUrl?: string;
+  videoId?: string;
+  numberTimestamps?: number[];
+  isConfigured?: boolean;
+  canPlay: boolean;
+  isSunday: boolean;
+  currentWeek: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: string;
+  };
+}
+
+export interface SoloLeaderboardEntry {
+  category: string;
+  userId: string;
+  userName: string | null;
+  numberCountAtClaim: number;
+  claimedAt: string;
+  isFinalized: boolean;
+}
+
+export interface SoloLeaderboardResponse {
+  week: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: string;
+    finalizedAt?: string;
+  };
+  leaderboard: SoloLeaderboardEntry[];
+  playerCount?: number;
+}
+
+export interface ConfigureSoloWeekResponse {
+  success: boolean;
+  week: {
+    id: string;
+    videoUrl: string;
+    videoId: string;
+    numberSequence: number[];
+    numberTimestamps: number[];
+    configuredAt: string;
+  };
+}
+
+export interface SoloWeekConfigResponse {
+  week: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: string;
+    videoUrl: string | null;
+    videoId: string | null;
+    numberSequence: number[];
+    numberTimestamps: number[];
+    videoStartTime: number | null;
+    numberInterval: number | null;
+    configuredAt: string | null;
+    configuredBy: string | null;
+  };
+  gameCount: number;
+  isConfigured: boolean;
+  canReconfigure: boolean;
 }
 
 // Export singleton instance

@@ -106,6 +106,18 @@ export default function Organizer() {
         </Box>
 
         <Box maxW="600px" w="100%" mx="auto">
+          {/* Solo Week Setup Button */}
+          <Button
+            colorScheme="highlight"
+            variant="outline"
+            onClick={() => navigate('/solo-management')}
+            size="md"
+            w="100%"
+            mb={4}
+          >
+            Solo Week Setup
+          </Button>
+
           <Box
             p={{ base: 4, md: 6 }}
             bg="white"
