@@ -1,4 +1,4 @@
-import { Box, Button, Text, HStack } from '@chakra-ui/react';
+import { Box, Text, VStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -37,68 +37,89 @@ export function SoloGameCTA() {
   const isConfigured = data.week.isConfigured !== false;
   const hasPlayed = userStatus.hasPlayed;
 
-  // Determine button label, gradient, and pulse
-  let label = 'अभी खेलो';
-  let bgGradient = 'linear(to-r, highlight.500, highlight.700)';
-  let hoverBg = 'linear(to-r, highlight.600, highlight.800)';
+  let label = 'अभी खेलें';
+  let cardBg = 'highlight.500';
+  let btnBg = 'highlight.700';
+  let btnHoverBg = 'highlight.800';
   let shouldPulse = true;
 
   if (isSunday) {
     label = 'टिकट देखो';
-    bgGradient = 'linear(to-r, grey.600, grey.700)';
-    hoverBg = 'linear(to-r, grey.500, grey.600)';
+    cardBg = 'grey.600';
+    btnBg = 'grey.700';
+    btnHoverBg = 'grey.800';
     shouldPulse = false;
   } else if (isCompleted) {
     label = 'टिकट देखो';
-    bgGradient = 'linear(to-r, grey.600, grey.700)';
-    hoverBg = 'linear(to-r, grey.500, grey.600)';
+    cardBg = 'grey.600';
+    btnBg = 'grey.700';
+    btnHoverBg = 'grey.800';
     shouldPulse = false;
   } else if (isInProgress) {
-    label = 'जारी रखो';
-    bgGradient = 'linear(to-r, brand.500, brand.700)';
-    hoverBg = 'linear(to-r, brand.600, brand.800)';
+    label = 'जारी रखें';
+    cardBg = 'brand.500';
+    btnBg = 'brand.700';
+    btnHoverBg = 'brand.800';
   } else if (!isConfigured) {
     label = 'जल्द आ रहा है';
-    bgGradient = 'linear(to-r, grey.600, grey.700)';
-    hoverBg = 'linear(to-r, grey.500, grey.600)';
+    cardBg = 'grey.600';
+    btnBg = 'grey.700';
+    btnHoverBg = 'grey.800';
     shouldPulse = false;
   }
+
+  const isDisabled = !isConfigured && !isSunday && !hasPlayed;
 
   return (
     <Box
       w="100%"
       maxW={{ base: '100%', md: '800px', lg: '1000px' }}
       mx="auto"
+      cursor={isDisabled ? 'not-allowed' : 'pointer'}
+      onClick={() => !isDisabled && navigate('/soloGame')}
+      animation={shouldPulse ? `${pulseGlow} 3s ease-in-out infinite` : undefined}
+      borderRadius="xl"
+      overflow="hidden"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      opacity={isDisabled ? 0.5 : 1}
+      _hover={!isDisabled ? { transform: 'scale(1.01)', transition: 'transform 0.2s' } : undefined}
+      _active={!isDisabled ? { transform: 'scale(0.98)' } : undefined}
+      transition="transform 0.2s"
     >
-      <Button
-        w="100%"
-        h={{ base: '58px', md: '62px' }}
-        bgGradient={bgGradient}
-        color="white"
-        fontSize={{ base: 'md', md: 'lg' }}
-        fontWeight="bold"
-        borderRadius="xl"
-        border="1px solid"
-        borderColor="whiteAlpha.200"
-        onClick={() => navigate('/soloGame')}
-        isDisabled={!isConfigured && !isSunday && !hasPlayed}
-        animation={shouldPulse ? `${pulseGlow} 3s ease-in-out infinite` : undefined}
-        _hover={{ bgGradient: hoverBg }}
-        _active={{ bgGradient: hoverBg, transform: 'scale(0.98)' }}
+      {/* Top: Orange card with title */}
+      <Box
+        bg={cardBg}
+        py={{ base: 3, md: 4 }}
+        px={4}
+        textAlign="center"
       >
-        <HStack spacing={3}>
-          <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight="extrabold">
-            🎯 Daily TAMBOLA
-          </Text>
-          <Text
-            fontSize={{ base: 'sm', md: 'md' }}
-            fontWeight="medium"
-            opacity={0.9}
-          >
-            — {label}
-          </Text>
-        </HStack>
-      </Button>
+        <Text
+          fontSize={{ base: 'xl', md: '2xl' }}
+          fontWeight="extrabold"
+          color="white"
+          letterSpacing="wide"
+        >
+          🎯 DAILY TAMBOLA
+        </Text>
+      </Box>
+
+      {/* Bottom: Darker button strip */}
+      <Box
+        bg={btnBg}
+        py={{ base: 2.5, md: 3 }}
+        px={4}
+        textAlign="center"
+        _groupHover={{ bg: btnHoverBg }}
+      >
+        <Text
+          fontSize={{ base: 'md', md: 'lg' }}
+          fontWeight="bold"
+          color="white"
+        >
+          {label}
+        </Text>
+      </Box>
     </Box>
   );
 }
