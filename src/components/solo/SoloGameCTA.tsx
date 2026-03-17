@@ -1,4 +1,4 @@
-import { Box, Text, VStack } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -104,21 +104,30 @@ export function SoloGameCTA() {
         </Text>
       </Box>
 
-      {/* Bottom: Darker button strip */}
+      {/* Bottom: Button inside card */}
       <Box
-        bg={btnBg}
-        py={{ base: 2.5, md: 3 }}
-        px={4}
+        bg={cardBg}
+        px={{ base: 4, md: 5 }}
+        pb={{ base: 3, md: 4 }}
         textAlign="center"
-        _groupHover={{ bg: btnHoverBg }}
       >
-        <Text
-          fontSize={{ base: 'md', md: 'lg' }}
-          fontWeight="bold"
-          color="white"
+        <Box
+          bg={btnBg}
+          py={{ base: 2.5, md: 3 }}
+          px={6}
+          borderRadius="lg"
+          display="inline-block"
+          w="80%"
+          _hover={{ bg: btnHoverBg }}
         >
-          {label}
-        </Text>
+          <Text
+            fontSize={{ base: 'md', md: 'lg' }}
+            fontWeight="bold"
+            color="white"
+          >
+            {label}
+          </Text>
+        </Box>
       </Box>
     </Box>
   );
