@@ -461,8 +461,8 @@ export default function Lobby() {
     setIsLoading(true);
     loadGames();
     toast({
-      title: 'रिफ्रेश हो रहा है...',
-      status: 'info',
+      title: 'रिफ्रेश हो गया',
+      status: 'success',
       duration: 1000,
     });
   };
