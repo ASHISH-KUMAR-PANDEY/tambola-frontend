@@ -788,6 +788,7 @@ export interface WeeklyPlayerState {
     missedNumbers: number[];
   };
   revealedNumbers: number[];
+  todayNumbers: number[];
   currentNumber: number | null;
   claims: Array<{ category: string; completedAtCall: number; claimedAt: string }>;
   wonCategories: string[];

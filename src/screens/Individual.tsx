@@ -52,40 +52,32 @@ export default function Individual() {
     <Box w="100vw" minH="100vh" bg="grey.900">
       <VStack spacing={{ base: 4, md: 6 }} w="100%" align="stretch" p={{ base: 3, md: 4 }}>
         {/* Header */}
-        <Box position="relative" w="100%" minH="50px" mb={2}>
-          <Box position="absolute" left={0} top={0}>
+        <VStack spacing={2} w="100%">
+          <HStack w="100%" justify="space-between" align="center">
             <Logo height="28px" />
-          </Box>
-          <Heading
-            size={{ base: 'md', md: 'xl' }}
-            color="white"
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            whiteSpace="nowrap"
-          >
+            <HStack gap={2}>
+              <Button
+                variant="outline"
+                colorScheme="green"
+                size={{ base: 'xs', md: 'sm' }}
+                onClick={loadGames}
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                colorScheme="brand"
+                size={{ base: 'xs', md: 'sm' }}
+                onClick={() => navigate('/lobby')}
+              >
+                वापस
+              </Button>
+            </HStack>
+          </HStack>
+          <Heading size={{ base: 'md', md: 'xl' }} color="white" textAlign="center">
             INDIVIDUAL TAMBOLA
           </Heading>
-          <HStack position="absolute" top={0} right={0} gap={2}>
-            <Button
-              variant="outline"
-              colorScheme="green"
-              size={{ base: 'xs', md: 'sm' }}
-              onClick={loadGames}
-            >
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              colorScheme="brand"
-              size={{ base: 'xs', md: 'sm' }}
-              onClick={() => navigate('/lobby')}
-            >
-              वापस
-            </Button>
-          </HStack>
-        </Box>
+        </VStack>
 
         {/* Info */}
         <Box bg="brand.900" borderRadius="lg" p={4} border="1px solid" borderColor="brand.700">
