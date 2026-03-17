@@ -210,6 +210,7 @@ export default function Lobby() {
     } finally {
       setIsLoading(false);
     }
+
   };
 
   const loadMyActiveGames = async () => {
@@ -992,6 +993,21 @@ export default function Lobby() {
             </Box>
           </Box>
         )}
+
+        {/* Individual (Weekly) Game Button */}
+        <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+          <Button
+            w="100%"
+            size="lg"
+            colorScheme="purple"
+            variant="outline"
+            onClick={() => navigate('/individual')}
+            py={6}
+            fontSize={{ base: 'md', md: 'lg' }}
+          >
+            🎯 Individual Tambola — अपनी सुविधा अनुसार खेलें
+          </Button>
+        </Box>
 
         {/* How to Play Section (Hindi) */}
         <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mt={8}>
