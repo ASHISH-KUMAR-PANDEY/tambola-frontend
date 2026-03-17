@@ -658,11 +658,14 @@ class ApiService {
     return this.request<SoloWeekResponse>('/api/v1/solo/current-week');
   }
 
-  async startSoloGame(): Promise<StartSoloGameResponse> {
+  private getSoloQuery(): string {
     const userId = localStorage.getItem('app_user_id');
-    return this.request<StartSoloGameResponse>('/api/v1/solo/start-game', {
+    return userId ? `?userId=${userId}` : '';
+  }
+
+  async startSoloGame(): Promise<StartSoloGameResponse> {
+    return this.request<StartSoloGameResponse>(`/api/v1/solo/start-game${this.getSoloQuery()}`, {
       method: 'POST',
-      body: JSON.stringify({ userId }),
     });
   }
 
@@ -671,17 +674,14 @@ class ApiService {
     category: string;
     currentNumberIndex: number;
   }): Promise<SoloClaimResponse> {
-    const userId = localStorage.getItem('app_user_id');
-    return this.request<SoloClaimResponse>('/api/v1/solo/claim', {
+    return this.request<SoloClaimResponse>(`/api/v1/solo/claim${this.getSoloQuery()}`, {
       method: 'POST',
-      body: JSON.stringify({ ...data, userId }),
+      body: JSON.stringify(data),
     });
   }
 
   async getMySoloGame(): Promise<MySoloGameResponse> {
-    const userId = localStorage.getItem('app_user_id');
-    const query = userId ? `?userId=${userId}` : '';
-    return this.request<MySoloGameResponse>(`/api/v1/solo/my-game${query}`);
+    return this.request<MySoloGameResponse>(`/api/v1/solo/my-game${this.getSoloQuery()}`);
   }
 
   async getSoloLeaderboard(weekId?: string): Promise<SoloLeaderboardResponse> {
@@ -694,10 +694,9 @@ class ApiService {
     currentIndex: number;
     markedNumbers: number[];
   }): Promise<void> {
-    const userId = localStorage.getItem('app_user_id');
-    await this.request('/api/v1/solo/update-progress', {
+    await this.request(`/api/v1/solo/update-progress${this.getSoloQuery()}`, {
       method: 'PATCH',
-      body: JSON.stringify({ ...data, userId }),
+      body: JSON.stringify(data),
     });
   }
 
@@ -705,10 +704,9 @@ class ApiService {
     soloGameId: string;
     markedNumbers: number[];
   }): Promise<void> {
-    const userId = localStorage.getItem('app_user_id');
-    await this.request('/api/v1/solo/complete-game', {
+    await this.request(`/api/v1/solo/complete-game${this.getSoloQuery()}`, {
       method: 'POST',
-      body: JSON.stringify({ ...data, userId }),
+      body: JSON.stringify(data),
     });
   }
 
