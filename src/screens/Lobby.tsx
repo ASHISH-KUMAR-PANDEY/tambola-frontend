@@ -24,7 +24,7 @@ import {
   Input,
   FormControl,
 } from '@chakra-ui/react';
-import { BellIcon } from '@chakra-ui/icons';
+import { BellIcon, RepeatIcon } from '@chakra-ui/icons';
 import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
@@ -35,6 +35,7 @@ import { RegistrationCard } from '../components/RegistrationCard';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
+import { sendToFlutter } from '../utils/flutterBridge';
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -649,17 +650,26 @@ export default function Lobby() {
             TAMBOLA
           </Heading>
           {isFlutterApp ? (
-            <Button
-              position="absolute"
-              top={0}
-              right={0}
-              variant="outline"
-              colorScheme="green"
-              onClick={handleRefresh}
-              size={{ base: 'xs', md: 'sm' }}
-            >
-              Refresh
-            </Button>
+            <HStack position="absolute" top={0} right={0} spacing={2}>
+              <Button
+                variant="outline"
+                colorScheme="green"
+                onClick={handleRefresh}
+                size={{ base: 'xs', md: 'sm' }}
+                p={2}
+                minW="auto"
+              >
+                <RepeatIcon />
+              </Button>
+              <Button
+                variant="outline"
+                colorScheme="red"
+                onClick={() => sendToFlutter('backPressed')}
+                size={{ base: 'xs', md: 'sm' }}
+              >
+                Back
+              </Button>
+            </HStack>
           ) : (
             <Button
               position="absolute"
