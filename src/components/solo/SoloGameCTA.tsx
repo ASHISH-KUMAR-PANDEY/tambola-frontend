@@ -1,22 +1,22 @@
-import { Box, Text, HStack } from '@chakra-ui/react';
+import { Box, Text, HStack, Flex } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { apiService, type SoloWeekResponse } from '../../services/api.service';
 
 const pulseGlow = keyframes`
-  0%, 100% { box-shadow: 0 0 20px rgba(239, 167, 63, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(239, 167, 63, 0.6); }
+  0%, 100% { box-shadow: 0 0 20px rgba(239, 167, 63, 0.25); }
+  50% { box-shadow: 0 0 45px rgba(239, 167, 63, 0.5); }
 `;
 
-const shimmer = keyframes`
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-`;
-
-const blink = keyframes`
+const pulse = keyframes`
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  50% { opacity: 0.5; }
+`;
+
+const float = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
 `;
 
 /** Generate a fake-ish "live" player count that looks realistic */
@@ -49,7 +49,7 @@ export function SoloGameCTA() {
     load();
   }, []);
 
-  // Countdown timer — loops every 10 seconds
+  // Countdown timer — loops every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
@@ -71,44 +71,50 @@ export function SoloGameCTA() {
   const isConfigured = data.week.isConfigured !== false;
   const hasPlayed = userStatus.hasPlayed;
 
+  // --- State-driven config ---
   let label = 'जल्दी Join करें';
-  let subtitle = 'रोज़ खेलो, रोज़ जीतो! 🏆';
-  let cardBgGradient = 'linear(to-br, highlight.400, highlight.600)';
-  let btnBg = 'highlight.700';
-  let btnHoverBg = 'highlight.800';
+  let subtitle = 'रोज़ खेलो, रोज़ जीतो!';
+  let accentFrom = '#F6B93B';
+  let accentTo = '#E58E26';
+  let btnGradient = 'linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%)';
+  let btnTextColor = '#F6B93B';
   let shouldPulse = true;
   let showPlayerCount = true;
   let showTimer = true;
 
   if (isSunday) {
     label = 'टिकट देखो';
-    subtitle = 'आज Sunday है — आराम करो! 😴';
-    cardBgGradient = 'linear(to-br, grey.500, grey.700)';
-    btnBg = 'grey.700';
-    btnHoverBg = 'grey.800';
+    subtitle = 'आज Sunday है — आराम करो!';
+    accentFrom = '#555';
+    accentTo = '#333';
+    btnGradient = 'linear-gradient(135deg, #222 0%, #333 100%)';
+    btnTextColor = '#aaa';
     shouldPulse = false;
     showPlayerCount = false;
     showTimer = false;
   } else if (isCompleted) {
     label = 'टिकट देखो';
     subtitle = 'आज का game खेल लिया! ✅';
-    cardBgGradient = 'linear(to-br, grey.500, grey.700)';
-    btnBg = 'grey.700';
-    btnHoverBg = 'grey.800';
+    accentFrom = '#555';
+    accentTo = '#333';
+    btnGradient = 'linear-gradient(135deg, #222 0%, #333 100%)';
+    btnTextColor = '#aaa';
     shouldPulse = false;
     showTimer = false;
   } else if (isInProgress) {
-    label = 'जारी रखें ▶';
-    subtitle = 'Game अभी चल रहा है! 🔥';
-    cardBgGradient = 'linear(to-br, brand.400, brand.600)';
-    btnBg = 'brand.700';
-    btnHoverBg = 'brand.800';
+    label = 'जारी रखें';
+    subtitle = 'Game अभी चल रहा है!';
+    accentFrom = '#27AE60';
+    accentTo = '#1E8449';
+    btnGradient = 'linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%)';
+    btnTextColor = '#2ECC71';
   } else if (!isConfigured) {
     label = 'जल्द आ रहा है';
-    subtitle = 'नया game तैयार हो रहा है ⏳';
-    cardBgGradient = 'linear(to-br, grey.500, grey.700)';
-    btnBg = 'grey.700';
-    btnHoverBg = 'grey.800';
+    subtitle = 'नया game तैयार हो रहा है...';
+    accentFrom = '#555';
+    accentTo = '#333';
+    btnGradient = 'linear-gradient(135deg, #222 0%, #333 100%)';
+    btnTextColor = '#aaa';
     shouldPulse = false;
     showPlayerCount = false;
     showTimer = false;
@@ -126,120 +132,166 @@ export function SoloGameCTA() {
       animation={shouldPulse ? `${pulseGlow} 3s ease-in-out infinite` : undefined}
       borderRadius="2xl"
       overflow="hidden"
-      border="2px solid"
-      borderColor="whiteAlpha.300"
       opacity={isDisabled ? 0.5 : 1}
-      _hover={!isDisabled ? { transform: 'scale(1.01)', transition: 'transform 0.2s' } : undefined}
-      _active={!isDisabled ? { transform: 'scale(0.97)' } : undefined}
-      transition="transform 0.2s"
+      _hover={!isDisabled ? { transform: 'scale(1.015)', transition: 'all 0.25s ease' } : undefined}
+      _active={!isDisabled ? { transform: 'scale(0.98)' } : undefined}
+      transition="all 0.25s ease"
+      position="relative"
     >
-      {/* Main card area */}
+      {/* Main card */}
       <Box
-        bgGradient={cardBgGradient}
-        py={{ base: 8, md: 10 }}
-        px={{ base: 5, md: 8 }}
-        textAlign="center"
+        bg="#111"
         position="relative"
-        minH={{ base: '280px', md: '320px' }}
+        overflow="hidden"
+        py={{ base: 10, md: 12 }}
+        px={{ base: 5, md: 8 }}
+        minH={{ base: '300px', md: '340px' }}
         display="flex"
         flexDirection="column"
         justifyContent="center"
         alignItems="center"
       >
+        {/* Accent gradient border at top */}
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          h="4px"
+          bgGradient={`linear(to-r, ${accentFrom}, ${accentTo}, ${accentFrom})`}
+        />
+
+        {/* Subtle radial glow behind content */}
+        <Box
+          position="absolute"
+          top="50%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          w="120%"
+          h="120%"
+          bg={`radial-gradient(ellipse at center, ${accentFrom}12 0%, transparent 70%)`}
+          pointerEvents="none"
+        />
+
         {/* Title */}
         <Text
-          fontSize={{ base: '2xl', md: '3xl', lg: '4xl' }}
+          fontSize={{ base: '3xl', md: '4xl', lg: '5xl' }}
           fontWeight="extrabold"
           color="white"
           letterSpacing="wider"
-          textShadow="0 2px 8px rgba(0,0,0,0.3)"
+          position="relative"
+          zIndex={1}
+          animation={shouldPulse ? `${float} 4s ease-in-out infinite` : undefined}
         >
-          🎯 DAILY TAMBOLA
+          DAILY TAMBOLA
         </Text>
+
+        {/* Accent line under title */}
+        <Box
+          w="60px"
+          h="3px"
+          bgGradient={`linear(to-r, ${accentFrom}, ${accentTo})`}
+          borderRadius="full"
+          mt={2}
+          mb={3}
+        />
 
         {/* Subtitle */}
         <Text
-          fontSize={{ base: 'lg', md: 'xl' }}
-          fontWeight="bold"
-          color="whiteAlpha.900"
-          mt={{ base: 2, md: 3 }}
+          fontSize={{ base: 'md', md: 'lg' }}
+          fontWeight="medium"
+          color="whiteAlpha.700"
+          letterSpacing="wide"
+          position="relative"
+          zIndex={1}
         >
           {subtitle}
         </Text>
 
-        {/* Countdown timer */}
-        {showTimer && (
-          <HStack
+        {/* Timer + Player count — single row */}
+        {(showTimer || showPlayerCount) && (
+          <Flex
             justify="center"
-            mt={{ base: 3, md: 4 }}
-            spacing={2}
+            align="center"
+            gap={{ base: 3, md: 5 }}
+            mt={{ base: 5, md: 6 }}
+            flexWrap="wrap"
+            position="relative"
+            zIndex={1}
           >
-            <Box
-              bg="rgba(0,0,0,0.3)"
-              backdropFilter="blur(4px)"
-              px={4}
-              py={1.5}
-              borderRadius="full"
-            >
-              <Text
-                fontSize={{ base: 'sm', md: 'md' }}
-                fontWeight="bold"
-                color="white"
-                animation={countdown <= 5 ? `${blink} 0.5s ease-in-out infinite` : undefined}
-              >
-                ⏰ Game शुरू होने वाला है — 0:{countdown.toString().padStart(2, '0')}
-              </Text>
-            </Box>
-          </HStack>
-        )}
+            {showTimer && (
+              <HStack spacing={1.5}>
+                <Box
+                  w="6px"
+                  h="6px"
+                  borderRadius="full"
+                  bg={countdown <= 5 ? '#E74C3C' : accentFrom}
+                  animation={`${pulse} ${countdown <= 5 ? '0.5s' : '2s'} ease-in-out infinite`}
+                />
+                <Text
+                  fontSize={{ base: 'xs', md: 'sm' }}
+                  fontWeight="semibold"
+                  color="whiteAlpha.600"
+                  fontFamily="mono"
+                >
+                  शुरू होने में 0:{countdown.toString().padStart(2, '0')}
+                </Text>
+              </HStack>
+            )}
 
-        {/* Player count badge */}
-        {showPlayerCount && playerCount > 0 && (
-          <HStack
-            justify="center"
-            mt={{ base: 2, md: 3 }}
-            spacing={2}
-          >
-            <Box
-              bg="whiteAlpha.200"
-              backdropFilter="blur(4px)"
-              px={4}
-              py={1.5}
-              borderRadius="full"
-            >
-              <Text
-                fontSize={{ base: 'sm', md: 'md' }}
-                fontWeight="semibold"
-                color="white"
-              >
-                🔴 {playerCount.toLocaleString('en-IN')}+ लोग खेल रहे हैं
-              </Text>
-            </Box>
-          </HStack>
+            {showTimer && showPlayerCount && (
+              <Box w="1px" h="14px" bg="whiteAlpha.200" />
+            )}
+
+            {showPlayerCount && playerCount > 0 && (
+              <HStack spacing={1.5}>
+                <Box
+                  w="6px"
+                  h="6px"
+                  borderRadius="full"
+                  bg="#E74C3C"
+                  animation={`${pulse} 1.5s ease-in-out infinite`}
+                />
+                <Text
+                  fontSize={{ base: 'xs', md: 'sm' }}
+                  fontWeight="semibold"
+                  color="whiteAlpha.600"
+                >
+                  {playerCount.toLocaleString('en-IN')}+ खेल रहे हैं
+                </Text>
+              </HStack>
+            )}
+          </Flex>
         )}
 
         {/* CTA Button */}
-        <Box mt={{ base: 5, md: 6 }} w="100%">
+        <Box
+          mt={{ base: 6, md: 8 }}
+          w={{ base: '80%', md: '60%' }}
+          position="relative"
+          zIndex={1}
+        >
           <Box
-            bg={btnBg}
             py={{ base: 3.5, md: 4 }}
-            px={{ base: 8, md: 10 }}
+            px={{ base: 6, md: 10 }}
             borderRadius="xl"
-            display="inline-block"
-            w={{ base: '85%', md: '70%' }}
-            _hover={{ bg: btnHoverBg }}
-            boxShadow="0 4px 15px rgba(0,0,0,0.3)"
-            css={shouldPulse ? {
-              backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)',
-              backgroundSize: '200% 100%',
-              animation: `${shimmer} 3s linear infinite`,
-            } : undefined}
+            textAlign="center"
+            border="1.5px solid"
+            borderColor={`${accentFrom}44`}
+            css={{
+              background: btnGradient,
+            }}
+            _hover={{
+              borderColor: `${accentFrom}88`,
+            }}
+            transition="all 0.2s ease"
           >
             <Text
               fontSize={{ base: 'lg', md: 'xl' }}
               fontWeight="extrabold"
-              color="white"
-              letterSpacing="wide"
+              color={btnTextColor}
+              letterSpacing="wider"
+              textTransform="uppercase"
             >
               {label}
             </Text>
