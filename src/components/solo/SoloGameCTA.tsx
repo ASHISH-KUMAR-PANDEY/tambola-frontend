@@ -1,7 +1,7 @@
 import { Box, Text, HStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { apiService, type SoloWeekResponse } from '../../services/api.service';
 
 const pulseGlow = keyframes`
@@ -33,7 +33,7 @@ export function SoloGameCTA() {
   const navigate = useNavigate();
   const [data, setData] = useState<SoloWeekResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
     const load = async () => {
@@ -52,7 +52,7 @@ export function SoloGameCTA() {
   // Countdown timer — loops every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 10 : prev - 1));
+      setCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -73,7 +73,6 @@ export function SoloGameCTA() {
 
   let label = 'जल्दी Join करें';
   let subtitle = 'रोज़ खेलो, रोज़ जीतो! 🏆';
-  let description = 'हर दिन नया ticket, नया मौका — अपना नंबर आने दो और claim मारो!';
   let cardBgGradient = 'linear(to-br, highlight.400, highlight.600)';
   let btnBg = 'highlight.700';
   let btnHoverBg = 'highlight.800';
@@ -84,7 +83,6 @@ export function SoloGameCTA() {
   if (isSunday) {
     label = 'टिकट देखो';
     subtitle = 'आज Sunday है — आराम करो! 😴';
-    description = 'कल से फिर नया game शुरू होगा, तब तक अपना ticket check करो।';
     cardBgGradient = 'linear(to-br, grey.500, grey.700)';
     btnBg = 'grey.700';
     btnHoverBg = 'grey.800';
@@ -94,7 +92,6 @@ export function SoloGameCTA() {
   } else if (isCompleted) {
     label = 'टिकट देखो';
     subtitle = 'आज का game खेल लिया! ✅';
-    description = 'शाबाश! कल फिर नया ticket मिलेगा — daily खेलो, ranking बढ़ाओ!';
     cardBgGradient = 'linear(to-br, grey.500, grey.700)';
     btnBg = 'grey.700';
     btnHoverBg = 'grey.800';
@@ -103,14 +100,12 @@ export function SoloGameCTA() {
   } else if (isInProgress) {
     label = 'जारी रखें ▶';
     subtitle = 'Game अभी चल रहा है! 🔥';
-    description = 'आपका ticket wait कर रहा है — वापस आओ और claim मारो!';
     cardBgGradient = 'linear(to-br, brand.400, brand.600)';
     btnBg = 'brand.700';
     btnHoverBg = 'brand.800';
   } else if (!isConfigured) {
     label = 'जल्द आ रहा है';
     subtitle = 'नया game तैयार हो रहा है ⏳';
-    description = 'थोड़ा wait करो — आज का game जल्द ही शुरू होगा!';
     cardBgGradient = 'linear(to-br, grey.500, grey.700)';
     btnBg = 'grey.700';
     btnHoverBg = 'grey.800';
@@ -172,18 +167,6 @@ export function SoloGameCTA() {
           {subtitle}
         </Text>
 
-        {/* Description */}
-        <Text
-          fontSize={{ base: 'sm', md: 'md' }}
-          color="whiteAlpha.800"
-          mt={{ base: 2, md: 3 }}
-          maxW="500px"
-          mx="auto"
-          lineHeight="tall"
-        >
-          {description}
-        </Text>
-
         {/* Countdown timer */}
         {showTimer && (
           <HStack
@@ -202,7 +185,7 @@ export function SoloGameCTA() {
                 fontSize={{ base: 'sm', md: 'md' }}
                 fontWeight="bold"
                 color="white"
-                animation={countdown <= 3 ? `${blink} 0.5s ease-in-out infinite` : undefined}
+                animation={countdown <= 5 ? `${blink} 0.5s ease-in-out infinite` : undefined}
               >
                 ⏰ Game शुरू होने वाला है — 0:{countdown.toString().padStart(2, '0')}
               </Text>
