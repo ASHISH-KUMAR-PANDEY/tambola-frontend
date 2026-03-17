@@ -1,19 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Global YT API loading
-let apiReady = false;
 let apiPromise: Promise<void> | null = null;
 
 function ensureYTAPI(): Promise<void> {
   if ((window as any).YT?.Player) {
-    apiReady = true;
     return Promise.resolve();
   }
   if (apiPromise) return apiPromise;
 
   apiPromise = new Promise<void>((resolve) => {
     (window as any).onYouTubeIframeAPIReady = () => {
-      apiReady = true;
       resolve();
     };
 
@@ -26,7 +23,6 @@ function ensureYTAPI(): Promise<void> {
       const poll = setInterval(() => {
         if ((window as any).YT?.Player) {
           clearInterval(poll);
-          apiReady = true;
           resolve();
         }
       }, 200);

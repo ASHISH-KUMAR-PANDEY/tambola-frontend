@@ -1,4 +1,4 @@
-import { Box, Text, Button } from '@chakra-ui/react';
+import { Box, Button } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';

@@ -15,9 +15,9 @@ const categories: { key: WinCategory; label: string; lineIndex?: number }[] = [
 ];
 
 export function SoloClaimButtons({ onClaim, isClaimLoading }: SoloClaimButtonsProps) {
-  const { claims, checkEarly5, checkLineComplete, checkFullHouse, getMarkedCount } = useSoloGameStore();
+  const { claims, checkEarly5, checkLineComplete, checkFullHouse } = useSoloGameStore();
 
-  const isPatternComplete = (category: WinCategory, lineIndex?: number): boolean => {
+  const isPatternComplete = (category: WinCategory, _lineIndex?: number): boolean => {
     switch (category) {
       case 'EARLY_5': return checkEarly5();
       case 'TOP_LINE': return checkLineComplete(0);

@@ -61,27 +61,22 @@ export default function SoloGame() {
     currentIndex,
     gameStatus,
     isPlaying,
-    claims,
     initGame,
     resumeGame,
     advanceNumber,
     recordClaim,
     setPlaying,
     completeGame,
-    getCalledNumbers,
     getCurrentNumber,
-    getMarkedCount,
     markedNumbers,
   } = useSoloGameStore();
 
   // YouTube player — autoplay baked into the iframe URL
   const {
-    isReady: isPlayerReady,
     playerState,
     currentTime,
     play: playVideo,
     pause: pauseVideo,
-    seekTo,
   } = useYouTubePlayer({
     videoId,
     containerId: 'solo-youtube-player',
