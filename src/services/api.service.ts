@@ -659,8 +659,10 @@ class ApiService {
   }
 
   async startSoloGame(): Promise<StartSoloGameResponse> {
+    const userId = localStorage.getItem('app_user_id');
     return this.request<StartSoloGameResponse>('/api/v1/solo/start-game', {
       method: 'POST',
+      body: JSON.stringify({ userId }),
     });
   }
 
@@ -669,14 +671,17 @@ class ApiService {
     category: string;
     currentNumberIndex: number;
   }): Promise<SoloClaimResponse> {
+    const userId = localStorage.getItem('app_user_id');
     return this.request<SoloClaimResponse>('/api/v1/solo/claim', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, userId }),
     });
   }
 
   async getMySoloGame(): Promise<MySoloGameResponse> {
-    return this.request<MySoloGameResponse>('/api/v1/solo/my-game');
+    const userId = localStorage.getItem('app_user_id');
+    const query = userId ? `?userId=${userId}` : '';
+    return this.request<MySoloGameResponse>(`/api/v1/solo/my-game${query}`);
   }
 
   async getSoloLeaderboard(weekId?: string): Promise<SoloLeaderboardResponse> {
@@ -689,9 +694,10 @@ class ApiService {
     currentIndex: number;
     markedNumbers: number[];
   }): Promise<void> {
+    const userId = localStorage.getItem('app_user_id');
     await this.request('/api/v1/solo/update-progress', {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, userId }),
     });
   }
 
@@ -699,9 +705,10 @@ class ApiService {
     soloGameId: string;
     markedNumbers: number[];
   }): Promise<void> {
+    const userId = localStorage.getItem('app_user_id');
     await this.request('/api/v1/solo/complete-game', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, userId }),
     });
   }
 
