@@ -42,42 +42,6 @@ const formatNumber = (num: number): string => {
   return num.toLocaleString('en-IN');
 };
 
-// Faster pulse animation for the buzzer
-const buzzerPulse = keyframes`
-  0%, 100% {
-    box-shadow: 0 0 30px rgba(37, 141, 88, 0.6), 0 0 60px rgba(37, 141, 88, 0.4), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    box-shadow: 0 0 50px rgba(37, 141, 88, 0.9), 0 0 100px rgba(37, 141, 88, 0.6), 0 8px 0 #1a5c3a, inset 0 -8px 20px rgba(0,0,0,0.3);
-    transform: translateY(-3px) scale(1.03);
-  }
-`;
-
-const buzzerPress = keyframes`
-  0% {
-    transform: translateY(0);
-    box-shadow: 0 8px 0 #1a5c3a, 0 0 30px rgba(37, 141, 88, 0.6);
-  }
-  50% {
-    transform: translateY(6px);
-    box-shadow: 0 2px 0 #1a5c3a, 0 0 50px rgba(37, 141, 88, 1);
-  }
-  100% {
-    transform: translateY(0);
-    box-shadow: 0 8px 0 #1a5c3a, 0 0 30px rgba(37, 141, 88, 0.6);
-  }
-`;
-
-// Hand pointing animation
-const handPoint = keyframes`
-  0%, 100% {
-    transform: translate(-50%, 0) rotate(-15deg);
-  }
-  50% {
-    transform: translate(-50%, 10px) rotate(-15deg);
-  }
-`;
 
 // Confetti animations - falling from top
 const confettiFall = keyframes`
@@ -117,7 +81,6 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
   const countdownText = formatCountdown(timeRemaining);
   const { trackEvent } = useTambolaTracking();
   const [showConfetti, setShowConfetti] = useState(false);
-  const [isPressed, setIsPressed] = useState(false);
 
   // Fake ticket scarcity stats
   const [ticketStats, setTicketStats] = useState<{ sold: number; left: number }>({ sold: 0, left: 0 });
@@ -147,9 +110,7 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
   const handleBuzzerPress = () => {
     if (reminderSet) return;
 
-    setIsPressed(true);
-
-    // Show confetti after press animation
+    // Show confetti after press
     setTimeout(() => {
       setShowConfetti(true);
       setReminderSet(true);
@@ -175,8 +136,6 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
       const key = `reminder_${card.id}`;
       localStorage.setItem(key, new Date().toISOString());
     }, 300);
-
-    setTimeout(() => setIsPressed(false), 300);
   };
 
   // Generate confetti pieces from top (70) and bottom (50)
@@ -284,99 +243,36 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
           </Text>
         </Box>
 
-        {/* Circular Buzzer Button with Hand Gesture */}
-        <Center position="relative">
-          {/* Pointing Hand Gesture - bottom right of button */}
-          {!reminderSet && (
-            <Box
-              position="absolute"
-              bottom={{ base: '-15px', md: '-20px' }}
-              right={{ base: 'calc(50% - 130px)', md: 'calc(50% - 160px)' }}
-              fontSize={{ base: '55px', md: '70px' }}
-              animation={`${handPoint} 1s ease-in-out infinite`}
-              zIndex={15}
-              pointerEvents="none"
-              filter="drop-shadow(0 4px 8px rgba(0,0,0,0.3))"
-              transform="rotate(30deg)"
-            >
-              👆
-            </Box>
-          )}
-
+        {/* Register Button */}
+        <Center>
           <Box
             as="button"
             onClick={handleBuzzerPress}
             disabled={reminderSet}
-            w={{ base: '180px', md: '220px' }}
-            h={{ base: '180px', md: '220px' }}
-            borderRadius="full"
-            bg={reminderSet
-              ? 'linear-gradient(180deg, #38A169 0%, #276749 100%)'
-              : 'linear-gradient(180deg, #38A169 0%, #258D58 50%, #1a6b42 100%)'
-            }
-            border="6px solid"
-            borderColor={reminderSet ? '#276749' : '#1a5c3a'}
+            w={{ base: '85%', md: '70%' }}
+            py={{ base: 4, md: 5 }}
+            px={8}
+            borderRadius="xl"
+            bg={reminderSet ? 'brand.700' : 'brand.500'}
             cursor={reminderSet ? 'default' : 'pointer'}
-            position="relative"
-            animation={reminderSet || isPressed ? undefined : `${buzzerPulse} 1.2s ease-in-out infinite`}
-            sx={isPressed ? {
-              animation: `${buzzerPress} 0.3s ease-out`,
-            } : {}}
-            boxShadow={reminderSet
-              ? '0 4px 0 #1a5c3a, 0 0 30px rgba(56, 161, 105, 0.5), inset 0 -5px 15px rgba(0,0,0,0.2)'
-              : '0 8px 0 #1a5c3a, 0 0 30px rgba(37, 141, 88, 0.6), inset 0 -8px 20px rgba(0,0,0,0.3)'
-            }
-            transition="all 0.1s ease-out"
+            transition="all 0.2s ease"
             _hover={reminderSet ? {} : {
-              transform: 'scale(1.05)',
-              boxShadow: '0 10px 0 #1a5c3a, 0 0 50px rgba(37, 141, 88, 0.8), inset 0 -8px 20px rgba(0,0,0,0.3)',
+              bg: 'brand.600',
             }}
             _active={reminderSet ? {} : {
-              transform: 'translateY(6px)',
-              boxShadow: '0 2px 0 #1a5c3a, 0 0 50px rgba(37, 141, 88, 1), inset 0 -8px 20px rgba(0,0,0,0.3)',
+              bg: 'brand.700',
+              transform: 'scale(0.98)',
             }}
           >
-            {/* Inner circle highlight */}
-            <Box
-              position="absolute"
-              top="15%"
-              left="15%"
-              right="15%"
-              bottom="15%"
-              borderRadius="full"
-              bg="linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%)"
-              pointerEvents="none"
-            />
-
-            {/* Button Text */}
-            <VStack spacing={1} position="relative" zIndex={1} justify="center" h="100%">
-              {reminderSet ? (
-                <>
-                  <Text fontSize={{ base: '5xl', md: '6xl' }} color="white">✓</Text>
-                  <Text
-                    fontSize={{ base: 'md', md: 'lg' }}
-                    fontWeight="bold"
-                    color="white"
-                    textAlign="center"
-                    textShadow="0 2px 4px rgba(0,0,0,0.4)"
-                    px={2}
-                  >
-                    आप रजिस्टर्ड हैं
-                  </Text>
-                </>
-              ) : (
-                <Text
-                  fontSize={{ base: '3xl', md: '4xl' }}
-                  fontWeight="extrabold"
-                  color="white"
-                  textAlign="center"
-                  textShadow="0 2px 4px rgba(0,0,0,0.4)"
-                  lineHeight="1.2"
-                >
-                  रजिस्टर<br />करें
-                </Text>
-              )}
-            </VStack>
+            <Text
+              fontSize={{ base: 'xl', md: '2xl' }}
+              fontWeight="extrabold"
+              color="white"
+              textAlign="center"
+              letterSpacing="wide"
+            >
+              {reminderSet ? '✓ आप रजिस्टर्ड हैं' : 'रजिस्टर करें'}
+            </Text>
           </Box>
         </Center>
 
