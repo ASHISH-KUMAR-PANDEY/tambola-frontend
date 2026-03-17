@@ -732,6 +732,8 @@ export default function Lobby() {
 
           {games.length === 0 ? (
             <VStack spacing={{ base: 4, md: 6 }} w="100%">
+              <SoloGameCTA />
+
               {currentRegistrationCard && (
                 <RegistrationCard
                   card={currentRegistrationCard}
@@ -739,8 +741,6 @@ export default function Lobby() {
                   onReminderChange={setRegistrationReminderSet}
                 />
               )}
-
-              <SoloGameCTA />
 
               {currentBanner && (
                 <Box
@@ -980,6 +980,9 @@ export default function Lobby() {
           )}
         </Box>
 
+        {/* Solo Game CTA - shown when games exist */}
+        {games.length > 0 && <SoloGameCTA />}
+
         {/* Registration Card - shown when games exist */}
         {games.length > 0 && currentRegistrationCard && (
           <RegistrationCard
@@ -988,9 +991,6 @@ export default function Lobby() {
             onReminderChange={setRegistrationReminderSet}
           />
         )}
-
-        {/* Solo Game CTA - shown when games exist */}
-        {games.length > 0 && <SoloGameCTA />}
 
         {/* Promotional Banner - shown when games exist */}
         {games.length > 0 && currentBanner && (
