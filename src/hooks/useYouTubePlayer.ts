@@ -79,6 +79,7 @@ export function useYouTubePlayer({
       const params = new URLSearchParams({
         enablejsapi: '1',
         autoplay: autoplay ? '1' : '0',
+        mute: '1',
         controls: '0',
         modestbranding: '1',
         rel: '0',
@@ -225,6 +226,12 @@ export function useYouTubePlayer({
   const seekTo = useCallback((seconds: number) => {
     try { playerRef.current?.seekTo(seconds, true); } catch { /* */ }
   }, []);
+  const mute = useCallback(() => {
+    try { playerRef.current?.mute(); } catch { /* */ }
+  }, []);
+  const unMute = useCallback(() => {
+    try { playerRef.current?.unMute(); } catch { /* */ }
+  }, []);
 
-  return { isReady, playerState, currentTime, play, pause, seekTo };
+  return { isReady, playerState, currentTime, play, pause, seekTo, mute, unMute };
 }
