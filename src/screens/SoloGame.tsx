@@ -23,7 +23,7 @@ import {
   FormControl,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { apiService } from '../services/api.service';
+import { apiService, type CategoryRankingsResponse } from '../services/api.service';
 import { useSoloGameStore, type WinCategory } from '../stores/soloGameStore';
 import { useAuthStore } from '../stores/authStore';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
@@ -59,6 +59,7 @@ export default function SoloGame() {
   const [isStarting, setIsStarting] = useState(false);
   const [claimLoading, setClaimLoading] = useState<WinCategory | null>(null);
   const [gameMode, setGameMode] = useState<'fresh' | 'resume' | 'completed'>('fresh');
+  const [categoryRankings, setCategoryRankings] = useState<CategoryRankingsResponse | null>(null);
   const { user } = useAuthStore();
 
   // Name collection (same localStorage key as main game)
@@ -204,6 +205,7 @@ export default function SoloGame() {
           });
           setGameMode('completed');
           setViewState('start');
+          fetchCategoryRankings();
           return;
         }
 
@@ -245,6 +247,10 @@ export default function SoloGame() {
         pendingVideoIdRef.current = result.videoId || null;
         setGameMode('resume');
         setViewState('start');
+        // Fetch rankings if user has claims
+        if (result.game.claims && result.game.claims.length > 0) {
+          fetchCategoryRankings();
+        }
       } catch (error) {
         console.error('Failed to load solo game:', error);
         setViewState('start');
@@ -493,6 +499,7 @@ export default function SoloGame() {
     completeGame();
     setViewState('completed');
     pauseVideo();
+    fetchCategoryRankings();
     const state = useSoloGameStore.getState();
     trackEvent({
       eventName: 'solo_game_completed',
@@ -536,6 +543,8 @@ export default function SoloGame() {
         currentNumberIndex: currentIndex - 1,
       });
       recordClaim(category, result.claim.numberCountAtClaim, result.claim.claimedAt);
+      // Re-fetch rankings after successful claim
+      fetchCategoryRankings();
       trackEvent({
         eventName: 'solo_claim_result',
         properties: {
@@ -603,6 +612,16 @@ export default function SoloGame() {
       setLivePlayerCount(prev => prev + Math.floor(Math.random() * 5) + 1);
     }
   }, [currentIndex]);
+
+  // Fetch category rankings
+  const fetchCategoryRankings = async () => {
+    try {
+      const result = await apiService.getSoloCategoryRankings();
+      setCategoryRankings(result);
+    } catch (error) {
+      console.error('Failed to fetch category rankings:', error);
+    }
+  };
 
   const calledCount = currentIndex;
   const currentNumber = getCurrentNumber();
@@ -726,7 +745,7 @@ export default function SoloGame() {
 
         {/* Completed / Already Played */}
         {viewState === 'completed' && (
-          <SoloGameResults onBackToLobby={() => returnToStartScreen('completed')} />
+          <SoloGameResults onBackToLobby={() => returnToStartScreen('completed')} categoryRankings={categoryRankings} />
         )}
 
         {/* Active Game View — unified for playing and paused states */}
@@ -868,25 +887,28 @@ export default function SoloGame() {
               py={2}
               spacing={3}
             >
-              {/* Overlapping avatar faces */}
+              {/* Overlapping bitmoji avatar faces */}
               <HStack spacing={0}>
-                {['😊', '👦', '🧑', '👩', '😎'].map((emoji, i) => (
+                {['player-1', 'player-2', 'player-3', 'player-4', 'player-5'].map((seed, i) => (
                   <Box
                     key={i}
                     w="24px"
                     h="24px"
                     borderRadius="full"
-                    bg="grey.700"
                     border="2px solid"
                     borderColor="grey.900"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    fontSize="xs"
+                    overflow="hidden"
                     ml={i > 0 ? '-8px' : '0'}
                     zIndex={5 - i}
+                    bg="grey.700"
                   >
-                    {emoji}
+                    <img
+                      src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
+                      alt=""
+                      width="24"
+                      height="24"
+                      style={{ display: 'block' }}
+                    />
                   </Box>
                 ))}
                 <Box
@@ -925,7 +947,7 @@ export default function SoloGame() {
             <SoloTicket ticket={ticket} />
 
             {/* Claim Buttons */}
-            <SoloClaimButtons onClaim={handleClaim} isClaimLoading={claimLoading} />
+            <SoloClaimButtons onClaim={handleClaim} isClaimLoading={claimLoading} categoryRankings={categoryRankings} />
 
             {/* Number Board */}
             <SoloNumberBoard />

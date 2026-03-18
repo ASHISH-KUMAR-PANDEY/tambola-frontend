@@ -689,6 +689,12 @@ class ApiService {
     return this.request<SoloLeaderboardResponse>(`/api/v1/solo/leaderboard${query}`);
   }
 
+  async getSoloCategoryRankings(weekId?: string): Promise<CategoryRankingsResponse> {
+    const baseQuery = this.getSoloQuery();
+    const weekParam = weekId ? `&weekId=${weekId}` : '';
+    return this.request<CategoryRankingsResponse>(`/api/v1/solo/category-rankings${baseQuery}${weekParam}`);
+  }
+
   async updateSoloProgress(data: {
     soloGameId: string;
     currentIndex: number;
@@ -848,6 +854,19 @@ export interface SoloLeaderboardResponse {
   };
   leaderboard: SoloLeaderboardEntry[];
   playerCount?: number;
+}
+
+export interface CategoryRankingEntry {
+  rank: number;
+  userName: string;
+  numberCountAtClaim: number;
+  isCurrentUser: boolean;
+}
+
+export interface CategoryRankingsResponse {
+  rankings: Record<string, CategoryRankingEntry[]>;
+  userRanks: Record<string, number | null>;
+  totalClaimers: Record<string, number>;
 }
 
 export interface ConfigureSoloWeekResponse {
