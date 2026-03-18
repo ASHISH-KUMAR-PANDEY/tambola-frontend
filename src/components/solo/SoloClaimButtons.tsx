@@ -6,6 +6,18 @@ import type { CategoryRankingsResponse } from '../../services/api.service';
 const getAvatarUrl = (name: string) =>
   `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 
+// Arrange entries: filter anonymous, take 9, place current user in middle (position 4-5)
+function arrangeEntries(entries: any[]): any[] {
+  const named = entries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser);
+  const currentUser = named.find(e => e.isCurrentUser);
+  const others = named.filter(e => !e.isCurrentUser).slice(0, currentUser ? 8 : 9);
+  if (!currentUser) return others.slice(0, 9);
+  // Insert current user at position 4 (middle of 9)
+  const pos = Math.min(4, others.length);
+  const result = [...others.slice(0, pos), currentUser, ...others.slice(pos)];
+  return result.slice(0, 9);
+}
+
 interface SoloClaimButtonsProps {
   onClaim: (category: WinCategory) => void;
   isClaimLoading: WinCategory | null;
@@ -112,7 +124,7 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
                 >
                   {rankingEntries.length > 0 ? (
                     <HStack spacing={2} flexWrap="wrap" justify="center" gap={2}>
-                      {rankingEntries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser).map((entry) => (
+                      {arrangeEntries(rankingEntries).map((entry) => (
                         <HStack
                           key={`${key}-${entry.rank}`}
                           spacing={1.5}

@@ -6,6 +6,16 @@ import type { CategoryRankingsResponse } from '../../services/api.service';
 const getAvatarUrl = (name: string) =>
   `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 
+function arrangeEntries(entries: any[]): any[] {
+  const named = entries.filter((e: any) => e.userName !== 'Anonymous' || e.isCurrentUser);
+  const currentUser = named.find((e: any) => e.isCurrentUser);
+  const others = named.filter((e: any) => !e.isCurrentUser).slice(0, currentUser ? 8 : 9);
+  if (!currentUser) return others.slice(0, 9);
+  const pos = Math.min(4, others.length);
+  const result = [...others.slice(0, pos), currentUser, ...others.slice(pos)];
+  return result.slice(0, 9);
+}
+
 const categoryLabels: Record<string, string> = {
   EARLY_5: 'पहले पांच',
   TOP_LINE: 'ऊपर वाली लाइन',
@@ -76,7 +86,7 @@ export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameRes
 
                 {/* Player bubbles */}
                 <HStack spacing={2} flexWrap="wrap" justify="center" gap={2} px={3} py={3}>
-                  {entries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser).map((entry) => (
+                  {arrangeEntries(entries).map((entry) => (
                     <HStack
                       key={`${category}-${entry.rank}`}
                       spacing={1.5}
