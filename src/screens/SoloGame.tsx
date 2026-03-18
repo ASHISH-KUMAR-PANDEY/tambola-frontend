@@ -847,7 +847,17 @@ export default function SoloGame() {
               {/* Right: Refresh Button */}
               <Box
                 as="button"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  // Re-create the YouTube iframe instead of full page reload
+                  // (full reload sends user back to the intermediate start screen)
+                  const savedVideoId = videoId;
+                  if (savedVideoId) {
+                    setVideoId(null);
+                    requestAnimationFrame(() => {
+                      setVideoId(savedVideoId);
+                    });
+                  }
+                }}
                 bg="grey.700"
                 border="1px solid"
                 borderColor="whiteAlpha.400"
