@@ -1,4 +1,4 @@
-import { Box, VStack, HStack, Text, Button, Badge, Image } from '@chakra-ui/react';
+import { Box, VStack, HStack, Text, Button, Image } from '@chakra-ui/react';
 import { SoloTicket } from './SoloTicket';
 import { useSoloGameStore } from '../../stores/soloGameStore';
 import type { CategoryRankingsResponse } from '../../services/api.service';
