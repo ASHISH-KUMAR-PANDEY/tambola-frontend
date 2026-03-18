@@ -577,6 +577,33 @@ export default function SoloGame() {
     }
   };
 
+  // Fake live player count — fluctuates during gameplay
+  const [livePlayerCount, setLivePlayerCount] = useState(() => {
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const base = 300 + ((seed * 9301 + 49297) % 233280) / 233280 * 200;
+    return Math.floor(base);
+  });
+
+  useEffect(() => {
+    if (viewState !== 'playing' && viewState !== 'paused') return;
+    const interval = setInterval(() => {
+      setLivePlayerCount(prev => {
+        // Small random fluctuation with net positive bias
+        const change = Math.floor(Math.random() * 7) - 2; // -2 to +4
+        return Math.max(200, prev + change);
+      });
+    }, 8000 + Math.random() * 7000); // Every 8-15 seconds
+    return () => clearInterval(interval);
+  }, [viewState]);
+
+  // Bump count when a new number is called
+  useEffect(() => {
+    if (currentIndex > 0 && (viewState === 'playing' || viewState === 'paused')) {
+      setLivePlayerCount(prev => prev + Math.floor(Math.random() * 5) + 1);
+    }
+  }, [currentIndex]);
+
   const calledCount = currentIndex;
   const currentNumber = getCurrentNumber();
   const progress = (calledCount / 90) * 100;
@@ -829,6 +856,70 @@ export default function SoloGame() {
 
             {/* Thin progress bar */}
             <Progress value={progress} colorScheme="brand" w="100%" borderRadius="full" size="xs" />
+
+            {/* Live players row */}
+            <HStack
+              w="100%"
+              justify="center"
+              align="center"
+              bgGradient="linear(to-r, rgba(37,141,88,0.3), rgba(239,167,63,0.2), rgba(37,141,88,0.3))"
+              borderRadius="lg"
+              px={4}
+              py={2}
+              spacing={3}
+            >
+              {/* Overlapping avatar faces */}
+              <HStack spacing={0}>
+                {['😊', '👦', '🧑', '👩', '😎'].map((emoji, i) => (
+                  <Box
+                    key={i}
+                    w="24px"
+                    h="24px"
+                    borderRadius="full"
+                    bg="grey.700"
+                    border="2px solid"
+                    borderColor="grey.900"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontSize="xs"
+                    ml={i > 0 ? '-8px' : '0'}
+                    zIndex={5 - i}
+                  >
+                    {emoji}
+                  </Box>
+                ))}
+                <Box
+                  w="24px"
+                  h="24px"
+                  borderRadius="full"
+                  bg="brand.600"
+                  border="2px solid"
+                  borderColor="grey.900"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  ml="-8px"
+                  zIndex={0}
+                >
+                  <Text fontSize="2xs" color="white" fontWeight="bold">+</Text>
+                </Box>
+              </HStack>
+
+              {/* Player count */}
+              <HStack spacing={1.5}>
+                <Box
+                  w="6px"
+                  h="6px"
+                  borderRadius="full"
+                  bg="#E74C3C"
+                  css={{ animation: 'pulse 1.5s ease-in-out infinite' }}
+                />
+                <Text fontSize="xs" fontWeight="semibold" color="whiteAlpha.800">
+                  {livePlayerCount.toLocaleString('en-IN')}+ आपके साथ खेल रहे हैं
+                </Text>
+              </HStack>
+            </HStack>
 
             {/* Ticket */}
             <SoloTicket ticket={ticket} />
