@@ -180,7 +180,7 @@ export function SoloGameCTA() {
           zIndex={1}
           animation={shouldPulse ? `${float} 4s ease-in-out infinite` : undefined}
         >
-          DAILY TAMBOLA
+          LIVE TAMBOLA
         </Text>
 
         {/* Accent line under title */}

@@ -380,7 +380,7 @@ export default function SoloGame() {
         <HStack w="100%" justify="space-between" align="center">
           <Logo height={{ base: '20px', md: '24px' }} />
           <Heading size={{ base: 'sm', md: 'md' }} color="white">
-            Daily Tambola
+            Live Tambola
           </Heading>
           <Button
             variant="outline"
@@ -396,7 +396,7 @@ export default function SoloGame() {
         {viewState === 'not_configured' && (
           <VStack spacing={6} py={8}>
             <Heading size="lg" color="white" textAlign="center">
-              Daily Tambola
+              Live Tambola
             </Heading>
             <Text color="grey.300" textAlign="center" fontSize={{ base: 'sm', md: 'md' }}>
               इस हफ्ते का गेम अभी सेट नहीं हुआ है। कृपया बाद में आएं!
@@ -411,7 +411,7 @@ export default function SoloGame() {
         {viewState === 'start' && (
           <VStack spacing={6} py={8}>
             <Heading size="lg" color="white" textAlign="center">
-              Daily Tambola
+              Live Tambola
             </Heading>
             <Text color="grey.300" textAlign="center" fontSize={{ base: 'sm', md: 'md' }}>
               वीडियो में नंबर बुलाए जाएंगे — आप मार्क करें और दावा करें।
