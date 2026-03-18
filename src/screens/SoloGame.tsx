@@ -95,7 +95,6 @@ export default function SoloGame() {
   const {
     playerState,
     currentTime,
-    play: playVideo,
     pause: pauseVideo,
     mute: muteVideo,
     unMute: unMuteVideo,
