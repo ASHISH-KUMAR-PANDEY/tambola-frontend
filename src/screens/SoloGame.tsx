@@ -32,6 +32,7 @@ import { SoloNumberBoard } from '../components/solo/SoloNumberBoard';
 import { SoloClaimButtons } from '../components/solo/SoloClaimButtons';
 import { SoloGameResults } from '../components/solo/SoloGameResults';
 import { SoloLeaderboard } from '../components/solo/SoloLeaderboard';
+import { HowToPlay } from '../components/solo/HowToPlay';
 import { Logo } from '../components/Logo';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 
@@ -706,6 +707,7 @@ export default function SoloGame() {
             >
               {gameMode === 'completed' ? 'टिकट देखो' : gameMode === 'resume' ? 'जारी रखें' : 'गेम शुरू करें'}
             </Button>
+            <HowToPlay />
           </VStack>
         )}
 
