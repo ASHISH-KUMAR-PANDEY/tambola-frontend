@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { getUtmSource } from '../utils/analytics';
+import { getUtmParams } from '../utils/analytics';
 
 const RUDDERSTACK_ENDPOINT = 'https://stageindiayizr.dataplane.rudderstack.com';
 
@@ -94,7 +94,7 @@ export const InitializeTambolaAnalytics = () => {
               deviceId,
               app_user_id: appUserId,
               platform: 'WEB',
-              utm_source: getUtmSource(),
+              ...getUtmParams(),
               timestamp: new Date().toISOString(),
             });
 

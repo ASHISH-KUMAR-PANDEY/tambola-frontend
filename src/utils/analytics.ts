@@ -1,25 +1,36 @@
 /**
- * Get utm_source for current session:
- * 1. URL has utm_source → save to sessionStorage and use
+ * Get a UTM param for current session:
+ * 1. URL has param → save to sessionStorage and use
  * 2. Already saved in sessionStorage (same tab) → use
- * 3. Flutter bridge (app_user_id exists) → 'in_app'
- * 4. None → 'direct'
- *
- * Uses sessionStorage instead of localStorage so utm_source
- * only persists for the current tab/session, not forever.
+ * 3. For utm_source only: Flutter bridge → 'in_app', else 'direct'
  */
-export const getUtmSource = (): string => {
+const getUtmParam = (key: string, fallback: string = ''): string => {
   const params = new URLSearchParams(window.location.search);
-  const urlUtm = params.get('utm_source');
-  if (urlUtm) {
-    sessionStorage.setItem('utm_source', urlUtm);
-    return urlUtm;
+  const urlVal = params.get(key);
+  if (urlVal) {
+    sessionStorage.setItem(key, urlVal);
+    return urlVal;
   }
 
-  const stored = sessionStorage.getItem('utm_source');
+  const stored = sessionStorage.getItem(key);
   if (stored) return stored;
 
-  if (localStorage.getItem('app_user_id')) return 'in_app';
+  return fallback;
+};
 
+export const getUtmSource = (): string => {
+  const val = getUtmParam('utm_source');
+  if (val) return val;
+  if (localStorage.getItem('app_user_id')) return 'in_app';
   return 'direct';
 };
+
+export const getUtmMedium = (): string => getUtmParam('utm_medium');
+
+export const getUtmCampaign = (): string => getUtmParam('utm_campaign');
+
+export const getUtmParams = () => ({
+  utm_source: getUtmSource(),
+  utm_medium: getUtmMedium(),
+  utm_campaign: getUtmCampaign(),
+});

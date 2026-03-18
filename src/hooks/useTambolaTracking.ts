@@ -18,7 +18,7 @@ const getAppUserId = (): string | null => {
   return rawAppUserId && rawAppUserId !== 'lobby' ? rawAppUserId : null;
 };
 
-import { getUtmSource } from '../utils/analytics';
+import { getUtmParams } from '../utils/analytics';
 
 const getAppendedPlatformEventName = (eventName: string): string => {
   return `${eventName}_WEB`;
@@ -63,7 +63,7 @@ export const useTambolaTracking = () => {
       user_email: user?.email || null,
       device_id: getDeviceId(),
       platform: 'WEB',
-      utm_source: getUtmSource(),
+      ...getUtmParams(),
       timestamp: new Date().toISOString(),
       // Add game context if available
       ...(playerId && { player_id: playerId }),
