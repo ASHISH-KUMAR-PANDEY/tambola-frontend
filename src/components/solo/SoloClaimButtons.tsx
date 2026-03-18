@@ -9,14 +9,11 @@ const getAvatarUrl = (name: string) =>
 // Fake Indian names to pad when API returns fewer than 9 named players
 const fakeNames = ['Ravi', 'Sunita', 'Mohit', 'Kavita', 'Deepak', 'Meena', 'Suresh', 'Pooja', 'Arun', 'Sapna', 'Vikas', 'Rekha'];
 
-// Arrange entries: filter anonymous, shuffle, pad to 9, place current user in middle
+// Arrange entries: filter anonymous, pad to 9, stable order, current user in middle
 function arrangeEntries(entries: any[]): any[] {
   const named = entries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser);
   const currentUser = named.find(e => e.isCurrentUser);
   let others = named.filter(e => !e.isCurrentUser);
-
-  // Shuffle others so it doesn't look like a ranked list
-  others = others.sort(() => 0.5 - Math.random());
 
   // Pad with fake names if fewer than 8 others
   const needed = (currentUser ? 8 : 9) - others.length;

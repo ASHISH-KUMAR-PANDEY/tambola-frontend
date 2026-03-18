@@ -12,7 +12,6 @@ function arrangeEntries(entries: any[]): any[] {
   const named = entries.filter((e: any) => e.userName !== 'Anonymous' || e.isCurrentUser);
   const currentUser = named.find((e: any) => e.isCurrentUser);
   let others = named.filter((e: any) => !e.isCurrentUser);
-  others = others.sort(() => 0.5 - Math.random());
   const needed = (currentUser ? 8 : 9) - others.length;
   if (needed > 0) {
     const used = new Set(others.map((e: any) => e.userName));
