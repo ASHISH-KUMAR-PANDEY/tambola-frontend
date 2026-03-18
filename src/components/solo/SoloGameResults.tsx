@@ -76,7 +76,7 @@ export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameRes
 
                 {/* Player bubbles */}
                 <HStack spacing={2} flexWrap="wrap" justify="center" gap={2} px={3} py={3}>
-                  {entries.map((entry) => (
+                  {entries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser).map((entry) => (
                     <HStack
                       key={`${category}-${entry.rank}`}
                       spacing={1.5}

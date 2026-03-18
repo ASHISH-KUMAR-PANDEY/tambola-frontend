@@ -860,16 +860,17 @@ export default function SoloGame() {
                 </Box>
               )}
 
-              {/* Right: Play/Pause Button */}
+              {/* Right: Refresh Button */}
               <Button
-                colorScheme={isPlaying ? 'yellow' : 'brand'}
+                colorScheme="grey"
+                variant="outline"
                 size="sm"
-                px={4}
+                px={3}
                 fontWeight="bold"
                 fontSize="sm"
-                onClick={isPlaying ? handlePause : handleResume}
+                onClick={() => window.location.reload()}
               >
-                {isPlaying ? '⏸ रोकें' : '▶ चालू'}
+                🔄
               </Button>
             </HStack>
 

@@ -112,7 +112,7 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
                 >
                   {rankingEntries.length > 0 ? (
                     <HStack spacing={2} flexWrap="wrap" justify="center" gap={2}>
-                      {rankingEntries.map((entry) => (
+                      {rankingEntries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser).map((entry) => (
                         <HStack
                           key={`${key}-${entry.rank}`}
                           spacing={1.5}
