@@ -6,16 +6,35 @@ import type { CategoryRankingsResponse } from '../../services/api.service';
 const getAvatarUrl = (name: string) =>
   `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 
-// Arrange entries: filter anonymous, take 9, place current user in middle (position 4-5)
+// Fake Indian names to pad when API returns fewer than 9 named players
+const fakeNames = ['Ravi', 'Sunita', 'Mohit', 'Kavita', 'Deepak', 'Meena', 'Suresh', 'Pooja', 'Arun', 'Sapna', 'Vikas', 'Rekha'];
+
+// Arrange entries: filter anonymous, shuffle, pad to 9, place current user in middle
 function arrangeEntries(entries: any[]): any[] {
   const named = entries.filter(e => e.userName !== 'Anonymous' || e.isCurrentUser);
   const currentUser = named.find(e => e.isCurrentUser);
-  const others = named.filter(e => !e.isCurrentUser).slice(0, currentUser ? 8 : 9);
-  if (!currentUser) return others.slice(0, 9);
-  // Insert current user at position 4 (middle of 9)
+  let others = named.filter(e => !e.isCurrentUser);
+
+  // Shuffle others so it doesn't look like a ranked list
+  others = others.sort(() => 0.5 - Math.random());
+
+  // Pad with fake names if fewer than 8 others
+  const needed = (currentUser ? 8 : 9) - others.length;
+  if (needed > 0) {
+    const used = new Set(others.map(e => e.userName));
+    const padding = fakeNames
+      .filter(n => !used.has(n))
+      .slice(0, needed)
+      .map(n => ({ rank: 0, userName: n, numberCountAtClaim: 0, isCurrentUser: false }));
+    others = [...others, ...padding];
+  }
+
+  others = others.slice(0, currentUser ? 8 : 9);
+  if (!currentUser) return others;
+
+  // Insert current user at position 4-5 (middle)
   const pos = Math.min(4, others.length);
-  const result = [...others.slice(0, pos), currentUser, ...others.slice(pos)];
-  return result.slice(0, 9);
+  return [...others.slice(0, pos), currentUser, ...others.slice(pos)].slice(0, 9);
 }
 
 interface SoloClaimButtonsProps {

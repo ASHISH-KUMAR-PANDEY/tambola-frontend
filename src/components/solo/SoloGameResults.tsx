@@ -6,14 +6,26 @@ import type { CategoryRankingsResponse } from '../../services/api.service';
 const getAvatarUrl = (name: string) =>
   `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 
+const fakeNames = ['Ravi', 'Sunita', 'Mohit', 'Kavita', 'Deepak', 'Meena', 'Suresh', 'Pooja', 'Arun', 'Sapna', 'Vikas', 'Rekha'];
+
 function arrangeEntries(entries: any[]): any[] {
   const named = entries.filter((e: any) => e.userName !== 'Anonymous' || e.isCurrentUser);
   const currentUser = named.find((e: any) => e.isCurrentUser);
-  const others = named.filter((e: any) => !e.isCurrentUser).slice(0, currentUser ? 8 : 9);
-  if (!currentUser) return others.slice(0, 9);
+  let others = named.filter((e: any) => !e.isCurrentUser);
+  others = others.sort(() => 0.5 - Math.random());
+  const needed = (currentUser ? 8 : 9) - others.length;
+  if (needed > 0) {
+    const used = new Set(others.map((e: any) => e.userName));
+    const padding = fakeNames
+      .filter(n => !used.has(n))
+      .slice(0, needed)
+      .map(n => ({ rank: 0, userName: n, numberCountAtClaim: 0, isCurrentUser: false }));
+    others = [...others, ...padding];
+  }
+  others = others.slice(0, currentUser ? 8 : 9);
+  if (!currentUser) return others;
   const pos = Math.min(4, others.length);
-  const result = [...others.slice(0, pos), currentUser, ...others.slice(pos)];
-  return result.slice(0, 9);
+  return [...others.slice(0, pos), currentUser, ...others.slice(pos)].slice(0, 9);
 }
 
 const categoryLabels: Record<string, string> = {
