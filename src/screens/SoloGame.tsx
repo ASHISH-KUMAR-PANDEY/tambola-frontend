@@ -479,21 +479,6 @@ export default function SoloGame() {
     proceedEnterGame();
   };
 
-  const handleResume = () => {
-    playVideo();
-  };
-
-  const handlePause = () => {
-    pauseVideo();
-    trackEvent({
-      eventName: 'solo_game_paused',
-      properties: {
-        solo_game_id: soloGameId,
-        current_index: currentIndex,
-        pause_reason: 'user_paused',
-      },
-    });
-  };
 
   const handleGameComplete = async () => {
     completeGame();
