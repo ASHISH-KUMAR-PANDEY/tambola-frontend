@@ -13,10 +13,19 @@ import {
   Badge,
   Progress,
   AspectRatio,
+  Input,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  FormControl,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { apiService } from '../services/api.service';
 import { useSoloGameStore, type WinCategory } from '../stores/soloGameStore';
+import { useAuthStore } from '../stores/authStore';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { SoloTicket } from '../components/solo/SoloTicket';
 import { SoloNumberBoard } from '../components/solo/SoloNumberBoard';
@@ -50,6 +59,11 @@ export default function SoloGame() {
   const [isStarting, setIsStarting] = useState(false);
   const [claimLoading, setClaimLoading] = useState<WinCategory | null>(null);
   const [gameMode, setGameMode] = useState<'fresh' | 'resume' | 'completed'>('fresh');
+  const { user } = useAuthStore();
+
+  // Name collection (same localStorage key as main game)
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [tempName, setTempName] = useState('');
 
   // Video state
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -336,8 +350,46 @@ export default function SoloGame() {
     }
   };
 
-  // Enter game from the start screen (handles fresh, resume, completed)
-  const handleEnterGame = () => {
+  // Check if user has a name, show modal if not
+  const isDefaultName = (name: string) => /^Player_/i.test(name) || /^user_/i.test(name);
+
+  const hasPlayerName = (): boolean => {
+    const savedName = localStorage.getItem('playerName');
+    const userName = user?.name;
+    const name = savedName || userName;
+    return !!name && name.trim().length > 0 && !isDefaultName(name);
+  };
+
+  const handleNameSubmit = async () => {
+    if (!tempName.trim()) return;
+    const name = tempName.trim();
+
+    // Save to localStorage (shared with main game)
+    localStorage.setItem('playerName', name);
+    setShowNameModal(false);
+    setTempName('');
+
+    // Save to database
+    try {
+      const response = await apiService.updateUserProfile({ name });
+      if (response.user && user) {
+        useAuthStore.getState().setUser({ ...user, name: response.user.name });
+      }
+    } catch (error) {
+      console.error('Failed to save name to database:', error);
+    }
+
+    // Track registration
+    trackEvent({
+      eventName: 'player_registered',
+      properties: { user_name: name },
+    });
+
+    // Now proceed with entering the game
+    proceedEnterGame();
+  };
+
+  const proceedEnterGame = () => {
     if (gameMode === 'completed') {
       setViewState('completed');
       trackEvent({
@@ -364,6 +416,15 @@ export default function SoloGame() {
       // Fresh game — call handleStartGame
       handleStartGame();
     }
+  };
+
+  // Enter game from the start screen — check name first
+  const handleEnterGame = () => {
+    if (!hasPlayerName()) {
+      setShowNameModal(true);
+      return;
+    }
+    proceedEnterGame();
   };
 
   const handleResume = () => {
@@ -682,6 +743,87 @@ export default function SoloGame() {
           </VStack>
         )}
       </VStack>
+
+      {/* Name Collection Modal — same as Lobby */}
+      <Modal isOpen={showNameModal} onClose={() => {}} closeOnOverlayClick={false} isCentered>
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent
+          mx={4}
+          bg="grey.700"
+          position="relative"
+          overflow="visible"
+          sx={{
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: '-4px',
+              borderRadius: 'md',
+              padding: '4px',
+              background: 'linear-gradient(90deg, #FFD700, #00FF00, #00FFFF, #FF00FF, #FFD700)',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+              animation: 'rotateBorder 3s linear infinite, pulseBorder 1.5s ease-in-out infinite',
+              backgroundSize: '300% 100%',
+              zIndex: -1,
+            },
+            '@keyframes rotateBorder': {
+              '0%': { backgroundPosition: '0% 0%' },
+              '100%': { backgroundPosition: '300% 0%' },
+            },
+            '@keyframes pulseBorder': {
+              '0%, 100%': { filter: 'brightness(1) drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))' },
+              '50%': { filter: 'brightness(1.5) drop-shadow(0 0 20px rgba(0, 255, 0, 0.8))' },
+            },
+          }}
+          boxShadow="0 0 30px 5px rgba(0, 255, 0, 0.3), 0 0 60px 10px rgba(255, 215, 0, 0.2)"
+        >
+          <ModalHeader color="white" fontSize="lg" fontWeight="bold" pb={2} textAlign="center">
+            Live Tambola खेलने के लिए अपना नाम दर्ज करें
+          </ModalHeader>
+          <ModalBody pb={6}>
+            <FormControl>
+              <Input
+                placeholder="नाम लिखें"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handleNameSubmit();
+                }}
+                autoFocus
+                color="white"
+                bg="rgba(255, 255, 255, 0.1)"
+                borderColor="rgba(255, 255, 255, 0.3)"
+                borderWidth="2px"
+                _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+                _hover={{ borderColor: 'rgba(255, 255, 255, 0.5)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                _focus={{ borderColor: '#FFD700', boxShadow: '0 0 0 1px #FFD700, 0 0 15px rgba(255, 215, 0, 0.3)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                fontSize="md"
+                fontWeight="medium"
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              onClick={handleNameSubmit}
+              isDisabled={!tempName.trim()}
+              w="100%"
+              size="lg"
+              bg="brand.500"
+              color="white"
+              fontWeight="bold"
+              fontSize="lg"
+              _hover={{ bg: 'brand.600', transform: 'scale(1.02)', boxShadow: '0 0 20px rgba(37, 141, 88, 0.6)' }}
+              _active={{ bg: 'brand.700', transform: 'scale(0.98)' }}
+              _disabled={{ bg: 'grey.600', color: 'grey.400', opacity: 0.5, cursor: 'not-allowed' }}
+              transition="all 0.2s"
+              boxShadow="0 4px 15px rgba(37, 141, 88, 0.4)"
+            >
+              जारी रखें
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
