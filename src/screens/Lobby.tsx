@@ -775,10 +775,9 @@ export default function Lobby() {
                 >
                   <AspectRatio ratio={16 / 9}>
                     <iframe
-                      src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=1`}
+                      src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=0&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}`}
                       title="YouTube video player"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
                     />
                   </AspectRatio>
                 </Box>
@@ -1024,10 +1023,9 @@ export default function Lobby() {
             >
               <AspectRatio ratio={16 / 9}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=1`}
+                  src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=0&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}`}
                   title="YouTube video player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
                 />
               </AspectRatio>
             </Box>
