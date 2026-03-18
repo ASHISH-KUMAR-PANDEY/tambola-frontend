@@ -53,6 +53,7 @@ export default function Lobby() {
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
   const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
+  const [videoMuted, setVideoMuted] = useState(true);
   const [currentRegistrationCard, setCurrentRegistrationCard] = useState<RegistrationCardType | null>(null);
   const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
     // Load reminded games from localStorage
@@ -772,14 +773,56 @@ export default function Lobby() {
                   boxShadow="xl"
                   border="2px"
                   borderColor="brand.500"
+                  position="relative"
                 >
                   <AspectRatio ratio={16 / 9}>
                     <iframe
-                      src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=0&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}`}
+                      id="lobby-yt-embed-1"
+                      src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=1&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}&enablejsapi=1&origin=${window.location.origin}`}
                       title="YouTube video player"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     />
                   </AspectRatio>
+                  <Box
+                    as="button"
+                    position="absolute"
+                    bottom={3}
+                    right={3}
+                    bg="blackAlpha.700"
+                    color="white"
+                    borderRadius="full"
+                    w="36px"
+                    h="36px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontSize="lg"
+                    zIndex={2}
+                    cursor="pointer"
+                    _hover={{ bg: 'blackAlpha.800' }}
+                    onClick={() => {
+                      const iframe = document.getElementById('lobby-yt-embed-1') as HTMLIFrameElement;
+                      if (iframe?.contentWindow) {
+                        const cmd = videoMuted ? 'unMute' : 'mute';
+                        iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+                        setVideoMuted(!videoMuted);
+                      }
+                    }}
+                  >
+                    {videoMuted ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <line x1="23" y1="9" x2="17" y2="15" />
+                        <line x1="17" y1="9" x2="23" y2="15" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                    )}
+                  </Box>
                 </Box>
               )}
 
@@ -1020,14 +1063,56 @@ export default function Lobby() {
               boxShadow="xl"
               border="2px"
               borderColor="brand.500"
+              position="relative"
             >
               <AspectRatio ratio={16 / 9}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=0&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}`}
+                  id="lobby-yt-embed-2"
+                  src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=1&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}&enablejsapi=1&origin=${window.location.origin}`}
                   title="YouTube video player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
               </AspectRatio>
+              <Box
+                as="button"
+                position="absolute"
+                bottom={3}
+                right={3}
+                bg="blackAlpha.700"
+                color="white"
+                borderRadius="full"
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="lg"
+                zIndex={2}
+                cursor="pointer"
+                _hover={{ bg: 'blackAlpha.800' }}
+                onClick={() => {
+                  const iframe = document.getElementById('lobby-yt-embed-2') as HTMLIFrameElement;
+                  if (iframe?.contentWindow) {
+                    const cmd = videoMuted ? 'unMute' : 'mute';
+                    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+                    setVideoMuted(!videoMuted);
+                  }
+                }}
+              >
+                {videoMuted ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <line x1="23" y1="9" x2="17" y2="15" />
+                        <line x1="17" y1="9" x2="23" y2="15" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                    )}
+              </Box>
             </Box>
           </Box>
         )}
