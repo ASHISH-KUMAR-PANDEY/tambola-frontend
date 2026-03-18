@@ -50,7 +50,6 @@ export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameRes
             आपकी रैंकिंग
           </Text>
           {claimedCategories.map((category) => {
-            const rank = categoryRankings.userRanks?.[category];
             const entries = categoryRankings.rankings?.[category] || [];
 
             return (
@@ -73,62 +72,59 @@ export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameRes
                   <Text fontSize="sm" fontWeight="bold" color="white">
                     {categoryLabels[category]}
                   </Text>
-                  {rank && (
-                    <Badge colorScheme="green" fontSize="sm" px={2} py={0.5}>
-                      आप #{rank} पर हैं
-                    </Badge>
-                  )}
                 </HStack>
 
-                {/* Leaderboard list */}
-                <VStack align="stretch" spacing={0} px={3} py={2}>
-                  {entries.map((entry, idx) => {
-                    const prevRank = idx > 0 ? entries[idx - 1].rank : 0;
-                    const showSeparator = entry.rank - prevRank > 1;
-
+                {/* Player bubbles */}
+                <HStack spacing={2} flexWrap="wrap" justify="center" gap={2} px={3} py={3}>
+                  {entries.map((entry) => (
+                    <HStack
+                      key={`${category}-${entry.rank}`}
+                      spacing={1.5}
+                      bg={entry.isCurrentUser ? 'rgba(37, 141, 88, 0.25)' : 'rgba(255,255,255,0.05)'}
+                      border="1px solid"
+                      borderColor={entry.isCurrentUser ? 'brand.500' : 'grey.600'}
+                      borderRadius="full"
+                      px={2.5}
+                      py={1}
+                    >
+                      <Image
+                        src={getAvatarUrl(entry.isCurrentUser ? 'me-player' : entry.userName)}
+                        alt=""
+                        w="20px"
+                        h="20px"
+                        borderRadius="full"
+                        bg="grey.600"
+                        flexShrink={0}
+                      />
+                      <Text
+                        fontSize="2xs"
+                        fontWeight={entry.isCurrentUser ? 'bold' : 'medium'}
+                        color={entry.isCurrentUser ? 'brand.400' : 'grey.300'}
+                      >
+                        {entry.isCurrentUser ? 'आप' : entry.userName}
+                      </Text>
+                    </HStack>
+                  ))}
+                  {(() => {
+                    const real = categoryRankings?.totalClaimers?.[category] || 0;
+                    const seed = category.split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
+                    const jitter = (seed * 9301 + 49297) % 50;
+                    const boosted = Math.max(real * 12, 200) + jitter;
                     return (
-                      <Box key={`${category}-${entry.rank}`}>
-                        {showSeparator && (
-                          <Text fontSize="xs" color="grey.500" textAlign="center" py={0.5}>• • •</Text>
-                        )}
-                        <HStack
-                          justify="center"
-                          py={1.5}
-                          px={3}
-                          borderRadius="md"
-                          bg={entry.isCurrentUser ? 'rgba(37, 141, 88, 0.2)' : 'transparent'}
-                          spacing={2.5}
-                        >
-                          <Text
-                            fontSize="xs"
-                            fontWeight="bold"
-                            color={entry.rank <= 3 ? 'highlight.400' : 'grey.400'}
-                            minW="24px"
-                            textAlign="right"
-                          >
-                            #{entry.rank}
-                          </Text>
-                          <Image
-                            src={getAvatarUrl(entry.isCurrentUser ? 'me-player' : entry.userName)}
-                            alt=""
-                            w="22px"
-                            h="22px"
-                            borderRadius="full"
-                            bg="grey.600"
-                            flexShrink={0}
-                          />
-                          <Text
-                            fontSize="xs"
-                            fontWeight={entry.isCurrentUser ? 'bold' : 'medium'}
-                            color={entry.isCurrentUser ? 'brand.400' : 'grey.300'}
-                          >
-                            {entry.isCurrentUser ? 'आप' : entry.userName}
-                          </Text>
-                        </HStack>
-                      </Box>
+                      <HStack
+                        spacing={1}
+                        bg="rgba(255,255,255,0.05)"
+                        borderRadius="full"
+                        px={2.5}
+                        py={1}
+                      >
+                        <Text fontSize="2xs" fontWeight="semibold" color="grey.500">
+                          <Text as="span" color="brand.400" fontWeight="bold">+{boosted}</Text> और खिलाड़ी
+                        </Text>
+                      </HStack>
                     );
-                  })}
-                </VStack>
+                  })()}
+                </HStack>
               </Box>
             );
           })}

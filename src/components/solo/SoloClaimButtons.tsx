@@ -35,10 +35,6 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
     }
   };
 
-  const userRank = (key: WinCategory): number | null => {
-    return categoryRankings?.userRanks?.[key] ?? null;
-  };
-
   return (
     <Box w="100%" maxW={{ base: '100%', md: '500px' }} mx="auto">
       <Text fontSize={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center" fontWeight="bold">
@@ -49,7 +45,6 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
           const claimed = claims.has(key);
           const isComplete = isPatternComplete(key, lineIndex);
           const loading = isClaimLoading === key;
-          const rank = userRank(key);
           const isExpanded = expandedCategory === key;
           const rankingEntries = categoryRankings?.rankings?.[key] || [];
 
@@ -79,11 +74,6 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
                 <HStack spacing={2}>
                   {claimed ? (
                     <>
-                      {rank && (
-                        <Badge bg="highlight.500" color="white" fontSize={{ base: 'xs', md: 'sm' }} px={2.5} py={0.5} borderRadius="md" fontWeight="bold">
-                          #{rank}
-                        </Badge>
-                      )}
                       <Badge colorScheme="green" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>
                         दावा किया ✓
                       </Badge>
@@ -103,7 +93,7 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
                       जीत का दावा करें
                     </Button>
                   ) : (
-                    <Badge colorScheme="grey" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>प्रगति में</Badge>
+                    <Badge bg="grey.200" color="grey.600" fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>प्रगति में</Badge>
                   )}
                 </HStack>
               </HStack>
@@ -118,51 +108,63 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
                   borderTop="0"
                   borderBottomRadius="md"
                   px={3}
-                  py={2}
+                  py={3}
                 >
                   {rankingEntries.length > 0 ? (
-                    <VStack align="stretch" spacing={1}>
-                      {rankingEntries.map((entry, idx) => {
-                        // Show separator if there's a gap between top entries and user's entry
-                        const prevRank = idx > 0 ? rankingEntries[idx - 1].rank : 0;
-                        const showSeparator = entry.rank - prevRank > 1;
-
+                    <HStack spacing={2} flexWrap="wrap" justify="center" gap={2}>
+                      {rankingEntries.map((entry) => (
+                        <HStack
+                          key={`${key}-${entry.rank}`}
+                          spacing={1.5}
+                          bg={entry.isCurrentUser ? 'green.100' : 'white'}
+                          border="1px solid"
+                          borderColor={entry.isCurrentUser ? 'green.400' : 'grey.200'}
+                          borderRadius="full"
+                          px={2.5}
+                          py={1}
+                        >
+                          <Image
+                            src={getAvatarUrl(entry.isCurrentUser ? 'me-player' : entry.userName)}
+                            alt=""
+                            w="20px"
+                            h="20px"
+                            borderRadius="full"
+                            bg="grey.200"
+                            flexShrink={0}
+                          />
+                          <Text
+                            fontSize="2xs"
+                            fontWeight={entry.isCurrentUser ? 'bold' : 'medium'}
+                            color={entry.isCurrentUser ? 'green.700' : 'grey.600'}
+                          >
+                            {entry.isCurrentUser ? 'आप' : entry.userName}
+                          </Text>
+                        </HStack>
+                      ))}
+                      {(() => {
+                        const real = categoryRankings?.totalClaimers?.[key] || 0;
+                        // Stable boost: seed from category name so it doesn't flicker
+                        const seed = key.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+                        const jitter = (seed * 9301 + 49297) % 50;
+                        const boosted = Math.max(real * 12, 200) + jitter;
                         return (
-                          <Box key={`${key}-${entry.rank}`}>
-                            {showSeparator && (
-                              <Text fontSize="xs" color="grey.400" textAlign="center" py={0.5}>• • •</Text>
-                            )}
-                            <HStack
-                              justify="center"
-                              py={1.5}
-                              px={3}
-                              borderRadius="md"
-                              bg={entry.isCurrentUser ? 'green.100' : 'transparent'}
-                              spacing={2.5}
-                            >
-                              <Text fontSize="xs" fontWeight="bold" color={entry.isCurrentUser ? 'green.700' : 'grey.400'} minW="24px" textAlign="right">
-                                #{entry.rank}
-                              </Text>
-                              <Image
-                                src={getAvatarUrl(entry.isCurrentUser ? 'me-player' : entry.userName)}
-                                alt=""
-                                w="22px"
-                                h="22px"
-                                borderRadius="full"
-                                bg="grey.200"
-                                flexShrink={0}
-                              />
-                              <Text fontSize="xs" fontWeight={entry.isCurrentUser ? 'bold' : 'medium'} color={entry.isCurrentUser ? 'green.800' : 'grey.700'}>
-                                {entry.isCurrentUser ? 'आप' : entry.userName}
-                              </Text>
-                            </HStack>
-                          </Box>
+                          <HStack
+                            spacing={1}
+                            bg="grey.100"
+                            borderRadius="full"
+                            px={2.5}
+                            py={1}
+                          >
+                            <Text fontSize="2xs" fontWeight="semibold" color="grey.500">
+                              <Text as="span" color="brand.500" fontWeight="bold">+{boosted}</Text> और खिलाड़ी
+                            </Text>
+                          </HStack>
                         );
-                      })}
-                    </VStack>
+                      })()}
+                    </HStack>
                   ) : (
                     <Text fontSize="xs" color="grey.400" textAlign="center" py={1}>
-                      रैंकिंग लोड हो रही है...
+                      लोड हो रहा है...
                     </Text>
                   )}
                 </Box>
