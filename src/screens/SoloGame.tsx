@@ -71,6 +71,7 @@ export default function SoloGame() {
   const [shouldAutoplay, setShouldAutoplay] = useState(false);
   const [resumeAtSeconds, setResumeAtSeconds] = useState<number | undefined>(undefined);
   const gameCompleteCalledRef = useRef(false);
+  const pendingVideoIdRef = useRef<string | null>(null);
 
   const {
     soloGameId,
@@ -229,7 +230,9 @@ export default function SoloGame() {
           claims: result.game.claims as any,
         });
 
-        // Store video/timestamp info for when user enters game
+        // Store video/timestamp info — but DON'T set videoId yet
+        // (setting videoId now would create iframe with autoplay=0;
+        //  we set it in proceedEnterGame so the hook creates it with autoplay=1)
         if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
 
         // Calculate where to resume the video from
@@ -238,7 +241,8 @@ export default function SoloGame() {
           setResumeAtSeconds(timestamps[resolvedIndex - 1]);
         }
 
-        if (result.videoId) setVideoId(result.videoId);
+        // Store videoId in a ref for later — don't trigger hook yet
+        pendingVideoIdRef.current = result.videoId || null;
         setGameMode('resume');
         setViewState('start');
       } catch (error) {
@@ -429,6 +433,11 @@ export default function SoloGame() {
       });
     } else if (gameMode === 'resume') {
       setShouldAutoplay(true);
+      // Now set videoId — hook will create iframe with autoplay=1
+      if (pendingVideoIdRef.current) {
+        setVideoId(pendingVideoIdRef.current);
+        pendingVideoIdRef.current = null;
+      }
       setViewState('playing');
       trackEvent({
         eventName: 'solo_game_resumed',
