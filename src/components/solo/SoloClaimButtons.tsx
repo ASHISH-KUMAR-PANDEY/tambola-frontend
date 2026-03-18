@@ -39,10 +39,6 @@ export function SoloClaimButtons({ onClaim, isClaimLoading, categoryRankings }: 
     return categoryRankings?.userRanks?.[key] ?? null;
   };
 
-  const totalForCategory = (key: WinCategory): number => {
-    return categoryRankings?.totalClaimers?.[key] ?? 0;
-  };
-
   return (
     <Box w="100%" maxW={{ base: '100%', md: '500px' }} mx="auto">
       <Text fontSize={{ base: 'sm', md: 'md' }} mb={{ base: 2, md: 3 }} color="white" textAlign="center" fontWeight="bold">

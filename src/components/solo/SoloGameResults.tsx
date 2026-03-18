@@ -52,7 +52,6 @@ export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameRes
           {claimedCategories.map((category) => {
             const rank = categoryRankings.userRanks?.[category];
             const entries = categoryRankings.rankings?.[category] || [];
-            const total = categoryRankings.totalClaimers?.[category] || 0;
 
             return (
               <Box
