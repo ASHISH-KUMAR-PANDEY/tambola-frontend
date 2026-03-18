@@ -326,7 +326,6 @@ export default function SoloGame() {
       window.history.pushState({ soloGame: true }, '');
 
       const handlePopState = () => {
-        pauseVideo();
         if (soloGameId && gameStatus === 'IN_PROGRESS') {
           apiService.updateSoloProgress({
             soloGameId,
@@ -334,8 +333,7 @@ export default function SoloGame() {
             markedNumbers: Array.from(markedNumbers),
           }).catch(() => {});
         }
-        setGameMode(gameStatus === 'COMPLETED' ? 'completed' : 'resume');
-        setViewState('start');
+        returnToStartScreen(gameStatus === 'COMPLETED' ? 'completed' : 'resume');
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -418,6 +416,18 @@ export default function SoloGame() {
 
     // Now proceed with entering the game
     proceedEnterGame();
+  };
+
+  // When going back to start screen, park videoId in ref so hook can re-create iframe on re-entry
+  const returnToStartScreen = (mode: 'resume' | 'completed') => {
+    pauseVideo();
+    if (videoId) {
+      pendingVideoIdRef.current = videoId;
+      setVideoId(null);
+      setShouldAutoplay(false);
+    }
+    setGameMode(mode);
+    setViewState('start');
   };
 
   const proceedEnterGame = () => {
@@ -596,8 +606,6 @@ export default function SoloGame() {
             size="xs"
             onClick={() => {
               if (viewState === 'playing' || viewState === 'paused' || viewState === 'completed') {
-                // Go back to start screen, pause video and save progress
-                pauseVideo();
                 if (soloGameId && gameStatus === 'IN_PROGRESS') {
                   apiService.updateSoloProgress({
                     soloGameId,
@@ -605,8 +613,7 @@ export default function SoloGame() {
                     markedNumbers: Array.from(markedNumbers),
                   }).catch(() => {});
                 }
-                setGameMode(gameStatus === 'COMPLETED' ? 'completed' : 'resume');
-                setViewState('start');
+                returnToStartScreen(gameStatus === 'COMPLETED' ? 'completed' : 'resume');
               } else {
                 navigate('/lobby');
               }
@@ -692,10 +699,7 @@ export default function SoloGame() {
 
         {/* Completed / Already Played */}
         {viewState === 'completed' && (
-          <SoloGameResults onBackToLobby={() => {
-            setGameMode('completed');
-            setViewState('start');
-          }} />
+          <SoloGameResults onBackToLobby={() => returnToStartScreen('completed')} />
         )}
 
         {/* Active Game View — unified for playing and paused states */}
