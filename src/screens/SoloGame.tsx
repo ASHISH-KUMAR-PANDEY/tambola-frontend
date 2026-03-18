@@ -435,7 +435,7 @@ export default function SoloGame() {
           solo_game_id: soloGameId,
           category,
           success: true,
-          rank: result.claim.rank || null,
+          rank: (result.claim as any).rank || null,
           numbers_called_to_claim: result.claim.numberCountAtClaim,
         },
       });
