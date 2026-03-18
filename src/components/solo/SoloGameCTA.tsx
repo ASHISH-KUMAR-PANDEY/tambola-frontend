@@ -76,8 +76,7 @@ export function SoloGameCTA() {
   let subtitle = 'रोज़ खेलो, रोज़ जीतो!';
   let accentFrom = '#F6B93B';
   let accentTo = '#E58E26';
-  let btnGradient = 'linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%)';
-  let btnTextColor = '#F6B93B';
+  let btnTextColor = '#111';
   let shouldPulse = true;
   let showPlayerCount = true;
   let showTimer = true;
@@ -87,8 +86,7 @@ export function SoloGameCTA() {
     subtitle = 'आज Sunday है — आराम करो!';
     accentFrom = '#555';
     accentTo = '#333';
-    btnGradient = 'linear-gradient(135deg, #222 0%, #333 100%)';
-    btnTextColor = '#aaa';
+    btnTextColor = '#ddd';
     shouldPulse = false;
     showPlayerCount = false;
     showTimer = false;
@@ -97,8 +95,7 @@ export function SoloGameCTA() {
     subtitle = 'आज का game खेल लिया! ✅';
     accentFrom = '#555';
     accentTo = '#333';
-    btnGradient = 'linear-gradient(135deg, #222 0%, #333 100%)';
-    btnTextColor = '#aaa';
+    btnTextColor = '#ddd';
     shouldPulse = false;
     showTimer = false;
   } else if (isInProgress) {
@@ -106,15 +103,13 @@ export function SoloGameCTA() {
     subtitle = 'Game अभी चल रहा है!';
     accentFrom = '#27AE60';
     accentTo = '#1E8449';
-    btnGradient = 'linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%)';
-    btnTextColor = '#2ECC71';
+    btnTextColor = '#fff';
   } else if (!isConfigured) {
     label = 'जल्द आ रहा है';
     subtitle = 'नया game तैयार हो रहा है...';
     accentFrom = '#555';
     accentTo = '#333';
-    btnGradient = 'linear-gradient(135deg, #222 0%, #333 100%)';
-    btnTextColor = '#aaa';
+    btnTextColor = '#ddd';
     shouldPulse = false;
     showPlayerCount = false;
     showTimer = false;
@@ -132,6 +127,8 @@ export function SoloGameCTA() {
       animation={shouldPulse ? `${pulseGlow} 3s ease-in-out infinite` : undefined}
       borderRadius="2xl"
       overflow="hidden"
+      border="2px solid"
+      borderColor={accentFrom}
       opacity={isDisabled ? 0.5 : 1}
       _hover={!isDisabled ? { transform: 'scale(1.015)', transition: 'all 0.25s ease' } : undefined}
       _active={!isDisabled ? { transform: 'scale(0.98)' } : undefined}
@@ -276,13 +273,11 @@ export function SoloGameCTA() {
             px={{ base: 6, md: 10 }}
             borderRadius="xl"
             textAlign="center"
-            border="1.5px solid"
-            borderColor={`${accentFrom}44`}
             css={{
-              background: btnGradient,
+              background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})`,
             }}
             _hover={{
-              borderColor: `${accentFrom}88`,
+              opacity: 0.9,
             }}
             transition="all 0.2s ease"
           >

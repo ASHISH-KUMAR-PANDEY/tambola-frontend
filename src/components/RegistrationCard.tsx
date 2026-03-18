@@ -1,4 +1,4 @@
-import { Box, Text, VStack, Center, HStack } from '@chakra-ui/react';
+import { Box, Text, VStack, Center, HStack, Flex } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import type { RegistrationCard as RegistrationCardType } from '../services/api.service';
@@ -16,62 +16,43 @@ const generateTicketStats = (cardId: string): { sold: number; left: number; last
     const timeSinceLastVisit = now - data.lastVisit;
     const hoursPassed = timeSinceLastVisit / (1000 * 60 * 60);
 
-    // Increase sold and decrease left based on time passed
-    // More aggressive changes for longer time gaps
     const soldIncrease = Math.floor(Math.random() * 200 + 50 + hoursPassed * 30);
     const leftDecrease = Math.floor(Math.random() * 30 + 10 + hoursPassed * 5);
 
     const newSold = data.sold + soldIncrease;
-    const newLeft = Math.max(50 + Math.floor(Math.random() * 50), data.left - leftDecrease); // Never below ~50-100
+    const newLeft = Math.max(50 + Math.floor(Math.random() * 50), data.left - leftDecrease);
 
     const newData = { sold: newSold, left: newLeft, lastVisit: now };
     localStorage.setItem(storageKey, JSON.stringify(newData));
     return newData;
   } else {
-    // First visit - generate initial numbers
-    const initialSold = 10000 + Math.floor(Math.random() * 5000); // 10,000 - 15,000
-    const initialLeft = 400 + Math.floor(Math.random() * 200); // 400 - 600
+    const initialSold = 10000 + Math.floor(Math.random() * 5000);
+    const initialLeft = 400 + Math.floor(Math.random() * 200);
     const newData = { sold: initialSold, left: initialLeft, lastVisit: now };
     localStorage.setItem(storageKey, JSON.stringify(newData));
     return newData;
   }
 };
 
-// Format number with commas (Indian style)
 const formatNumber = (num: number): string => {
   return num.toLocaleString('en-IN');
 };
 
-
-// Confetti animations - falling from top
+// Confetti animations
 const confettiFall = keyframes`
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(500px) rotate(1080deg) scale(0.5);
-    opacity: 0;
-  }
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(500px) rotate(1080deg) scale(0.5); opacity: 0; }
 `;
 
-// Confetti animations - rising from bottom
 const confettiRise = keyframes`
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-500px) rotate(-1080deg) scale(0.5);
-    opacity: 0;
-  }
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(-500px) rotate(-1080deg) scale(0.5); opacity: 0; }
 `;
 
 const confettiColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#FF69B4', '#00FF7F', '#FF4500', '#7B68EE'];
 
 interface RegistrationCardProps {
   card: RegistrationCardType;
-  // Optional external state management
   externalReminderSet?: boolean;
   onReminderChange?: (isSet: boolean) => void;
 }
@@ -82,7 +63,6 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
   const { trackEvent } = useTambolaTracking();
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Fake ticket scarcity stats
   const [ticketStats, setTicketStats] = useState<{ sold: number; left: number }>({ sold: 0, left: 0 });
 
   useEffect(() => {
@@ -90,7 +70,6 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
     setTicketStats({ sold: stats.sold, left: stats.left });
   }, [card.id]);
 
-  // Use internal state if no external state is provided
   const [internalReminderSet, setInternalReminderSet] = useState(() => {
     const key = `reminder_${card.id}`;
     const registeredAtStr = localStorage.getItem(key);
@@ -100,22 +79,19 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
     return registeredAt > lastResetAt;
   });
 
-  // Use external state if provided, otherwise use internal
   const reminderSet = externalReminderSet !== undefined ? externalReminderSet : internalReminderSet;
   const setReminderSet = (value: boolean) => {
     setInternalReminderSet(value);
     onReminderChange?.(value);
   };
 
-  const handleBuzzerPress = () => {
+  const handleRegister = () => {
     if (reminderSet) return;
 
-    // Show confetti after press
     setTimeout(() => {
       setShowConfetti(true);
       setReminderSet(true);
 
-      // Track event
       const rawUserId = localStorage.getItem('app_user_id');
       const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
       const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
@@ -132,13 +108,11 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
         });
       }
 
-      // Save to localStorage
       const key = `reminder_${card.id}`;
       localStorage.setItem(key, new Date().toISOString());
-    }, 300);
+    }, 150);
   };
 
-  // Generate confetti pieces from top (70) and bottom (50)
   const confettiFromTop = Array.from({ length: 70 }, (_, i) => ({
     id: `top-${i}`,
     left: Math.random() * 100,
@@ -168,17 +142,12 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
       w="100%"
       maxW={{ base: '100%', md: '800px', lg: '1000px' }}
       mx="auto"
-      minH={{ base: '45vh', md: '50vh' }}
-      py={{ base: 10, md: 12 }}
-      px={{ base: 6, md: 8 }}
-      bg="grey.700"
-      borderRadius="lg"
-      boxShadow="xl"
-      border="2px"
-      borderColor="brand.500"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
+      py={{ base: 5, md: 6 }}
+      px={{ base: 5, md: 6 }}
+      bg="#1A1A1A"
+      borderRadius="xl"
+      border="1px solid"
+      borderColor="whiteAlpha.100"
       position="relative"
       overflow="hidden"
     >
@@ -210,50 +179,43 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
         </Box>
       )}
 
-      <VStack spacing={{ base: 8, md: 10 }} align="stretch" w="100%">
-        {/* Message - Primary Focus */}
+      <VStack spacing={{ base: 4, md: 5 }} align="stretch" w="100%">
+        {/* Message */}
         <Text
-          fontSize={{ base: '2xl', md: '4xl' }}
+          fontSize={{ base: 'lg', md: 'xl' }}
           fontWeight="bold"
           color="white"
           textAlign="center"
-          lineHeight="1.3"
+          lineHeight="1.4"
           whiteSpace="pre-line"
         >
           {card.message}
         </Text>
 
-        {/* Countdown Timer */}
-        <Box
-          py={{ base: 4, md: 5 }}
-          px={{ base: 4, md: 6 }}
-          bg="rgba(234, 158, 4, 0.15)"
-          borderRadius="lg"
-          border="2px solid"
-          borderColor="#ea9e04"
-        >
+        {/* Countdown — compact inline style */}
+        <Flex justify="center" align="center">
           <Text
-            fontSize={{ base: '2xl', md: '3xl' }}
+            fontSize={{ base: 'lg', md: 'xl' }}
             color="#ea9e04"
             fontWeight="bold"
             textAlign="center"
-            letterSpacing="wide"
+            fontFamily="mono"
           >
-            {timeRemaining.isExpired ? '⏱️ जल्द शुरू होगा' : countdownText}
+            {timeRemaining.isExpired ? 'जल्द शुरू होगा' : countdownText}
           </Text>
-        </Box>
+        </Flex>
 
-        {/* Register Button */}
+        {/* Register Button — compact */}
         <Center>
           <Box
             as="button"
-            onClick={handleBuzzerPress}
+            onClick={handleRegister}
             disabled={reminderSet}
-            w={{ base: '85%', md: '70%' }}
-            py={{ base: 4, md: 5 }}
-            px={8}
-            borderRadius="xl"
-            bg={reminderSet ? 'brand.700' : 'brand.500'}
+            w={{ base: '100%', md: '80%' }}
+            py={{ base: 3, md: 3.5 }}
+            px={6}
+            borderRadius="lg"
+            bg={reminderSet ? '#222' : 'brand.500'}
             cursor={reminderSet ? 'default' : 'pointer'}
             transition="all 0.2s ease"
             _hover={reminderSet ? {} : {
@@ -265,44 +227,24 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
             }}
           >
             <Text
-              fontSize={{ base: 'xl', md: '2xl' }}
-              fontWeight="extrabold"
-              color="white"
+              fontSize={{ base: 'md', md: 'lg' }}
+              fontWeight="bold"
+              color={reminderSet ? 'whiteAlpha.500' : 'white'}
               textAlign="center"
-              letterSpacing="wide"
             >
               {reminderSet ? '✓ आप रजिस्टर्ड हैं' : 'रजिस्टर करें'}
             </Text>
           </Box>
         </Center>
 
-        {/* Fake Ticket Scarcity Stats */}
-        <VStack spacing={2} pt={4}>
-          <HStack spacing={2} justify="center">
-            <Text fontSize={{ base: 'lg', md: 'xl' }} color="orange.400">
-              ⚡
-            </Text>
-            <Text
-              fontSize={{ base: 'lg', md: 'xl' }}
-              fontWeight="bold"
-              color="white"
-            >
-              केवल <Text as="span" color="yellow.400">{formatNumber(ticketStats.left)}</Text> टिकट बचे हैं
-            </Text>
-          </HStack>
-          <HStack spacing={2} justify="center">
-            <Text fontSize={{ base: 'lg', md: 'xl' }} color="grey.300">
-              🎫
-            </Text>
-            <Text
-              fontSize={{ base: 'lg', md: 'xl' }}
-              fontWeight="bold"
-              color="grey.400"
-            >
-              {formatNumber(ticketStats.sold)} टिकट बुक हो चुके हैं
-            </Text>
-          </HStack>
-        </VStack>
+        {/* Ticket stats — single muted line */}
+        <Text
+          fontSize={{ base: 'xs', md: 'sm' }}
+          color="whiteAlpha.400"
+          textAlign="center"
+        >
+          {formatNumber(ticketStats.sold)} बुक हो चुके · केवल {formatNumber(ticketStats.left)} बचे
+        </Text>
       </VStack>
     </Box>
   );
