@@ -47,6 +47,7 @@ export default function SoloGame() {
   const [viewState, setViewState] = useState<ViewState>('loading');
   const [isStarting, setIsStarting] = useState(false);
   const [claimLoading, setClaimLoading] = useState<WinCategory | null>(null);
+  const [gameMode, setGameMode] = useState<'fresh' | 'resume' | 'completed'>('fresh');
 
   // Video state
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -155,7 +156,7 @@ export default function SoloGame() {
           return;
         }
 
-        // Game exists
+        // Game exists — restore state into store but land on start screen
         if (result.game.status === 'COMPLETED') {
           resumeGame({
             soloGameId: result.game.id,
@@ -167,11 +168,12 @@ export default function SoloGame() {
             gameStatus: 'COMPLETED',
             claims: result.game.claims as any,
           });
-          setViewState('completed');
+          setGameMode('completed');
+          setViewState('start');
           return;
         }
 
-        // In progress — resume with autoplay
+        // In progress — restore state but land on start screen
         const localState = useSoloGameStore.getState();
         const serverIndex = result.game.currentIndex;
         const localIndex = localState.soloGameId === result.game.id ? localState.currentIndex : 0;
@@ -194,19 +196,18 @@ export default function SoloGame() {
           claims: result.game.claims as any,
         });
 
+        // Store video/timestamp info for when user enters game
+        if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
+
         // Calculate where to resume the video from
         const timestamps = result.numberTimestamps || [];
         if (resolvedIndex > 0 && resolvedIndex <= timestamps.length) {
           setResumeAtSeconds(timestamps[resolvedIndex - 1]);
         }
 
-        // Set video info and autoplay
-        if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
-        if (result.videoId) {
-          setShouldAutoplay(true);
-          setVideoId(result.videoId);
-        }
-        setViewState('playing');
+        if (result.videoId) setVideoId(result.videoId);
+        setGameMode('resume');
+        setViewState('start');
       } catch (error) {
         console.error('Failed to load solo game:', error);
         setViewState('start');
@@ -300,6 +301,20 @@ export default function SoloGame() {
       });
     } finally {
       setIsStarting(false);
+    }
+  };
+
+  // Enter game from the start screen (handles fresh, resume, completed)
+  const handleEnterGame = () => {
+    if (gameMode === 'completed') {
+      setViewState('completed');
+    } else if (gameMode === 'resume') {
+      // Start autoplay for resumed game
+      setShouldAutoplay(true);
+      setViewState('playing');
+    } else {
+      // Fresh game — call handleStartGame
+      handleStartGame();
     }
   };
 
@@ -441,9 +456,9 @@ export default function SoloGame() {
               fontWeight="bold"
               isLoading={isStarting}
               loadingText="शुरू हो रहा है..."
-              onClick={handleStartGame}
+              onClick={handleEnterGame}
             >
-              गेम शुरू करें
+              {gameMode === 'completed' ? 'टिकट देखो' : gameMode === 'resume' ? 'जारी रखें' : 'गेम शुरू करें'}
             </Button>
           </VStack>
         )}
