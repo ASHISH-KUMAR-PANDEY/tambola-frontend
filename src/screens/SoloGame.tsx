@@ -17,6 +17,7 @@ import {
 import { keyframes } from '@emotion/react';
 import { apiService } from '../services/api.service';
 import { useSoloGameStore, type WinCategory } from '../stores/soloGameStore';
+import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { SoloTicket } from '../components/solo/SoloTicket';
 import { SoloNumberBoard } from '../components/solo/SoloNumberBoard';
 import { SoloClaimButtons } from '../components/solo/SoloClaimButtons';
@@ -44,6 +45,7 @@ const categoryLabels: Record<string, string> = {
 export default function SoloGame() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { trackEvent } = useTambolaTracking();
   const [viewState, setViewState] = useState<ViewState>('loading');
   const [isStarting, setIsStarting] = useState(false);
   const [claimLoading, setClaimLoading] = useState<WinCategory | null>(null);
@@ -142,12 +144,26 @@ export default function SoloGame() {
 
         if (result.isSunday && !result.game) {
           setViewState('sunday');
+          trackEvent({
+            eventName: 'solo_leaderboard_viewed',
+            properties: {
+              week_id: result.currentWeek?.id || null,
+              total_players: null,
+            },
+          });
           return;
         }
 
         if (!result.game) {
           if (!result.canPlay) {
             setViewState('sunday');
+            trackEvent({
+              eventName: 'solo_leaderboard_viewed',
+              properties: {
+                week_id: result.currentWeek?.id || null,
+                total_players: null,
+              },
+            });
           } else if (result.isConfigured === false) {
             setViewState('not_configured');
           } else {
@@ -233,6 +249,14 @@ export default function SoloGame() {
     const handleVisibility = () => {
       if (document.hidden && isPlaying) {
         pauseVideo();
+        trackEvent({
+          eventName: 'solo_game_paused',
+          properties: {
+            solo_game_id: soloGameId,
+            current_index: currentIndex,
+            pause_reason: 'tab_hidden',
+          },
+        });
         if (soloGameId && gameStatus === 'IN_PROGRESS') {
           apiService.updateSoloProgress({
             soloGameId,
@@ -291,6 +315,14 @@ export default function SoloGame() {
         setVideoId(result.videoId);
       }
       setViewState('playing'); // Go straight to playing — video autoplays
+      trackEvent({
+        eventName: 'solo_game_started',
+        properties: {
+          solo_game_id: result.soloGameId,
+          week_id: result.weekId,
+          video_id: result.videoId || null,
+        },
+      });
     } catch (error: any) {
       const message = error?.message || 'गेम शुरू नहीं हो सका';
       toast({
@@ -308,10 +340,26 @@ export default function SoloGame() {
   const handleEnterGame = () => {
     if (gameMode === 'completed') {
       setViewState('completed');
+      trackEvent({
+        eventName: 'solo_results_viewed',
+        properties: {
+          solo_game_id: soloGameId,
+          total_claims: useSoloGameStore.getState().claims.size,
+          categories_won: Array.from(useSoloGameStore.getState().claims.keys()),
+        },
+      });
     } else if (gameMode === 'resume') {
-      // Start autoplay for resumed game
       setShouldAutoplay(true);
       setViewState('playing');
+      trackEvent({
+        eventName: 'solo_game_resumed',
+        properties: {
+          solo_game_id: soloGameId,
+          current_index: currentIndex,
+          marked_count: markedNumbers.size,
+          video_id: videoId,
+        },
+      });
     } else {
       // Fresh game — call handleStartGame
       handleStartGame();
@@ -324,6 +372,14 @@ export default function SoloGame() {
 
   const handlePause = () => {
     pauseVideo();
+    trackEvent({
+      eventName: 'solo_game_paused',
+      properties: {
+        solo_game_id: soloGameId,
+        current_index: currentIndex,
+        pause_reason: 'user_paused',
+      },
+    });
   };
 
   const handleGameComplete = async () => {
@@ -331,6 +387,17 @@ export default function SoloGame() {
     setViewState('completed');
     pauseVideo();
     const state = useSoloGameStore.getState();
+    trackEvent({
+      eventName: 'solo_game_completed',
+      properties: {
+        solo_game_id: state.soloGameId,
+        week_id: state.weekId,
+        total_marked: state.markedNumbers.size,
+        total_claims: state.claims.size,
+        categories_won: Array.from(state.claims.keys()),
+        video_watched_fully: gameCompleteCalledRef.current,
+      },
+    });
     if (state.soloGameId) {
       try {
         await apiService.completeSoloGame({
@@ -346,6 +413,15 @@ export default function SoloGame() {
   const handleClaim = async (category: WinCategory) => {
     if (!soloGameId) return;
     setClaimLoading(category);
+    trackEvent({
+      eventName: 'solo_claim_attempted',
+      properties: {
+        solo_game_id: soloGameId,
+        category,
+        current_index: currentIndex,
+        marked_count: markedNumbers.size,
+      },
+    });
     try {
       const result = await apiService.claimSoloCategory({
         soloGameId,
@@ -353,6 +429,16 @@ export default function SoloGame() {
         currentNumberIndex: currentIndex - 1,
       });
       recordClaim(category, result.claim.numberCountAtClaim, result.claim.claimedAt);
+      trackEvent({
+        eventName: 'solo_claim_result',
+        properties: {
+          solo_game_id: soloGameId,
+          category,
+          success: true,
+          rank: result.claim.rank || null,
+          numbers_called_to_claim: result.claim.numberCountAtClaim,
+        },
+      });
       toast({
         title: `${categoryLabels[category]} पूरी!`,
         description: 'सफलतापूर्वक दर्ज हो गया',
@@ -363,6 +449,16 @@ export default function SoloGame() {
         handleGameComplete();
       }
     } catch (error: any) {
+      trackEvent({
+        eventName: 'solo_claim_result',
+        properties: {
+          solo_game_id: soloGameId,
+          category,
+          success: false,
+          rank: null,
+          numbers_called_to_claim: currentIndex,
+        },
+      });
       toast({
         title: 'दावा असफल',
         description: error?.message || 'कुछ गलत हो गया',

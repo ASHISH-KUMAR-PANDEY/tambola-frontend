@@ -1,5 +1,6 @@
 import { Box, Grid, GridItem, Text } from '@chakra-ui/react';
 import { useSoloGameStore } from '../../stores/soloGameStore';
+import { useTambolaTracking } from '../../hooks/useTambolaTracking';
 
 interface SoloTicketProps {
   ticket: number[][];
@@ -8,13 +9,23 @@ interface SoloTicketProps {
 }
 
 export function SoloTicket({ ticket, readOnly = false, compact = false }: SoloTicketProps) {
-  const { markNumber, isNumberCalled, isNumberMarked } = useSoloGameStore();
+  const { markNumber, isNumberCalled, isNumberMarked, soloGameId, currentIndex, markedNumbers } = useSoloGameStore();
+  const { trackEvent } = useTambolaTracking();
 
   const handleClick = (num: number) => {
     if (readOnly || num === 0) return;
     if (!isNumberCalled(num)) return;
     if (isNumberMarked(num)) return;
     markNumber(num);
+    trackEvent({
+      eventName: 'solo_number_marked',
+      properties: {
+        solo_game_id: soloGameId,
+        number: num,
+        current_index: currentIndex,
+        total_marked: markedNumbers.size + 1,
+      },
+    });
   };
 
   const cellSize = compact

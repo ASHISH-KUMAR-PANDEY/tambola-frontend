@@ -3,6 +3,7 @@ import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { apiService, type SoloWeekResponse } from '../../services/api.service';
+import { useTambolaTracking } from '../../hooks/useTambolaTracking';
 
 const pulseGlow = keyframes`
   0%, 100% { box-shadow: 0 0 20px rgba(239, 167, 63, 0.25); }
@@ -31,6 +32,7 @@ function generatePlayerCount(realCount: number): number {
 
 export function SoloGameCTA() {
   const navigate = useNavigate();
+  const { trackEvent } = useTambolaTracking();
   const [data, setData] = useState<SoloWeekResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(30);
@@ -123,7 +125,18 @@ export function SoloGameCTA() {
       maxW={{ base: '100%', md: '800px', lg: '1000px' }}
       mx="auto"
       cursor={isDisabled ? 'not-allowed' : 'pointer'}
-      onClick={() => !isDisabled && navigate('/soloGame')}
+      onClick={() => {
+        if (isDisabled) return;
+        trackEvent({
+          eventName: 'solo_cta_clicked',
+          properties: {
+            game_mode: isCompleted ? 'completed' : isInProgress ? 'resume' : 'fresh',
+            cta_label: label,
+            player_count_shown: playerCount,
+          },
+        });
+        navigate('/soloGame');
+      }}
       animation={shouldPulse ? `${pulseGlow} 3s ease-in-out infinite` : undefined}
       borderRadius="2xl"
       overflow="hidden"
