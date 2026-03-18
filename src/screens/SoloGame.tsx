@@ -865,6 +865,8 @@ export default function SoloGame() {
                 as="button"
                 onClick={() => window.location.reload()}
                 bg="grey.700"
+                border="1px solid"
+                borderColor="whiteAlpha.400"
                 borderRadius="md"
                 w="36px"
                 h="36px"
