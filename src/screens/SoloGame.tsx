@@ -861,17 +861,27 @@ export default function SoloGame() {
               )}
 
               {/* Right: Refresh Button */}
-              <Button
-                colorScheme="grey"
-                variant="outline"
-                size="sm"
-                px={3}
-                fontWeight="bold"
-                fontSize="sm"
+              <Box
+                as="button"
                 onClick={() => window.location.reload()}
+                bg="grey.700"
+                borderRadius="md"
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                cursor="pointer"
+                _hover={{ bg: 'grey.600' }}
+                flexShrink={0}
               >
-                🔄
-              </Button>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 2v6h-6" />
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                  <path d="M3 22v-6h6" />
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                </svg>
+              </Box>
             </HStack>
 
             {/* Thin progress bar */}
