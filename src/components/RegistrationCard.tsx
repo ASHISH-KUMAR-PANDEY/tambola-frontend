@@ -1,4 +1,4 @@
-import { Box, Text, VStack, Center, HStack, Flex } from '@chakra-ui/react';
+import { Box, Text, VStack, Center, Flex } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import type { RegistrationCard as RegistrationCardType } from '../services/api.service';
