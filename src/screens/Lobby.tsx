@@ -666,7 +666,13 @@ export default function Lobby() {
               <Button
                 variant="outline"
                 colorScheme="red"
-                onClick={() => sendToFlutter('backPressed')}
+                onClick={() => {
+                  if ((window as any).FlutterChannel?.postMessage) {
+                    sendToFlutter('backPressed');
+                  } else {
+                    window.location.href = 'stage://har/hin';
+                  }
+                }}
                 size={{ base: 'xs', md: 'sm' }}
               >
                 Back
