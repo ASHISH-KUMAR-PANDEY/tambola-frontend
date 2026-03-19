@@ -69,9 +69,11 @@ export default function SoloGame() {
 
   // Video state
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [preloadVideoId, setPreloadVideoId] = useState<string | null>(null); // hidden preload on start screen
   const [numberTimestamps, setNumberTimestamps] = useState<number[]>([]);
   const [shouldAutoplay, setShouldAutoplay] = useState(false);
   const [resumeAtSeconds, setResumeAtSeconds] = useState<number | undefined>(undefined);
+  const [videoLoading, setVideoLoading] = useState(false); // loading overlay
   const gameCompleteCalledRef = useRef(false);
   const pendingVideoIdRef = useRef<string | null>(null);
 
@@ -113,6 +115,7 @@ export default function SoloGame() {
     if (playerState === 'playing') {
       setViewState('playing');
       setPlaying(true);
+      setVideoLoading(false); // Dismiss loading overlay — video is playing
     } else if (playerState === 'paused') {
       if (isPlaying) {
         setViewState('paused');
@@ -243,8 +246,9 @@ export default function SoloGame() {
           setResumeAtSeconds(timestamps[resolvedIndex - 1]);
         }
 
-        // Store videoId in a ref for later — don't trigger hook yet
+        // Store videoId in ref AND start hidden preload on start screen
         pendingVideoIdRef.current = result.videoId || null;
+        if (result.videoId) setPreloadVideoId(result.videoId);
         setGameMode('resume');
         setViewState('start');
         // Fetch rankings if user has claims
@@ -429,9 +433,11 @@ export default function SoloGame() {
     pauseVideo();
     if (videoId) {
       pendingVideoIdRef.current = videoId;
+      setPreloadVideoId(videoId); // Re-start hidden preload for next entry
       setVideoId(null);
       setShouldAutoplay(false);
     }
+    setVideoLoading(false);
     setGameMode(mode);
     setViewState('start');
   };
@@ -448,7 +454,9 @@ export default function SoloGame() {
         },
       });
     } else if (gameMode === 'resume') {
+      setVideoLoading(true); // Show loading overlay
       setShouldAutoplay(true);
+      setPreloadVideoId(null); // Stop hidden preload
       // Now set videoId — hook will create iframe with autoplay=1
       if (pendingVideoIdRef.current) {
         setVideoId(pendingVideoIdRef.current);
@@ -466,6 +474,7 @@ export default function SoloGame() {
       });
     } else {
       // Fresh game — call handleStartGame
+      setVideoLoading(true);
       handleStartGame();
     }
   };
@@ -711,6 +720,18 @@ export default function SoloGame() {
           </VStack>
         )}
 
+        {/* Hidden video preload — starts buffering while user reads start screen */}
+        {preloadVideoId && viewState === 'start' && (
+          <Box position="absolute" left="-9999px" w="1px" h="1px" overflow="hidden" aria-hidden="true">
+            <iframe
+              src={`https://www.youtube.com/embed/${preloadVideoId}?autoplay=1&mute=1&controls=0&playsinline=1&enablejsapi=1&origin=${window.location.origin}${resumeAtSeconds ? `&start=${Math.floor(resumeAtSeconds)}` : ''}`}
+              allow="autoplay; encrypted-media"
+              style={{ width: '320px', height: '180px', border: 'none' }}
+              title="preload"
+            />
+          </Box>
+        )}
+
         {/* Sunday / Results */}
         {viewState === 'sunday' && (
           <VStack spacing={6} py={8}>
@@ -747,6 +768,36 @@ export default function SoloGame() {
                     h="100%"
                   />
                 </AspectRatio>
+                {/* Video loading overlay — shows thumbnail + spinner while buffering */}
+                {videoLoading && (
+                  <Box
+                    position="absolute"
+                    inset={0}
+                    bg="grey.900"
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    zIndex={3}
+                    transition="opacity 0.3s ease"
+                    borderRadius="md"
+                    overflow="hidden"
+                  >
+                    {/* YouTube thumbnail as poster */}
+                    <Box
+                      position="absolute"
+                      inset={0}
+                      backgroundImage={`url(https://img.youtube.com/vi/${videoId}/hqdefault.jpg)`}
+                      backgroundSize="cover"
+                      backgroundPosition="center"
+                      opacity={0.4}
+                    />
+                    <Spinner size="lg" color="brand.500" thickness="3px" zIndex={1} />
+                    <Text color="white" fontSize="xs" mt={2} zIndex={1} fontWeight="medium">
+                      वीडियो लोड हो रहा है...
+                    </Text>
+                  </Box>
+                )}
                 {/* Overlay to block clicks on YouTube iframe + mute toggle */}
                 <Box
                   position="absolute"

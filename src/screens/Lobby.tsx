@@ -37,6 +37,7 @@ import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 import { sendToFlutter } from '../utils/flutterBridge';
+import { ensureYTAPI } from '../hooks/useYouTubePlayer';
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -46,6 +47,9 @@ export default function Lobby() {
   const { setConnected } = useUIStore();
   const { trackEvent } = useTambolaTracking();
   const isFlutterApp = !!localStorage.getItem('app_user_id');
+
+  // Preload YouTube IFrame API so it's cached when user enters Solo Game
+  useEffect(() => { ensureYTAPI(); }, []);
 
   const [games, setGames] = useState<Game[]>([]);
   const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);

@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 // Global YT API loading
 let apiPromise: Promise<void> | null = null;
 
-function ensureYTAPI(): Promise<void> {
+/** Preload the YouTube IFrame API. Call early (e.g., on Lobby) for faster video load later. */
+export function ensureYTAPI(): Promise<void> {
   if ((window as any).YT?.Player) {
     return Promise.resolve();
   }
