@@ -6,7 +6,8 @@
  */
 const getUtmParam = (key: string, fallback: string = ''): string => {
   const params = new URLSearchParams(window.location.search);
-  const urlVal = params.get(key);
+  const hyphenKey = key.replace(/_/g, '-');
+  const urlVal = params.get(key) || params.get(hyphenKey);
   if (urlVal) {
     sessionStorage.setItem(key, urlVal);
     return urlVal;
