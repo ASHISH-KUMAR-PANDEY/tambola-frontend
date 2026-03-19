@@ -23,8 +23,13 @@ import {
   ModalFooter,
   Input,
   FormControl,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from '@chakra-ui/react';
-import { BellIcon, RepeatIcon } from '@chakra-ui/icons';
+import { BellIcon } from '@chakra-ui/icons';
 import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
@@ -50,6 +55,9 @@ export default function Lobby() {
 
   // Preload YouTube IFrame API so it's cached when user enters Solo Game
   useEffect(() => { ensureYTAPI(); }, []);
+
+  // Tab navigation state
+  const [activeTab, setActiveTab] = useState<'all' | 'live' | 'sunday'>('all');
 
   const [games, setGames] = useState<Game[]>([]);
   const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);
@@ -637,70 +645,142 @@ export default function Lobby() {
   }
 
   return (
-    <Box w="100vw" minH="100vh" bg="grey.900">
+    <Box w="100vw" minH="100vh" bgGradient="linear(to-t, #2B080C, #0E0028)">
       <VStack spacing={{ base: 4, md: 6 }} w="100%" align="stretch" p={{ base: 3, md: 4 }}>
-        {/* Header */}
-        <Box position="relative" w="100%" minH={{ base: '40px', md: '50px' }} mb={{ base: 2, md: 3 }}>
-          <Box position="absolute" left={0} top={0}>
-            <Logo height={{ base: '24px', md: '28px' }} />
+        {/* Header — ← back | Stage logo centered | refresh → */}
+        <HStack w="100%" justify="space-between" align="center" pt={{ base: 1, md: 2 }}>
+          <Box
+            as="button"
+            onClick={() => {
+              if (isFlutterApp) {
+                if ((window as any).FlutterChannel?.postMessage) {
+                  sendToFlutter('backPressed');
+                } else {
+                  window.location.href = 'stage://har/hin';
+                }
+              } else {
+                handleLogout();
+              }
+            }}
+            p={1}
+            cursor="pointer"
+            w="24px"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
           </Box>
-          <Heading
-            size={{ base: 'lg', md: 'xl' }}
-            color="white"
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
+          <Logo height={{ base: '26px', md: '30px' }} />
+          <Box as="button" onClick={handleRefresh} p={1} cursor="pointer" w="24px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2v6h-6" />
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M3 22v-6h6" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </Box>
+        </HStack>
+
+        {/* Tab Navigation — glassmorphic pill bar from glassbg.svg */}
+        <HStack
+          w="100%"
+          maxW={{ base: '100%', md: '600px' }}
+          mx="auto"
+          bg="rgba(255,255,255,0.08)"
+          border="1px solid rgba(255,255,255,0.22)"
+          borderRadius="full"
+          h={{ base: '44px', md: '54px' }}
+          p={{ base: '4px', md: '5px' }}
+          spacing={0}
+          justify="center"
+          css={{
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
+          {/* All tab */}
+          <Box
+            as="button"
+            flex={1}
+            h="100%"
+            borderRadius="full"
+            bg={activeTab === 'all' ? 'white' : 'transparent'}
+            boxShadow={activeTab === 'all' ? '0 0 12px 4px rgba(255,255,255,0.25), 0 0 24px 8px rgba(255,255,255,0.1)' : 'none'}
+            css={activeTab === 'all' ? {
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } : undefined}
+            color={activeTab === 'all' ? '#313131' : '#E1E1E1'}
+            fontWeight={activeTab === 'all' ? '600' : '500'}
+            fontSize={{ base: '13px', md: '14px' }}
+            transition="all 0.25s ease"
+            onClick={() => setActiveTab('all')}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
             whiteSpace="nowrap"
           >
-            TAMBOLA
-          </Heading>
-          {isFlutterApp ? (
-            <HStack position="absolute" top={0} right={0} spacing={2}>
-              <Button
-                variant="outline"
-                colorScheme="green"
-                onClick={handleRefresh}
-                size={{ base: 'xs', md: 'sm' }}
-                p={2}
-                minW="auto"
-              >
-                <RepeatIcon />
-              </Button>
-              <Button
-                variant="outline"
-                colorScheme="red"
-                onClick={() => {
-                  if ((window as any).FlutterChannel?.postMessage) {
-                    sendToFlutter('backPressed');
-                  } else {
-                    window.location.href = 'stage://har/hin';
-                  }
-                }}
-                size={{ base: 'xs', md: 'sm' }}
-              >
-                Back
-              </Button>
-            </HStack>
-          ) : (
-            <Button
-              position="absolute"
-              top={0}
-              right={0}
-              variant="outline"
-              colorScheme="red"
-              onClick={handleLogout}
-              size={{ base: 'xs', md: 'sm' }}
-            >
-              Logout
-            </Button>
-          )}
-        </Box>
-
-        {/* Welcome Message */}
-        <Text color="grey.400" fontSize={{ base: 'sm', md: 'md' }} textAlign="center">
-          स्वागत है, {playerName || 'STAGE VIP MEMBER'}!
-        </Text>
+            सभी
+          </Box>
+          {/* Live tab */}
+          <Box
+            as="button"
+            flex={1}
+            h="100%"
+            borderRadius="full"
+            bg={activeTab === 'live' ? 'white' : 'transparent'}
+            boxShadow={activeTab === 'live' ? '0 0 12px 4px rgba(255,255,255,0.25), 0 0 24px 8px rgba(255,255,255,0.1)' : 'none'}
+            css={activeTab === 'live' ? {
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } : undefined}
+            color={activeTab === 'live' ? '#313131' : '#E1E1E1'}
+            fontWeight={activeTab === 'live' ? '600' : '500'}
+            fontSize={{ base: '13px', md: '14px' }}
+            transition="all 0.25s ease"
+            onClick={() => setActiveTab('live')}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap="6px"
+            whiteSpace="nowrap"
+          >
+            <Box w="8px" h="8px" borderRadius="full" bg="#41EE96" flexShrink={0} />
+            लाइव गेम
+          </Box>
+          {/* Coming Sunday tab */}
+          <Box
+            as="button"
+            flex={1}
+            h="100%"
+            borderRadius="full"
+            bg={activeTab === 'sunday' ? 'white' : 'transparent'}
+            boxShadow={activeTab === 'sunday' ? '0 0 12px 4px rgba(255,255,255,0.25), 0 0 24px 8px rgba(255,255,255,0.1)' : 'none'}
+            css={activeTab === 'sunday' ? {
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } : undefined}
+            color={activeTab === 'sunday' ? '#313131' : '#E1E1E1'}
+            fontWeight={activeTab === 'sunday' ? '600' : '500'}
+            fontSize={{ base: '13px', md: '14px' }}
+            transition="all 0.25s ease"
+            onClick={() => setActiveTab('sunday')}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap="6px"
+            whiteSpace="nowrap"
+          >
+            <svg width="16" height="16" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M12.358 5.57V11.78C12.358 12.11 12.227 12.43 11.992 12.66C11.758 12.9 11.44 13.03 11.108 13.03H0.893C0.561 13.03 0.243 12.9 0.009 12.66C-0.226 12.43 -0.357 12.11 -0.357 11.78V5.57H12.358Z" fill="#FEDB41" transform="translate(1,0)"/>
+              <path d="M9.708 2.08H11.108C11.44 2.08 11.758 2.22 11.992 2.45C12.227 2.68 12.358 3 12.358 3.33V5.57H-0.357V3.33C-0.357 3 -0.226 2.68 0.009 2.45C0.243 2.22 0.561 2.08 0.893 2.08H9.708Z" fill="#00ACEA" transform="translate(1,0)"/>
+              <path d="M8.303 8.46C8.497 9.45 7.881 10.78 6.058 11.52C6.021 11.54 5.978 11.54 5.941 11.52C4.124 10.8 3.503 9.46 3.696 8.46C3.825 7.78 4.3 7.34 4.915 7.34C5.261 7.34 5.63 7.48 6 7.76C6.363 7.49 6.738 7.35 7.078 7.35C7.694 7.35 8.168 7.79 8.303 8.46Z" fill="#D7443E" transform="translate(1,0)"/>
+              <path d="M2.432 3.45C2.365 3.45 2.302 3.424 2.255 3.377C2.208 3.33 2.182 3.267 2.182 3.2V0.969C2.182 0.902 2.208 0.839 2.255 0.792C2.302 0.745 2.365 0.719 2.432 0.719C2.498 0.719 2.562 0.745 2.608 0.792C2.655 0.839 2.682 0.902 2.682 0.969V3.2C2.682 3.267 2.655 3.33 2.608 3.377C2.562 3.424 2.498 3.45 2.432 3.45ZM9.708 3.45C9.641 3.45 9.578 3.424 9.531 3.377C9.484 3.33 9.458 3.267 9.458 3.2V0.969C9.458 0.902 9.484 0.839 9.531 0.792C9.578 0.745 9.641 0.719 9.708 0.719C9.774 0.719 9.837 0.745 9.884 0.792C9.931 0.839 9.958 0.902 9.958 0.969V3.2C9.958 3.267 9.931 3.33 9.884 3.377C9.837 3.424 9.774 3.45 9.708 3.45Z" fill="#FEDB41" transform="translate(1,0)"/>
+            </svg>
+            इस रविवार
+          </Box>
+        </HStack>
 
         {/* Organizer Controls - Always show for organizers */}
         {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
@@ -743,9 +823,11 @@ export default function Lobby() {
 
           {games.length === 0 ? (
             <VStack spacing={{ base: 4, md: 6 }} w="100%">
-              <SoloGameCTA />
+              {(activeTab === 'all' || activeTab === 'live') && (
+                <SoloGameCTA />
+              )}
 
-              {currentRegistrationCard && (
+              {(activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
                 <RegistrationCard
                   card={currentRegistrationCard}
                   externalReminderSet={registrationReminderSet}
@@ -753,7 +835,7 @@ export default function Lobby() {
                 />
               )}
 
-              {currentBanner && (
+              {(activeTab === 'sunday') && currentBanner && (
                 <Box
                   w="100%"
                   maxW={{ base: '100%', md: '800px', lg: '1000px' }}
@@ -773,7 +855,7 @@ export default function Lobby() {
                 </Box>
               )}
 
-              {currentEmbed && (
+              {(activeTab === 'sunday') && currentEmbed && (
                 <Box
                   w="100%"
                   maxW={{ base: '100%', md: '800px', lg: '1000px' }}
@@ -1044,8 +1126,8 @@ export default function Lobby() {
           />
         )}
 
-        {/* Promotional Banner - shown when games exist */}
-        {games.length > 0 && currentBanner && (
+        {/* Promotional Banner - shown on Coming Sunday tab when games exist */}
+        {games.length > 0 && activeTab === 'sunday' && currentBanner && (
           <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
             <Box
               borderRadius="lg"
@@ -1064,8 +1146,8 @@ export default function Lobby() {
           </Box>
         )}
 
-        {/* YouTube Video - shown when games exist */}
-        {games.length > 0 && currentEmbed && (
+        {/* YouTube Video - shown on Coming Sunday tab when games exist */}
+        {games.length > 0 && activeTab === 'sunday' && currentEmbed && (
           <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
             <Box
               borderRadius="lg"
@@ -1127,8 +1209,8 @@ export default function Lobby() {
           </Box>
         )}
 
-        {/* How to Play Section (Hindi) */}
-        <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mt={8}>
+        {/* How to Play Section (Hindi) — shown on Coming Sunday tab */}
+        {activeTab === 'sunday' && <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mt={8}>
           <Box
             p={{ base: 6, md: 8 }}
             bg="grey.800"
@@ -1177,69 +1259,79 @@ export default function Lobby() {
               </Box>
             </VStack>
           </Box>
-        </Box>
+        </Box>}
 
-        {/* Terms and Conditions Section */}
+        {/* Terms and Conditions Section — collapsible dropdown */}
         <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mb={8}>
-          <Box
-            p={{ base: 6, md: 8 }}
-            bg="grey.800"
-            borderRadius="lg"
-            boxShadow="md"
-            border="1px"
-            borderColor="grey.700"
-          >
-            <Heading size={{ base: 'md', md: 'lg' }} mb={6} color="brand.500" textAlign="center">
-              Terms & Conditions
-            </Heading>
-            <VStack align="start" spacing={4} color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>1. Eligibility</Text>
-                <Text>Players must be 18 years or older to participate. By joining, you confirm that you meet this requirement and agree to these terms.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>2. Game Rules</Text>
-                <Text>All decisions made by the organizer are final. Players must follow the game rules and mark numbers honestly. Any form of cheating or manipulation will result in immediate disqualification.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>3. Prize Distribution</Text>
-                <Text>Prizes will be awarded as announced at the start of the game. The organizer reserves the right to verify claims before awarding prizes. Winners must claim their prizes within the specified time period.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>4. Technical Issues</Text>
-                <Text>The organizer is not responsible for technical issues, internet connectivity problems, or device malfunctions that may affect gameplay. Players participate at their own risk.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>5. Fair Play</Text>
-                <Text>This platform is for entertainment purposes. Multiple accounts, bots, or automated scripts are strictly prohibited. Violation will result in permanent ban.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>6. Refunds</Text>
-                <Text>Entry fees (if applicable) are non-refundable once the game has started. Refunds may be considered only in case of game cancellation by the organizer.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>7. Privacy</Text>
-                <Text>Your personal information will be kept confidential and used only for game-related purposes. We do not share your data with third parties without consent.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>8. Dispute Resolution</Text>
-                <Text>Any disputes arising from the game will be resolved by the organizer. The organizer's decision in all matters relating to the game is final and binding.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>9. Modifications</Text>
-                <Text>The organizer reserves the right to modify these terms and conditions at any time. Continued participation constitutes acceptance of any changes.</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold" color="grey.300" mb={2}>10. Liability</Text>
-                <Text>The organizer shall not be held liable for any losses, damages, or claims arising from participation in the game. Players participate voluntarily and at their own risk.</Text>
-              </Box>
-              <Box mt={4} p={3} bg="grey.900" borderRadius="md" borderLeft="3px" borderColor="red.500">
-                <Text fontSize="xs" color="grey.500">
-                  By participating in this game, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions. If you do not agree, please do not participate.
+          <Accordion allowToggle>
+            <AccordionItem
+              border="none"
+              bg="grey.800"
+              borderRadius="lg"
+              boxShadow="md"
+              overflow="hidden"
+            >
+              <AccordionButton
+                px={{ base: 5, md: 6 }}
+                py={{ base: 4, md: 5 }}
+                _hover={{ bg: 'grey.700' }}
+              >
+                <Text flex="1" textAlign="center" fontWeight="bold" fontSize={{ base: 'md', md: 'lg' }} color="brand.500">
+                  Terms & Conditions
                 </Text>
-              </Box>
-            </VStack>
-          </Box>
+                <AccordionIcon color="brand.500" />
+              </AccordionButton>
+              <AccordionPanel px={{ base: 5, md: 6 }} pb={{ base: 5, md: 6 }}>
+                <VStack align="start" spacing={4} color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>1. Eligibility</Text>
+                    <Text>Players must be 18 years or older to participate. By joining, you confirm that you meet this requirement and agree to these terms.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>2. Game Rules</Text>
+                    <Text>All decisions made by the organizer are final. Players must follow the game rules and mark numbers honestly. Any form of cheating or manipulation will result in immediate disqualification.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>3. Prize Distribution</Text>
+                    <Text>Prizes will be awarded as announced at the start of the game. The organizer reserves the right to verify claims before awarding prizes. Winners must claim their prizes within the specified time period.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>4. Technical Issues</Text>
+                    <Text>The organizer is not responsible for technical issues, internet connectivity problems, or device malfunctions that may affect gameplay. Players participate at their own risk.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>5. Fair Play</Text>
+                    <Text>This platform is for entertainment purposes. Multiple accounts, bots, or automated scripts are strictly prohibited. Violation will result in permanent ban.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>6. Refunds</Text>
+                    <Text>Entry fees (if applicable) are non-refundable once the game has started. Refunds may be considered only in case of game cancellation by the organizer.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>7. Privacy</Text>
+                    <Text>Your personal information will be kept confidential and used only for game-related purposes. We do not share your data with third parties without consent.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>8. Dispute Resolution</Text>
+                    <Text>Any disputes arising from the game will be resolved by the organizer. The organizer's decision in all matters relating to the game is final and binding.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>9. Modifications</Text>
+                    <Text>The organizer reserves the right to modify these terms and conditions at any time. Continued participation constitutes acceptance of any changes.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>10. Liability</Text>
+                    <Text>The organizer shall not be held liable for any losses, damages, or claims arising from participation in the game. Players participate voluntarily and at their own risk.</Text>
+                  </Box>
+                  <Box mt={4} p={3} bg="grey.900" borderRadius="md" borderLeft="3px" borderColor="red.500">
+                    <Text fontSize="xs" color="grey.500">
+                      By participating in this game, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions. If you do not agree, please do not participate.
+                    </Text>
+                  </Box>
+                </VStack>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
         </Box>
       </VStack>
 

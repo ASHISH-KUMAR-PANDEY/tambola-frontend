@@ -1,55 +1,8 @@
-import { Box, Text, VStack, Center, Flex } from '@chakra-ui/react';
-import { keyframes } from '@emotion/react';
-import { useCountdown, formatCountdown } from '../hooks/useCountdown';
+import { Box, Image, Text, HStack, VStack } from '@chakra-ui/react';
 import type { RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
-import { useState, useEffect } from 'react';
-
-// Helper to generate fake ticket numbers
-const generateTicketStats = (cardId: string): { sold: number; left: number; lastVisit: number } => {
-  const storageKey = `ticket_stats_${cardId}`;
-  const stored = localStorage.getItem(storageKey);
-  const now = Date.now();
-
-  if (stored) {
-    const data = JSON.parse(stored);
-    const timeSinceLastVisit = now - data.lastVisit;
-    const hoursPassed = timeSinceLastVisit / (1000 * 60 * 60);
-
-    const soldIncrease = Math.floor(Math.random() * 200 + 50 + hoursPassed * 30);
-    const leftDecrease = Math.floor(Math.random() * 30 + 10 + hoursPassed * 5);
-
-    const newSold = data.sold + soldIncrease;
-    const newLeft = Math.max(50 + Math.floor(Math.random() * 50), data.left - leftDecrease);
-
-    const newData = { sold: newSold, left: newLeft, lastVisit: now };
-    localStorage.setItem(storageKey, JSON.stringify(newData));
-    return newData;
-  } else {
-    const initialSold = 10000 + Math.floor(Math.random() * 5000);
-    const initialLeft = 400 + Math.floor(Math.random() * 200);
-    const newData = { sold: initialSold, left: initialLeft, lastVisit: now };
-    localStorage.setItem(storageKey, JSON.stringify(newData));
-    return newData;
-  }
-};
-
-const formatNumber = (num: number): string => {
-  return num.toLocaleString('en-IN');
-};
-
-// Confetti animations
-const confettiFall = keyframes`
-  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-  100% { transform: translateY(500px) rotate(1080deg) scale(0.5); opacity: 0; }
-`;
-
-const confettiRise = keyframes`
-  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-  100% { transform: translateY(-500px) rotate(-1080deg) scale(0.5); opacity: 0; }
-`;
-
-const confettiColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#FF69B4', '#00FF7F', '#FF4500', '#7B68EE'];
+import { useCountdown } from '../hooks/useCountdown';
+import { useState } from 'react';
 
 interface RegistrationCardProps {
   card: RegistrationCardType;
@@ -58,17 +11,8 @@ interface RegistrationCardProps {
 }
 
 export function RegistrationCard({ card, externalReminderSet, onReminderChange }: RegistrationCardProps) {
-  const timeRemaining = useCountdown(card.targetDateTime);
-  const countdownText = formatCountdown(timeRemaining);
   const { trackEvent } = useTambolaTracking();
-  const [showConfetti, setShowConfetti] = useState(false);
-
-  const [ticketStats, setTicketStats] = useState<{ sold: number; left: number }>({ sold: 0, left: 0 });
-
-  useEffect(() => {
-    const stats = generateTicketStats(card.id);
-    setTicketStats({ sold: stats.sold, left: stats.left });
-  }, [card.id]);
+  const timeRemaining = useCountdown(card.targetDateTime);
 
   const [internalReminderSet, setInternalReminderSet] = useState(() => {
     const key = `reminder_${card.id}`;
@@ -87,165 +31,131 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
 
   const handleRegister = () => {
     if (reminderSet) return;
-
-    setTimeout(() => {
-      setShowConfetti(true);
-      setReminderSet(true);
-
-      const rawUserId = localStorage.getItem('app_user_id');
-      const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
-      const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
-
-      if (userId) {
-        trackEvent({
-          eventName: 'registration_reminder_set',
-          properties: {
-            card_id: card.id,
-            user_name: playerName,
-            target_date_time: card.targetDateTime,
-            message: card.message,
-          },
-        });
-      }
-
-      const key = `reminder_${card.id}`;
-      localStorage.setItem(key, new Date().toISOString());
-    }, 150);
+    setReminderSet(true);
+    const rawUserId = localStorage.getItem('app_user_id');
+    const userId = rawUserId && rawUserId !== 'lobby' ? rawUserId : null;
+    const playerName = sessionStorage.getItem('playerName') || 'Anonymous';
+    if (userId) {
+      trackEvent({
+        eventName: 'registration_reminder_set',
+        properties: { card_id: card.id, user_name: playerName, target_date_time: card.targetDateTime, message: card.message },
+      });
+    }
+    const key = `reminder_${card.id}`;
+    localStorage.setItem(key, new Date().toISOString());
   };
 
-  const confettiFromTop = Array.from({ length: 70 }, (_, i) => ({
-    id: `top-${i}`,
-    left: Math.random() * 100,
-    delay: Math.random() * 0.8,
-    duration: 1.5 + Math.random() * 1.5,
-    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
-    size: 6 + Math.random() * 12,
-    shape: Math.random() > 0.5 ? 'full' : Math.random() > 0.5 ? 'sm' : 'none',
-    fromBottom: false,
-  }));
-
-  const confettiFromBottom = Array.from({ length: 50 }, (_, i) => ({
-    id: `bottom-${i}`,
-    left: Math.random() * 100,
-    delay: Math.random() * 0.6,
-    duration: 1.5 + Math.random() * 1.5,
-    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
-    size: 6 + Math.random() * 12,
-    shape: Math.random() > 0.5 ? 'full' : Math.random() > 0.5 ? 'sm' : 'none',
-    fromBottom: true,
-  }));
-
-  const confettiPieces = [...confettiFromTop, ...confettiFromBottom];
+  const pad = (n: number) => n.toString().padStart(2, '0');
 
   return (
     <Box
       w="100%"
-      maxW={{ base: '100%', md: '800px', lg: '1000px' }}
+      maxW={{ base: '100%', md: '600px' }}
       mx="auto"
-      py={{ base: 5, md: 6 }}
-      px={{ base: 5, md: 6 }}
-      bg="#1A1A1A"
-      borderRadius="xl"
-      border="1px solid"
-      borderColor="whiteAlpha.100"
-      position="relative"
+      borderRadius="12px"
       overflow="hidden"
+      position="relative"
     >
-      {/* Confetti Animation */}
-      {showConfetti && (
-        <Box
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          pointerEvents="none"
-          zIndex={10}
-        >
-          {confettiPieces.map((piece) => (
-            <Box
-              key={piece.id}
-              position="absolute"
-              top={piece.fromBottom ? 'auto' : '-20px'}
-              bottom={piece.fromBottom ? '-20px' : 'auto'}
-              left={`${piece.left}%`}
-              w={`${piece.size}px`}
-              h={piece.shape === 'none' ? `${piece.size * 0.4}px` : `${piece.size}px`}
-              bg={piece.color}
-              borderRadius={piece.shape === 'none' ? '1px' : piece.shape}
-              animation={`${piece.fromBottom ? confettiRise : confettiFall} ${piece.duration}s ease-out ${piece.delay}s forwards`}
-            />
-          ))}
-        </Box>
-      )}
+      <Image
+        src="/card2.svg"
+        alt="Sunday Tambola"
+        w="100%"
+        borderRadius="12px"
+        display="block"
+      />
 
-      <VStack spacing={{ base: 4, md: 5 }} align="stretch" w="100%">
-        {/* Message */}
-        <Text
-          fontSize={{ base: 'lg', md: 'xl' }}
-          fontWeight="bold"
-          color="white"
-          textAlign="center"
-          lineHeight="1.4"
-          whiteSpace="pre-line"
-        >
-          {card.message}
-        </Text>
-
-        {/* Countdown — compact inline style */}
-        <Flex justify="center" align="center">
-          <Text
-            fontSize={{ base: 'lg', md: 'xl' }}
-            color="#ea9e04"
-            fontWeight="bold"
-            textAlign="center"
-            fontFamily="mono"
-          >
-            {timeRemaining.isExpired ? 'जल्द शुरू होगा' : countdownText}
+      {/* Dynamic countdown overlay — covers the static countdown baked in the SVG */}
+      {/* SVG is 360x301. Countdown area: right of orange button, ~x=218 to x=350, y=229 to y=283 */}
+      <Box
+        position="absolute"
+        bottom="6%"
+        right="2.8%"
+        w="36.5%"
+        h="17.9%"
+        bg="white"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        {timeRemaining.isExpired ? (
+          <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="bold" color="#333">
+            जल्द शुरू होगा
           </Text>
-        </Flex>
+        ) : (
+          <HStack spacing={{ base: 0.5, md: 1 }} align="center">
+            {[
+              { val: timeRemaining.days, label: 'दिन' },
+              { val: timeRemaining.hours, label: 'घंटे' },
+              { val: timeRemaining.minutes, label: 'मिनट' },
+              { val: timeRemaining.seconds, label: 'सेकंड' },
+            ].map((item, i) => (
+              <HStack key={item.label} spacing={0} align="center">
+                {i > 0 && (
+                  <Text
+                    fontSize={{ base: 'md', md: 'xl' }}
+                    fontWeight="bold"
+                    color="#1a1a1a"
+                    mx={{ base: '1px', md: 1 }}
+                    lineHeight="1"
+                  >
+                    :
+                  </Text>
+                )}
+                <VStack spacing={0}>
+                  <Text
+                    fontSize={{ base: 'md', md: 'xl' }}
+                    fontWeight="800"
+                    color="#1a1a1a"
+                    lineHeight="1.2"
+                    fontFamily="system-ui, -apple-system, sans-serif"
+                  >
+                    {pad(item.val)}
+                  </Text>
+                  <Text
+                    fontSize={{ base: '5px', md: '7px' }}
+                    color="#999"
+                    lineHeight="1"
+                    fontWeight="500"
+                  >
+                    {item.label}
+                  </Text>
+                </VStack>
+              </HStack>
+            ))}
+          </HStack>
+        )}
+      </Box>
 
-        {/* Register Button — compact */}
-        <Center>
-          <Box
-            as="button"
-            onClick={handleRegister}
-            disabled={reminderSet}
-            w={{ base: '100%', md: '80%' }}
-            py={{ base: 3, md: 3.5 }}
-            px={6}
-            borderRadius="lg"
-            bg={reminderSet ? '#222' : 'brand.500'}
-            cursor={reminderSet ? 'default' : 'pointer'}
-            transition="all 0.2s ease"
-            _hover={reminderSet ? {} : {
-              bg: 'brand.600',
-            }}
-            _active={reminderSet ? {} : {
-              bg: 'brand.700',
-              transform: 'scale(0.98)',
-            }}
+      {/* CTA button overlay — positioned over the orange button in the SVG */}
+      {/* SVG orange button: x=18, y=229, w=190, h=54 within 360x301 */}
+      <Box
+        position="absolute"
+        bottom="6%"
+        left="5%"
+        w="52.8%"
+        h="17.9%"
+        cursor={reminderSet ? 'default' : 'pointer'}
+        data-testid="registration-cta"
+        onClick={handleRegister}
+        borderRadius="8px"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        bg={reminderSet ? '#3a3a3a' : 'transparent'}
+        _hover={!reminderSet ? { bg: 'rgba(255,255,255,0.1)' } : undefined}
+        _active={!reminderSet ? { bg: 'rgba(0,0,0,0.1)' } : undefined}
+        transition="all 0.2s ease"
+      >
+        {reminderSet && (
+          <Text
+            fontSize={{ base: 'xs', md: 'sm' }}
+            fontWeight="bold"
+            color="white"
           >
-            <Text
-              fontSize={{ base: 'md', md: 'lg' }}
-              fontWeight="bold"
-              color={reminderSet ? 'whiteAlpha.500' : 'white'}
-              textAlign="center"
-            >
-              {reminderSet ? '✓ आप रजिस्टर्ड हैं' : 'रजिस्टर करें'}
-            </Text>
-          </Box>
-        </Center>
-
-        {/* Ticket stats — single muted line */}
-        <Text
-          fontSize={{ base: 'xs', md: 'sm' }}
-          color="whiteAlpha.400"
-          textAlign="center"
-        >
-          {formatNumber(ticketStats.sold)} बुक हो चुके · केवल {formatNumber(ticketStats.left)} बचे
-        </Text>
-      </VStack>
+            ✓ रजिस्टर्ड
+          </Text>
+        )}
+      </Box>
     </Box>
   );
 }
