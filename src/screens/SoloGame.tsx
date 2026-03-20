@@ -990,9 +990,9 @@ export default function SoloGame() {
                   game2CardState === 'completed' ? 'purple.500'
                     : game2CardState === 'in_progress' ? 'purple.700'
                     : game2CardState === 'available' ? 'purple.600'
-                    : 'grey.600'
+                    : 'highlight.500'
                 }
-                opacity={game2CardState === 'locked' ? 0.6 : 1}
+                opacity={game2CardState === 'locked' ? 0.85 : 1}
               >
                 {/* Card Header */}
                 <HStack
