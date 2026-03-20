@@ -1,5 +1,8 @@
 import { Box, VStack, HStack, Text, Button, Image } from '@chakra-ui/react';
+import { useState, useEffect, useRef } from 'react';
 import { SoloTicket } from './SoloTicket';
+import { useTambolaTracking } from '../../hooks/useTambolaTracking';
+
 import { useSoloGameStore } from '../../stores/soloGameStore';
 import type { CategoryRankingsResponse } from '../../services/api.service';
 
@@ -38,12 +41,62 @@ const categoryLabels: Record<string, string> = {
 interface SoloGameResultsProps {
   onBackToLobby: () => void;
   categoryRankings?: CategoryRankingsResponse | null;
+  gameNumber?: number;
+  game2Status?: {
+    available: boolean;
+    cooldownEndsAt: string | null;
+    configured: boolean;
+    hasPlayed: boolean;
+  } | null;
+  onPlayTicket2?: () => void;
 }
 
-export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameResultsProps) {
+export function SoloGameResults({ onBackToLobby, categoryRankings, gameNumber = 1, game2Status, onPlayTicket2 }: SoloGameResultsProps) {
   const { ticket, claims } = useSoloGameStore();
 
+  const { trackEvent } = useTambolaTracking();
   const claimedCategories = Array.from(claims.keys());
+
+  // Track Ticket 2 callout impression once
+  const calloutTrackedRef = useRef(false);
+  useEffect(() => {
+    if (calloutTrackedRef.current) return;
+    const showCallout = gameNumber === 1 && game2Status?.configured && !game2Status.hasPlayed;
+    if (showCallout) {
+      calloutTrackedRef.current = true;
+      trackEvent({
+        eventName: 'solo_ticket2_callout_shown',
+        properties: {
+          ticket2_available: game2Status?.available ?? false,
+          cooldown_ends_at: game2Status?.cooldownEndsAt || null,
+          shown_on: 'result_screen',
+        },
+      });
+    }
+  }, [gameNumber, game2Status]);
+
+  // Ticket 2 cooldown timer for result screen callout
+  const [cooldownLeft, setCooldownLeft] = useState('');
+  useEffect(() => {
+    if (gameNumber !== 1 || !game2Status?.configured || game2Status.hasPlayed) return;
+    if (!game2Status.cooldownEndsAt) return;
+
+    const tick = () => {
+      const diff = new Date(game2Status.cooldownEndsAt!).getTime() - Date.now();
+      if (diff <= 0) { setCooldownLeft(''); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setCooldownLeft(`${h} घंटे ${m} मिनट`);
+    };
+    tick();
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, [gameNumber, game2Status]);
+
+  // Determine callout state for Ticket 2
+  const showTicket2Callout = gameNumber === 1 && game2Status?.configured && !game2Status.hasPlayed;
+  const ticket2Ready = showTicket2Callout && game2Status?.available;
+  const ticket2InCooldown = showTicket2Callout && !game2Status?.available && cooldownLeft;
 
   return (
     <VStack spacing={6} w="100%" align="stretch" py={4}>
@@ -150,6 +203,35 @@ export function SoloGameResults({ onBackToLobby, categoryRankings }: SoloGameRes
             );
           })}
         </VStack>
+      )}
+
+      {/* Ticket 2 callout */}
+      {ticket2Ready && (
+        <Box bg="rgba(128, 90, 213, 0.15)" borderRadius="lg" p={5} border="1px solid" borderColor="purple.500">
+          <VStack spacing={3}>
+            <Text color="purple.300" textAlign="center" fontWeight="bold" fontSize={{ base: 'md', md: 'lg' }}>
+              🎯 जीतने का एक और मौका — अभी खेलो नया टिकट!
+            </Text>
+            {onPlayTicket2 && (
+              <Button colorScheme="purple" size="md" onClick={() => {
+                trackEvent({
+                  eventName: 'solo_ticket2_cta_clicked',
+                  properties: { clicked_from: 'result_screen' },
+                });
+                onPlayTicket2();
+              }}>
+                🎮 दूसरा टिकट खेलें
+              </Button>
+            )}
+          </VStack>
+        </Box>
+      )}
+      {ticket2InCooldown && (
+        <Box bg="rgba(128, 90, 213, 0.15)" borderRadius="lg" p={5} border="1px solid" borderColor="purple.500">
+          <Text color="purple.300" textAlign="center" fontWeight="semibold" fontSize={{ base: 'sm', md: 'md' }}>
+            🎯 जीतने का एक और मौका! टिकट 2 अनलॉक होगा {cooldownLeft} में
+          </Text>
+        </Box>
       )}
 
       {/* Winner announcement message */}

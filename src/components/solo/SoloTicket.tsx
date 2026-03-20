@@ -9,7 +9,7 @@ interface SoloTicketProps {
 }
 
 export function SoloTicket({ ticket, readOnly = false, compact = false }: SoloTicketProps) {
-  const { markNumber, isNumberCalled, isNumberMarked, soloGameId, currentIndex, markedNumbers } = useSoloGameStore();
+  const { markNumber, isNumberCalled, isNumberMarked, soloGameId, currentIndex, markedNumbers, gameNumber } = useSoloGameStore();
   const { trackEvent } = useTambolaTracking();
 
   const handleClick = (num: number) => {
@@ -21,6 +21,7 @@ export function SoloTicket({ ticket, readOnly = false, compact = false }: SoloTi
       eventName: 'solo_number_marked',
       properties: {
         solo_game_id: soloGameId,
+        game_number: gameNumber,
         number: num,
         current_index: currentIndex,
         total_marked: markedNumbers.size + 1,

@@ -13,6 +13,7 @@ interface SoloGameState {
   // Game state
   soloGameId: string | null;
   weekId: string | null;
+  gameNumber: number;
   ticket: number[][] | null;
   numberSequence: number[];
   currentIndex: number;
@@ -27,12 +28,14 @@ interface SoloGameState {
   initGame: (data: {
     soloGameId: string;
     weekId: string;
+    gameNumber?: number;
     ticket: number[][];
     numberSequence: number[];
   }) => void;
   resumeGame: (data: {
     soloGameId: string;
     weekId: string;
+    gameNumber?: number;
     ticket: number[][];
     numberSequence: number[];
     currentIndex: number;
@@ -63,6 +66,7 @@ export const useSoloGameStore = create<SoloGameState>()(
     (set, get) => ({
       soloGameId: null,
       weekId: null,
+      gameNumber: 1,
       ticket: null,
       numberSequence: [],
       currentIndex: 0,
@@ -75,6 +79,7 @@ export const useSoloGameStore = create<SoloGameState>()(
         set({
           soloGameId: data.soloGameId,
           weekId: data.weekId,
+          gameNumber: data.gameNumber || 1,
           ticket: data.ticket,
           numberSequence: data.numberSequence,
           currentIndex: 0,
@@ -98,6 +103,7 @@ export const useSoloGameStore = create<SoloGameState>()(
         set({
           soloGameId: data.soloGameId,
           weekId: data.weekId,
+          gameNumber: data.gameNumber || 1,
           ticket: data.ticket,
           numberSequence: data.numberSequence,
           currentIndex: data.currentIndex,
@@ -157,6 +163,7 @@ export const useSoloGameStore = create<SoloGameState>()(
         set({
           soloGameId: null,
           weekId: null,
+          gameNumber: 1,
           ticket: null,
           numberSequence: [],
           currentIndex: 0,
@@ -221,6 +228,7 @@ export const useSoloGameStore = create<SoloGameState>()(
       partialize: (state) => ({
         soloGameId: state.soloGameId,
         weekId: state.weekId,
+        gameNumber: state.gameNumber,
         ticket: state.ticket,
         numberSequence: state.numberSequence,
         currentIndex: state.currentIndex,

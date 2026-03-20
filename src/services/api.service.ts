@@ -655,7 +655,7 @@ class ApiService {
   // ========== Solo Game API ==========
 
   async getSoloCurrentWeek(): Promise<SoloWeekResponse> {
-    return this.request<SoloWeekResponse>('/api/v1/solo/current-week');
+    return this.request<SoloWeekResponse>(`/api/v1/solo/current-week${this.getSoloQuery()}`);
   }
 
   private getSoloQuery(): string {
@@ -663,8 +663,10 @@ class ApiService {
     return userId ? `?userId=${userId}` : '';
   }
 
-  async startSoloGame(): Promise<StartSoloGameResponse> {
-    return this.request<StartSoloGameResponse>(`/api/v1/solo/start-game${this.getSoloQuery()}`, {
+  async startSoloGame(gameNumber: number = 1): Promise<StartSoloGameResponse> {
+    const query = this.getSoloQuery();
+    const gameParam = gameNumber === 2 ? `${query ? '&' : '?'}gameNumber=2` : '';
+    return this.request<StartSoloGameResponse>(`/api/v1/solo/start-game${query}${gameParam}`, {
       method: 'POST',
     });
   }
@@ -684,15 +686,19 @@ class ApiService {
     return this.request<MySoloGameResponse>(`/api/v1/solo/my-game${this.getSoloQuery()}`);
   }
 
-  async getSoloLeaderboard(weekId?: string): Promise<SoloLeaderboardResponse> {
-    const query = weekId ? `?weekId=${weekId}` : '';
+  async getSoloLeaderboard(weekId?: string, gameNumber?: number): Promise<SoloLeaderboardResponse> {
+    const params = new URLSearchParams();
+    if (weekId) params.set('weekId', weekId);
+    if (gameNumber) params.set('gameNumber', String(gameNumber));
+    const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<SoloLeaderboardResponse>(`/api/v1/solo/leaderboard${query}`);
   }
 
-  async getSoloCategoryRankings(weekId?: string): Promise<CategoryRankingsResponse> {
+  async getSoloCategoryRankings(weekId?: string, gameNumber?: number): Promise<CategoryRankingsResponse> {
     const baseQuery = this.getSoloQuery();
     const weekParam = weekId ? `&weekId=${weekId}` : '';
-    return this.request<CategoryRankingsResponse>(`/api/v1/solo/category-rankings${baseQuery}${weekParam}`);
+    const gameParam = gameNumber ? `&gameNumber=${gameNumber}` : '';
+    return this.request<CategoryRankingsResponse>(`/api/v1/solo/category-rankings${baseQuery}${weekParam}${gameParam}`);
   }
 
   async updateSoloProgress(data: {
@@ -722,6 +728,7 @@ class ApiService {
     videoUrl: string;
     numberSequence: number[];
     numberTimestamps: number[];
+    gameNumber?: number;
   }): Promise<ConfigureSoloWeekResponse> {
     return this.request<ConfigureSoloWeekResponse>('/api/v1/solo/configure-week', {
       method: 'POST',
@@ -776,15 +783,26 @@ export interface SoloWeekResponse {
     videoUrl?: string;
     videoId?: string;
     isConfigured?: boolean;
+    isGame2Configured?: boolean;
   };
   stats: { playerCount: number };
-  userStatus: { hasPlayed: boolean; gameStatus: string | null };
+  userStatus: {
+    hasPlayed: boolean;
+    gameStatus: string | null;
+    game2Status: {
+      available: boolean;
+      cooldownEndsAt: string | null;
+      hasPlayed: boolean;
+      gameStatus: string | null;
+    };
+  };
   flags: { isSoloGameDay: boolean; isSunday: boolean };
 }
 
 export interface StartSoloGameResponse {
   soloGameId: string;
   weekId: string;
+  gameNumber: number;
   ticket: number[][];
   numberSequence: number[];
   status: string;
@@ -803,27 +821,40 @@ export interface SoloClaimResponse {
   gameComplete: boolean;
 }
 
-export interface MySoloGameResponse {
-  game: {
+export interface SoloGameData {
+  id: string;
+  weekId: string;
+  gameNumber: number;
+  ticket: number[][];
+  numberSequence: number[];
+  markedNumbers: number[];
+  currentIndex: number;
+  status: 'IN_PROGRESS' | 'COMPLETED';
+  startedAt: string;
+  completedAt?: string;
+  claims: Array<{
     id: string;
-    weekId: string;
-    ticket: number[][];
-    numberSequence: number[];
-    markedNumbers: number[];
-    currentIndex: number;
-    status: 'IN_PROGRESS' | 'COMPLETED';
-    startedAt: string;
-    completedAt?: string;
-    claims: Array<{
-      id: string;
-      category: string;
-      numberCountAtClaim: number;
-      claimedAt: string;
-    }>;
-  } | null;
+    category: string;
+    numberCountAtClaim: number;
+    claimedAt: string;
+  }>;
+}
+
+export interface MySoloGameResponse {
+  game: SoloGameData | null;
+  game1: SoloGameData | null;
+  game2: SoloGameData | null;
+  game2Status: {
+    available: boolean;
+    cooldownEndsAt: string | null;
+    configured: boolean;
+  };
   videoUrl?: string;
   videoId?: string;
   numberTimestamps?: number[];
+  game2VideoUrl?: string;
+  game2VideoId?: string;
+  game2NumberTimestamps?: number[];
   isConfigured?: boolean;
   canPlay: boolean;
   isSunday: boolean;
@@ -895,10 +926,21 @@ export interface SoloWeekConfigResponse {
     numberInterval: number | null;
     configuredAt: string | null;
     configuredBy: string | null;
+    // Game 2 config
+    game2VideoUrl: string | null;
+    game2VideoId: string | null;
+    game2NumberSequence: number[];
+    game2NumberTimestamps: number[];
+    game2VideoStartTime: number | null;
+    game2ConfiguredAt: string | null;
+    game2ConfiguredBy: string | null;
   };
   gameCount: number;
+  game2Count: number;
   isConfigured: boolean;
+  isGame2Configured: boolean;
   canReconfigure: boolean;
+  canReconfigureGame2: boolean;
 }
 
 // Export singleton instance

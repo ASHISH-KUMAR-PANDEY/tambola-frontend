@@ -111,9 +111,20 @@ export default function SoloManagement() {
   const [saving, setSaving] = useState(false);
   const [weekConfig, setWeekConfig] = useState<any>(null);
 
-  // Form state
-  const [videoUrl, setVideoUrl] = useState('');
-  const [numberCallsText, setNumberCallsText] = useState('');
+  // Tab state — Game 1 or Game 2
+  const [activeTab, setActiveTab] = useState<1 | 2>(1);
+
+  // Form state per game
+  const [game1VideoUrl, setGame1VideoUrl] = useState('');
+  const [game1NumberCallsText, setGame1NumberCallsText] = useState('');
+  const [game2VideoUrl, setGame2VideoUrl] = useState('');
+  const [game2NumberCallsText, setGame2NumberCallsText] = useState('');
+
+  // Derive active form values based on tab
+  const videoUrl = activeTab === 1 ? game1VideoUrl : game2VideoUrl;
+  const setVideoUrl = activeTab === 1 ? setGame1VideoUrl : setGame2VideoUrl;
+  const numberCallsText = activeTab === 1 ? game1NumberCallsText : game2NumberCallsText;
+  const setNumberCallsText = activeTab === 1 ? setGame1NumberCallsText : setGame2NumberCallsText;
 
   useEffect(() => {
     loadConfig();
@@ -123,11 +134,19 @@ export default function SoloManagement() {
     try {
       const result = await apiService.getSoloWeekConfig();
       setWeekConfig(result);
+      // Game 1 form
       if (result.week.videoUrl) {
-        setVideoUrl(result.week.videoUrl);
+        setGame1VideoUrl(result.week.videoUrl);
       }
       if (result.week.numberSequence?.length === 90 && result.week.numberTimestamps?.length === 90) {
-        setNumberCallsText(configToText(result.week.numberSequence, result.week.numberTimestamps));
+        setGame1NumberCallsText(configToText(result.week.numberSequence, result.week.numberTimestamps));
+      }
+      // Game 2 form
+      if (result.week.game2VideoUrl) {
+        setGame2VideoUrl(result.week.game2VideoUrl);
+      }
+      if (result.week.game2NumberSequence?.length === 90 && result.week.game2NumberTimestamps?.length === 90) {
+        setGame2NumberCallsText(configToText(result.week.game2NumberSequence, result.week.game2NumberTimestamps));
       }
     } catch (error) {
       console.error('Failed to load config:', error);
@@ -208,14 +227,19 @@ export default function SoloManagement() {
         videoUrl,
         numberSequence: entries.map(e => e.number),
         numberTimestamps: entries.map(e => e.timestamp),
+        gameNumber: activeTab,
       });
       toast({
         title: 'Configured',
-        description: 'Solo week configured successfully',
+        description: `Game ${activeTab} configured successfully`,
         status: 'success',
         duration: 3000,
       });
-      setWeekConfig({ ...weekConfig, week: result.week, isConfigured: true });
+      if (activeTab === 1) {
+        setWeekConfig({ ...weekConfig, week: result.week, isConfigured: true });
+      } else {
+        setWeekConfig({ ...weekConfig, week: result.week, isGame2Configured: true });
+      }
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -275,7 +299,7 @@ export default function SoloManagement() {
 
         {/* Status bar */}
         <HStack w="100%" justify="space-between" bg="grey.800" p={4} borderRadius="md">
-          <VStack align="start" spacing={0}>
+          <VStack align="start" spacing={1}>
             <Text color="grey.400" fontSize="sm">Status</Text>
             {weekConfig?.week && (
               <Text color="grey.500" fontSize="xs">
@@ -284,20 +308,56 @@ export default function SoloManagement() {
             )}
           </VStack>
           <VStack align="end" spacing={1}>
-            <Badge colorScheme={weekConfig?.isConfigured ? 'green' : 'red'}>
-              {weekConfig?.isConfigured ? 'Configured' : 'Not Configured'}
-            </Badge>
-            {weekConfig?.gameCount > 0 && (
-              <Text color="grey.500" fontSize="xs">{weekConfig.gameCount} player(s)</Text>
-            )}
+            <HStack spacing={2}>
+              <Badge colorScheme={weekConfig?.isConfigured ? 'green' : 'red'} fontSize="xs">
+                Game 1: {weekConfig?.isConfigured ? '✓' : '✗'}
+              </Badge>
+              <Badge colorScheme={weekConfig?.isGame2Configured ? 'green' : 'gray'} fontSize="xs">
+                Game 2: {weekConfig?.isGame2Configured ? '✓' : '✗'}
+              </Badge>
+            </HStack>
+            <HStack spacing={2}>
+              {weekConfig?.gameCount > 0 && (
+                <Text color="grey.500" fontSize="xs">G1: {weekConfig.gameCount} player(s)</Text>
+              )}
+              {weekConfig?.game2Count > 0 && (
+                <Text color="grey.500" fontSize="xs">G2: {weekConfig.game2Count} player(s)</Text>
+              )}
+            </HStack>
           </VStack>
+        </HStack>
+
+        {/* Game Tab Toggle */}
+        <HStack spacing={2} w="100%" justify="center">
+          <Button
+            size="md"
+            variant={activeTab === 1 ? 'solid' : 'outline'}
+            colorScheme="brand"
+            onClick={() => setActiveTab(1)}
+            fontWeight="bold"
+            flex={1}
+          >
+            Game 1
+          </Button>
+          <Button
+            size="md"
+            variant={activeTab === 2 ? 'solid' : 'outline'}
+            colorScheme="purple"
+            onClick={() => setActiveTab(2)}
+            fontWeight="bold"
+            flex={1}
+          >
+            Game 2
+          </Button>
         </HStack>
 
         {/* Form */}
         <Box p={{ base: 4, md: 6 }} bg="white" borderRadius="lg" boxShadow="md" w="100%">
           <form onSubmit={handleSubmit}>
             <VStack spacing={4} align="stretch">
-              <Heading size="sm" color="grey.900">Video Configuration</Heading>
+              <Heading size="sm" color="grey.900">
+                Game {activeTab} — Video Configuration
+              </Heading>
 
               <FormControl>
                 <FormLabel color="grey.900" fontWeight="semibold">YouTube Video URL</FormLabel>
@@ -423,13 +483,13 @@ export default function SoloManagement() {
 
               <Button
                 type="submit"
-                colorScheme="brand"
+                colorScheme={activeTab === 1 ? 'brand' : 'purple'}
                 size="lg"
                 isLoading={saving}
                 loadingText="Saving..."
                 isDisabled={false}
               >
-                Configure Week
+                Configure Game {activeTab}
               </Button>
             </VStack>
           </form>
