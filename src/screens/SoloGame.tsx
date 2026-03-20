@@ -59,7 +59,7 @@ export default function SoloGame() {
   const [viewState, setViewState] = useState<ViewState>('loading');
   const [isStarting, setIsStarting] = useState(false);
   const [claimLoading, setClaimLoading] = useState<WinCategory | null>(null);
-  const [gameMode, setGameMode] = useState<'fresh' | 'resume' | 'completed'>('fresh');
+  const [, setGameMode] = useState<'fresh' | 'resume' | 'completed'>('fresh');
   const [categoryRankings, setCategoryRankings] = useState<CategoryRankingsResponse | null>(null);
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
