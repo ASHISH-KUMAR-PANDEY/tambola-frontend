@@ -5,7 +5,6 @@ import {
   Button,
   Heading,
   Text,
-  Badge,
   Grid,
   GridItem,
   Spinner,
@@ -602,27 +601,6 @@ export default function Lobby() {
     return timeRemaining <= thirtyMinutesInMs;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'LOBBY':
-        return 'green';
-      case 'ACTIVE':
-        return 'orange';
-      case 'COMPLETED':
-        return 'grey';
-      default:
-        return 'grey';
-    }
-  };
 
   // GameCountdown Component
   const GameCountdown = ({ scheduledTime }: { scheduledTime: string }) => {
