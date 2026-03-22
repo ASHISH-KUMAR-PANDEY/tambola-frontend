@@ -28,9 +28,10 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
+  Icon,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
-import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type RegistrationCard as RegistrationCardType } from '../services/api.service';
+import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type YouTubeLiveStream, type RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
 import { useGameStore } from '../stores/gameStore';
@@ -67,6 +68,7 @@ export default function Lobby() {
   const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
   const [currentRegistrationCard, setCurrentRegistrationCard] = useState<RegistrationCardType | null>(null);
+  const [currentLiveStream, setCurrentLiveStream] = useState<YouTubeLiveStream | null>(null);
   const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
     // Load reminded games from localStorage
     const saved = localStorage.getItem('remindedGames');
@@ -126,6 +128,7 @@ export default function Lobby() {
     loadMyActiveGames();
     loadCurrentBanner();
     loadCurrentEmbed();
+    loadCurrentLiveStream();
     loadActiveRegistrationCard();
 
     // Setup WebSocket event handlers
@@ -253,6 +256,15 @@ export default function Lobby() {
       setCurrentEmbed(embed);
     } catch (error) {
       console.error('Failed to load YouTube embed:', error);
+    }
+  };
+
+  const loadCurrentLiveStream = async () => {
+    try {
+      const stream = await apiService.getCurrentYouTubeLiveStream();
+      setCurrentLiveStream(stream);
+    } catch (error) {
+      console.error('Failed to load live stream:', error);
     }
   };
 
@@ -935,190 +947,184 @@ export default function Lobby() {
               )}
             </VStack>
           ) : (
+            <VStack spacing={4} w="100%">
+            {(activeTab === 'all' || activeTab === 'sunday') && (
             <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }} gap={{ base: 3, md: 4 }} w="100%">
               {games.map((game) => (
                 <GridItem key={game.id}>
                   <Box
-                    p={{ base: 4, md: 5 }}
-                    bg="grey.700"
-                    borderRadius="lg"
-                    boxShadow="md"
-                    border="1px"
-                    borderColor="grey.600"
+                    borderRadius="12px"
+                    overflow="hidden"
+                    border="1px solid"
+                    borderColor="#e5c07b"
+                    bg="#fffbf0"
                     transition="all 0.2s"
-                    _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)', borderColor: 'brand.500' }}
+                    _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
                     h="100%"
                     w="100%"
                   >
-                    <VStack align="start" spacing={{ base: 3, md: 4 }} h="100%">
-                      <HStack justify="space-between" w="100%" flexWrap="wrap" gap={2}>
-                        <Badge colorScheme={getStatusColor(game.status)} fontSize={{ base: 'xs', md: 'sm' }} px={2} py={1}>
-                          {game.status}
-                        </Badge>
-                        <Text fontSize={{ base: 'xs', md: 'sm' }} color="grey.400" whiteSpace="nowrap">
-                          {formatDate(game.scheduledTime)}
+                    {/* Live banner — like registration card's date strip */}
+                    {game.status === 'ACTIVE' && (
+                      <HStack
+                        justify="center"
+                        spacing={2}
+                        py={2.5}
+                        bg="#92400e"
+                        w="100%"
+                      >
+                        <Box w="8px" h="8px" borderRadius="full" bg="#f87171" />
+                        <Text fontSize="sm" fontWeight="bold" color="white" letterSpacing="wide">
+                          चल रहा है — जल्दी Join करो!
                         </Text>
                       </HStack>
+                    )}
 
-                      <VStack align="start" spacing={2} w="100%" flex={1}>
-                        <HStack justify="space-between" w="100%">
-                          <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-                            खिलाड़ी:
-                          </Text>
-                          <Text fontWeight="bold" fontSize={{ base: 'sm', md: 'md' }} color="white">{game.playerCount || 0}</Text>
-                        </HStack>
-                        <HStack justify="space-between" w="100%">
-                          <Text fontSize={{ base: 'sm', md: 'md' }} color="grey.300">
-                            सारे नंबर:
-                          </Text>
-                          <Text fontWeight="bold" color="highlight.500" fontSize={{ base: 'sm', md: 'md' }}>
-                            {game.prizes.fullHouse || 0} अंक
-                          </Text>
-                        </HStack>
-                      </VStack>
+                    {/* Card body */}
+                    <VStack spacing={1} py={5} px={4}>
+                      {/* Title */}
+                      <Text
+                        fontSize={{ base: '2xl', md: '3xl' }}
+                        fontWeight="900"
+                        color="#1a1a1a"
+                        textAlign="center"
+                        lineHeight="1.2"
+                      >
+                        Sunday Tambola
+                      </Text>
 
-                      {/* Countdown Timer - Only show for LOBBY games */}
+                      {/* Subtitle */}
+                      <Text
+                        fontSize={{ base: 'sm', md: 'md' }}
+                        color="#9ca3af"
+                        textAlign="center"
+                      >
+                        हर रविवार, बड़े इनाम!
+                      </Text>
+
+                      {/* Accent line */}
+                      <Box w="28px" h="3px" bg="#e5a00d" borderRadius="full" my={1} />
+
+                      {/* Player count */}
+                      <HStack spacing={2} pt={2}>
+                        <Icon viewBox="0 0 24 24" boxSize={5} color="#e5a00d">
+                          <path
+                            fill="currentColor"
+                            d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                          />
+                        </Icon>
+                        <Text fontSize="md" fontWeight="bold" color="#1a1a1a">
+                          {(game.playerCount || 0).toLocaleString('en-IN')}+{' '}
+                          <Text as="span" fontWeight="medium" color="#9ca3af">
+                            खिलाड़ी
+                          </Text>
+                        </Text>
+                      </HStack>
+                    </VStack>
+
+                    {/* Live video preview — only when game is ACTIVE and live stream exists */}
+                    {game.status === 'ACTIVE' && currentLiveStream && (
+                      <Box px={4} pb={3}>
+                        <Box borderRadius="10px" overflow="hidden" border="2px solid" borderColor="#e5a00d">
+                          <AspectRatio ratio={16 / 9}>
+                            <iframe
+                              src={`https://www.youtube.com/embed/${currentLiveStream.embedId}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0`}
+                              allow="autoplay; encrypted-media"
+                              style={{ border: 'none' }}
+                              title="Live stream preview"
+                            />
+                          </AspectRatio>
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* Countdown or CTA */}
+                    <Box px={4} pb={4}>
                       {game.status === 'LOBBY' && <GameCountdown scheduledTime={game.scheduledTime} />}
+                    </Box>
+
+                    <Box px={4} pb={4}>
 
                       {(() => {
                         const isMyGame = myActiveGames.some((g) => g.id === game.id);
                         const isCreator = game.createdBy === user?.id;
+                        const btnStyle = {
+                          w: '100%',
+                          size: 'lg' as const,
+                          h: '52px',
+                          fontSize: 'lg',
+                          fontWeight: 'bold',
+                          borderRadius: '10px',
+                        };
 
-                        // If user is the creator, show different buttons based on game status
                         if (isCreator) {
                           if (game.status === 'LOBBY') {
-                            // Show Start Game and Delete Game buttons
                             return (
                               <VStack w="100%" spacing={2}>
-                                <Button
-                                  w="100%"
-                                  colorScheme="brand"
-                                  size={{ base: 'md', md: 'lg' }}
-                                  h={{ base: '44px', md: '48px' }}
-                                  fontSize={{ base: 'sm', md: 'md' }}
-                                  onClick={() => handleStartGame(game.id)}
-                                >
+                                <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} onClick={() => handleStartGame(game.id)}>
                                   Start Game
                                 </Button>
-                                <Button
-                                  w="100%"
-                                  colorScheme="red"
-                                  variant="outline"
-                                  size={{ base: 'sm', md: 'md' }}
-                                  h={{ base: '36px', md: '40px' }}
-                                  fontSize={{ base: 'xs', md: 'sm' }}
-                                  onClick={() => handleDeleteGame(game.id)}
-                                >
+                                <Button {...btnStyle} h="40px" fontSize="sm" colorScheme="red" variant="outline" onClick={() => handleDeleteGame(game.id)}>
                                   Delete Game
                                 </Button>
                               </VStack>
                             );
                           } else if (game.status === 'ACTIVE') {
-                            // Show Manage Game button for active games
                             return (
-                              <Button
-                                w="100%"
-                                bg="highlight.500"
-                                color="white"
-                                size={{ base: 'md', md: 'lg' }}
-                                h={{ base: '44px', md: '48px' }}
-                                fontSize={{ base: 'sm', md: 'md' }}
-                                onClick={() => navigate(`/game-control/${game.id}`)}
-                                _hover={{ bg: 'highlight.600' }}
-                              >
+                              <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} onClick={() => navigate(`/game-control/${game.id}`)}>
                                 Manage Game
                               </Button>
                             );
                           }
                         }
 
-                        // If user already joined, show "Rejoin Game"
                         if (isMyGame) {
                           return (
-                            <Button
-                              w="100%"
-                              colorScheme="green"
-                              size={{ base: 'md', md: 'lg' }}
-                              h={{ base: '44px', md: '48px' }}
-                              fontSize={{ base: 'sm', md: 'md' }}
-                              isLoading={joiningGameId === game.id}
-                              loadingText="फिर से शामिल हो रहे हैं..."
-                              onClick={() => handleRejoinGame(game)}
-                            >
+                            <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} isLoading={joiningGameId === game.id} loadingText="शामिल हो रहे हैं..." onClick={() => handleRejoinGame(game)}>
                               फिर से शामिल हों
                             </Button>
                           );
                         }
 
-                        // For regular players - check if within 30 minutes
                         const canJoin = canJoinGame(game.scheduledTime);
                         const isReminded = remindedGames.has(game.id);
 
-                        // If active game, always show Join/Watch
                         if (game.status === 'ACTIVE') {
                           return (
-                            <Button
-                              w="100%"
-                              colorScheme="brand"
-                              size={{ base: 'md', md: 'lg' }}
-                              h={{ base: '44px', md: '48px' }}
-                              fontSize={{ base: 'sm', md: 'md' }}
-                              isLoading={joiningGameId === game.id}
-                              loadingText="शामिल हो रहे हैं..."
-                              onClick={() => handleJoinGame(game)}
-                            >
-                              गेम देखें
+                            <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} isLoading={joiningGameId === game.id} loadingText="शामिल हो रहे हैं..." onClick={() => handleJoinGame(game)}>
+                              अभी Join करो
                             </Button>
                           );
                         }
 
-                        // If lobby game and can join (within 30 mins or expired)
                         if (canJoin) {
                           return (
-                            <Button
-                              w="100%"
-                              colorScheme="brand"
-                              size={{ base: 'md', md: 'lg' }}
-                              h={{ base: '44px', md: '48px' }}
-                              fontSize={{ base: 'sm', md: 'md' }}
-                              isLoading={joiningGameId === game.id}
-                              loadingText="शामिल हो रहे हैं..."
-                              onClick={() => handleJoinGame(game)}
-                            >
-                              गेम में शामिल हों
+                            <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} isLoading={joiningGameId === game.id} loadingText="शामिल हो रहे हैं..." onClick={() => handleJoinGame(game)}>
+                              अभी Join करो
                             </Button>
                           );
                         }
 
-                        // If lobby game but NOT within 30 mins - show Remind Me
                         return (
-                          <Button
-                            w="100%"
-                            colorScheme={isReminded ? 'green' : 'yellow'}
-                            variant={isReminded ? 'solid' : 'outline'}
-                            size={{ base: 'md', md: 'lg' }}
-                            h={{ base: '44px', md: '48px' }}
-                            fontSize={{ base: 'sm', md: 'md' }}
-                            leftIcon={<BellIcon />}
-                            onClick={() => handleRemindMe(game.id)}
-                          >
+                          <Button {...btnStyle} bg={isReminded ? 'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)' : 'transparent'} color={isReminded ? 'white' : '#d97706'} border="2px solid" borderColor="#d97706" _hover={{ opacity: 0.9 }} leftIcon={<BellIcon />} onClick={() => handleRemindMe(game.id)}>
                             {isReminded ? 'रिमाइंडर सेट' : 'मुझे याद दिलाएं'}
                           </Button>
                         );
                       })()}
-                    </VStack>
+                    </Box>
                   </Box>
                 </GridItem>
               ))}
             </Grid>
+            )}
+            {(activeTab === 'all' || activeTab === 'live') && (
+              <SoloGameCTA hasMultiplayerGame={games.length > 0} />
+            )}
+            </VStack>
           )}
         </Box>
 
-        {/* Solo Game CTA - shown when games exist */}
-        {games.length > 0 && <SoloGameCTA />}
-
         {/* Registration Card - shown when games exist */}
-        {games.length > 0 && currentRegistrationCard && (
+        {games.length > 0 && (activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
           <RegistrationCard
             card={currentRegistrationCard}
             externalReminderSet={registrationReminderSet}

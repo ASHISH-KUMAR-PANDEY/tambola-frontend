@@ -1,4 +1,4 @@
-import { Box, VStack, HStack, Text, Button, Icon } from '@chakra-ui/react';
+import { Box, VStack, HStack, Text, Button, Icon, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { apiService, type SoloWeekResponse } from '../../services/api.service';
@@ -75,8 +75,9 @@ function PeopleIcon(props: any) {
 
 // ─── Component ───────────────────────────────────────────────
 
-export function SoloGameCTA() {
+export function SoloGameCTA({ hasMultiplayerGame = false }: { hasMultiplayerGame?: boolean }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const { trackEvent } = useTambolaTracking();
   const [data, setData] = useState<SoloWeekResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +119,21 @@ export function SoloGameCTA() {
 
   const handleCTAClick = () => {
     if (isDisabled) return;
+    if (hasMultiplayerGame) {
+      toast({
+        title: '🎉 Sunday Tambola चल रहा है!',
+        description: 'वो join करो और जीतो बड़े इनाम!',
+        status: 'info',
+        duration: 4000,
+        isClosable: true,
+        position: 'top',
+      });
+      trackEvent({
+        eventName: 'solo_cta_blocked_by_multiplayer',
+        properties: { cta_label: btnLabel },
+      });
+      return;
+    }
     trackEvent({
       eventName: 'solo_cta_clicked',
       properties: {
@@ -201,11 +217,11 @@ export function SoloGameCTA() {
           h="52px"
           fontSize="lg"
           fontWeight="bold"
-          color={c.ctaTextColor}
-          bg={c.ctaBg}
+          color={hasMultiplayerGame ? '#9ca3af' : c.ctaTextColor}
+          bg={hasMultiplayerGame ? '#e5e7eb' : c.ctaBg}
           borderRadius="10px"
-          _hover={{ opacity: 0.9 }}
-          _active={{ opacity: 0.8 }}
+          _hover={{ opacity: hasMultiplayerGame ? 1 : 0.9 }}
+          _active={{ opacity: hasMultiplayerGame ? 1 : 0.8 }}
           cursor={isDisabled ? 'not-allowed' : 'pointer'}
           onClick={handleCTAClick}
         >
