@@ -1,8 +1,52 @@
-import { Box, Image } from '@chakra-ui/react';
+import { Box, VStack, HStack, Text, Button, Icon } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { apiService, type SoloWeekResponse } from '../../services/api.service';
 import { useTambolaTracking } from '../../hooks/useTambolaTracking';
+
+// ─── Card Config ─────────────────────────────────────────────
+// Edit these values to change card appearance without touching JSX
+
+const CARD_CONFIG = {
+  // Top badge (set showBadge to true to enable)
+  showBadge: false,
+  badgeText: 'Live Now',
+  badgeColor: '#22c55e', // green dot color
+
+  // Title & subtitle
+  title: 'Live Tambola',
+  subtitle: 'रोज खेलो, रोज जीतो!',
+
+  // Player count
+  playerCountSuffix: 'खेल रहे हैं',
+
+  // CTA labels per state
+  ctaLabels: {
+    fresh: 'अभी शामिल हों',
+    inProgress: 'जारी रखें',
+    completed: 'अभी खेलो',
+    sunday: 'अभी खेलो',
+    notConfigured: 'जल्द आ रहा है',
+  },
+
+  // Colors
+  badgeBg: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+  badgeTextColor: '#15803d',
+  cardBg: 'white',
+  cardBorder: '#e5e7eb',
+  titleColor: '#1a1a1a',
+  subtitleColor: '#9ca3af',
+  accentLine: '#2563eb', // blue line under subtitle
+  playerCountColor: '#1a1a1a',
+  playerIconColor: '#f97316', // orange
+  ctaBg: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #22c55e 100%)',
+  ctaTextColor: 'white',
+
+  // Route
+  route: '/soloGame',
+};
+
+// ─── Helpers ─────────────────────────────────────────────────
 
 function generatePlayerCount(realCount: number): number {
   const base = Math.max(200, realCount * 12);
@@ -13,11 +57,30 @@ function generatePlayerCount(realCount: number): number {
   return base + jitter;
 }
 
+function formatCount(n: number): string {
+  return n.toLocaleString('en-IN') + '+';
+}
+
+// People icon as inline SVG
+function PeopleIcon(props: any) {
+  return (
+    <Icon viewBox="0 0 24 24" {...props}>
+      <path
+        fill="currentColor"
+        d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+      />
+    </Icon>
+  );
+}
+
+// ─── Component ───────────────────────────────────────────────
+
 export function SoloGameCTA() {
   const navigate = useNavigate();
   const { trackEvent } = useTambolaTracking();
   const [data, setData] = useState<SoloWeekResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const c = CARD_CONFIG;
 
   useEffect(() => {
     const load = async () => {
@@ -47,11 +110,11 @@ export function SoloGameCTA() {
   const isConfigured = data.week.isConfigured !== false;
   const isDisabled = !isConfigured && !isSunday && !userStatus.hasPlayed;
 
-  let btnLabel = 'अभी शामिल हों';
-  if (isSunday) btnLabel = 'टिकट देखो';
-  else if (isCompleted) btnLabel = 'टिकट देखो';
-  else if (isInProgress) btnLabel = 'जारी रखें';
-  else if (!isConfigured) btnLabel = 'जल्द आ रहा है';
+  let btnLabel = c.ctaLabels.fresh;
+  if (isSunday) btnLabel = c.ctaLabels.sunday;
+  else if (isCompleted) btnLabel = c.ctaLabels.completed;
+  else if (isInProgress) btnLabel = c.ctaLabels.inProgress;
+  else if (!isConfigured) btnLabel = c.ctaLabels.notConfigured;
 
   const handleCTAClick = () => {
     if (isDisabled) return;
@@ -63,7 +126,7 @@ export function SoloGameCTA() {
         player_count_shown: playerCount,
       },
     });
-    navigate('/soloGame');
+    navigate(c.route);
   };
 
   return (
@@ -74,30 +137,81 @@ export function SoloGameCTA() {
       opacity={isDisabled ? 0.5 : 1}
       borderRadius="12px"
       overflow="hidden"
-      position="relative"
+      border="1px solid"
+      borderColor={c.cardBorder}
+      bg={c.cardBg}
     >
-      <Image
-        src="/card1.svg"
-        alt="Daily Tambola"
-        w="100%"
-        borderRadius="12px"
-        display="block"
-      />
-      {/* Invisible click overlay positioned exactly over the green CTA button */}
-      {/* Card1: 360x340, button at y=268 h=54 x=18 w=324 */}
-      <Box
-        position="absolute"
-        bottom="5.3%"
-        left="5%"
-        w="90%"
-        h="15.9%"
-        cursor={isDisabled ? 'not-allowed' : 'pointer'}
-        onClick={handleCTAClick}
-        borderRadius="8px"
-        _hover={!isDisabled ? { bg: 'rgba(255,255,255,0.08)' } : undefined}
-        _active={!isDisabled ? { bg: 'rgba(0,0,0,0.08)' } : undefined}
-        transition="background 0.15s ease"
-      />
+      {/* Badge bar — toggle via CARD_CONFIG.showBadge */}
+      {c.showBadge && (
+        <HStack
+          justify="center"
+          spacing={2}
+          py={2}
+          bg={c.badgeBg}
+        >
+          <Box w="8px" h="8px" borderRadius="full" bg={c.badgeColor} />
+          <Text fontSize="sm" fontWeight="bold" color={c.badgeTextColor}>
+            {c.badgeText}
+          </Text>
+        </HStack>
+      )}
+
+      {/* Card body */}
+      <VStack spacing={1} py={5} px={4}>
+        {/* Title */}
+        <Text
+          fontSize={{ base: '2xl', md: '3xl' }}
+          fontWeight="900"
+          color={c.titleColor}
+          textAlign="center"
+          lineHeight="1.2"
+        >
+          {c.title}
+        </Text>
+
+        {/* Subtitle */}
+        <Text
+          fontSize={{ base: 'sm', md: 'md' }}
+          color={c.subtitleColor}
+          textAlign="center"
+        >
+          {c.subtitle}
+        </Text>
+
+        {/* Accent line */}
+        <Box w="28px" h="3px" bg={c.accentLine} borderRadius="full" my={1} />
+
+        {/* Player count */}
+        <HStack spacing={2} pt={2}>
+          <PeopleIcon boxSize={5} color={c.playerIconColor} />
+          <Text fontSize="md" fontWeight="bold" color={c.playerCountColor}>
+            {formatCount(playerCount)}{' '}
+            <Text as="span" fontWeight="medium" color={c.subtitleColor}>
+              {c.playerCountSuffix}
+            </Text>
+          </Text>
+        </HStack>
+      </VStack>
+
+      {/* CTA Button */}
+      <Box px={4} pb={4}>
+        <Button
+          w="100%"
+          size="lg"
+          h="52px"
+          fontSize="lg"
+          fontWeight="bold"
+          color={c.ctaTextColor}
+          bg={c.ctaBg}
+          borderRadius="10px"
+          _hover={{ opacity: 0.9 }}
+          _active={{ opacity: 0.8 }}
+          cursor={isDisabled ? 'not-allowed' : 'pointer'}
+          onClick={handleCTAClick}
+        >
+          {btnLabel}
+        </Button>
+      </Box>
     </Box>
   );
 }
