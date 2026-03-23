@@ -29,7 +29,7 @@ const CATEGORIES = [
   { key: 'FULL_HOUSE', label: 'सारे नंबर', lineIndex: undefined },
 ];
 
-const DRIP_INTERVAL = 8; // seconds between each number shown to user
+const DRIP_INTERVAL = 15; // seconds between each number shown to user
 
 export default function WeeklyGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -244,6 +244,14 @@ export default function WeeklyGame() {
   const currentNumber = visibleTodayNumbers.length > 0 ? visibleTodayNumbers[visibleTodayNumbers.length - 1] : null;
   const allTodayShown = shownCount >= (todayNumbers || []).length;
 
+  // Visible revealed set: previous days' numbers + only dripped today numbers
+  // (so the 90-number board marks numbers progressively as they drip)
+  const todaySet = new Set(todayNumbers || []);
+  const visibleTodaySet = new Set(visibleTodayNumbers);
+  const visibleRevealedSet = new Set(
+    revealedNumbers.filter((n) => !todaySet.has(n) || visibleTodaySet.has(n))
+  );
+
   const getRowNumbers = (rowIdx: number) => ticket[rowIdx].filter((n) => n !== 0);
   const checkLineComplete = (rowIdx: number) => getRowNumbers(rowIdx).every((n) => markedSet.has(n));
   const checkFullHouse = () => ticketNumbers.every((n) => markedSet.has(n));
@@ -401,7 +409,7 @@ export default function WeeklyGame() {
                 {row.map((cell, colIndex) => {
                   const isEmpty = cell === 0;
                   const isMarked = !isEmpty && markedSet.has(cell);
-                  const isRevealed = !isEmpty && revealedSet.has(cell);
+                  const isRevealed = !isEmpty && visibleRevealedSet.has(cell);
                   const canMark = !isEmpty && isRevealed && !isMarked;
 
                   return (
@@ -506,7 +514,7 @@ export default function WeeklyGame() {
           </Heading>
           <Grid templateColumns="repeat(10, 1fr)" gap={{ base: 1, md: 1.5 }}>
             {Array.from({ length: 90 }, (_, i) => i + 1).map((num) => {
-              const isRevealed = revealedSet.has(num);
+              const isRevealed = visibleRevealedSet.has(num);
               const isCurrent = num === currentNumber;
               return (
                 <GridItem key={num}>
