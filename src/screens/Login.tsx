@@ -37,6 +37,7 @@ export default function Login() {
   }, [inactivityMessage, toast]);
 
   return (
+    <Box w="100vw" minH="100vh" display="flex" alignItems="center" justifyContent="center">
     <Container maxW="md" py={{ base: 8, md: 12, lg: 20 }} px={{ base: 4, md: 6 }}>
       <Box
         bg="grey.700"
@@ -93,5 +94,6 @@ export default function Login() {
         </Stack>
       </Box>
     </Container>
+    </Box>
   );
 }

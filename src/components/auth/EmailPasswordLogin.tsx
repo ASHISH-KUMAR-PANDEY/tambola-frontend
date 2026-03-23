@@ -63,7 +63,12 @@ export function EmailPasswordLogin() {
 
     try {
       await login(email, password);
-      navigate(from, { replace: true });
+      const user = useAuthStore.getState().user;
+      if (user?.role === 'ORGANIZER' || user?.email === 'organizer@test.com') {
+        navigate('/organizer', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       // Error is handled by store
     }
