@@ -228,7 +228,6 @@ export default function WeeklyGame() {
   const { game, player, revealedNumbers, todayNumbers, claims, wonCategories } = state;
   const ticket = player.ticket as number[][];
   const markedSet = new Set(player.markedNumbers);
-  const revealedSet = new Set(revealedNumbers);
   const ticketNumbers = ticket.flat().filter((n) => n !== 0);
   const markedCount = player.markedNumbers.length;
   const claimedCategories = new Set(claims.map((c) => c.category));
