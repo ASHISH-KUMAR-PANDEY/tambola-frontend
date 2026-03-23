@@ -72,13 +72,10 @@ export default function Organizer() {
           setIsCreating(false);
           return;
         }
-        // Calculate reveal interval from numbersPerDay
-        // numbersPerDay numbers per day = reveal every (1440 / numbersPerDay) minutes
-        // But since scheduler reveals daily batch, we store numbersPerDay directly
-        // revealIntervalMin = 1440 means once per day (scheduler uses daily logic)
+        // revealIntervalMin is now treated as seconds between each number reveal
         await apiService.createWeeklyGame({
           prizes,
-          revealIntervalMin: 1440,
+          revealIntervalMin: 8, // 8 seconds between each number
           resultDate: new Date(resultDate).toISOString(),
         });
         toast({ title: 'Weekly Game Created!', status: 'success', duration: 2000 });
