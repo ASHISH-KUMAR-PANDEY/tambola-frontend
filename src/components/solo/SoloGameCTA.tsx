@@ -9,7 +9,7 @@ import { useTambolaTracking } from '../../hooks/useTambolaTracking';
 
 const CARD_CONFIG = {
   // Top badge (set showBadge to true to enable)
-  showBadge: false,
+  showBadge: true,
   badgeText: 'Live Now',
   badgeColor: '#22c55e', // green dot color
 
