@@ -47,8 +47,8 @@ export default function WeeklyGame() {
   // Frontend drip animation state
   const [shownCount, setShownCount] = useState<number>(0); // how many of todayNumbers we've shown
   const [countdown, setCountdown] = useState<number>(DRIP_INTERVAL);
-  const dripTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const dripTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dripStartTimeRef = useRef<number>(0);
 
   const userId = user?.id || localStorage.getItem('app_user_id') || '';
