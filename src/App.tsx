@@ -13,6 +13,8 @@ import SoloManagement from './screens/SoloManagement';
 import BannerManagement from './screens/BannerManagement';
 import CohortManagement from './screens/CohortManagement';
 import WheelDisplay from './screens/WheelDisplay';
+import Individual from './screens/Individual';
+import WeeklyGame from './screens/WeeklyGame';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
 import { InactivityHandler } from './components/InactivityHandler';
@@ -99,6 +101,22 @@ export const App = () => {
               <OrganizerRoute>
                 <GameControl />
               </OrganizerRoute>
+            }
+          />
+          <Route
+            path="/individual"
+            element={
+              <ProtectedRoute>
+                <Individual />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/individual/:gameId"
+            element={
+              <ProtectedRoute>
+                <WeeklyGame />
+              </ProtectedRoute>
             }
           />
           <Route

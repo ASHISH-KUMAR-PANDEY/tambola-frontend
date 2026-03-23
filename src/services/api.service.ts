@@ -639,6 +639,78 @@ class ApiService {
    * Check if user is VIP
    * Uses userId from localStorage (no auth token required)
    */
+  // ===== Weekly Game APIs =====
+
+  async createWeeklyGame(data: {
+    prizes: any;
+    revealIntervalMin: number;
+    resultDate: string;
+  }): Promise<WeeklyGame> {
+    return this.request<WeeklyGame>('/api/v1/weekly-games', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getWeeklyGames(): Promise<WeeklyGame[]> {
+    const response = await this.request<{ games: WeeklyGame[] }>('/api/v1/weekly-games');
+    return response.games;
+  }
+
+  async getWeeklyGame(gameId: string): Promise<WeeklyGame> {
+    return this.request<WeeklyGame>(`/api/v1/weekly-games/${gameId}`);
+  }
+
+  async joinWeeklyGame(gameId: string, userId?: string, userName?: string): Promise<{
+    playerId: string;
+    ticket: number[][];
+    gameId: string;
+  }> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (userName) params.append('userName', userName);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/join${query}`, {
+      method: 'POST',
+    });
+  }
+
+  async getWeeklyPlayerState(gameId: string, userId?: string): Promise<WeeklyPlayerState> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/my-state${query}`);
+  }
+
+  async markWeeklyNumber(gameId: string, number: number, userId?: string): Promise<{ success: boolean }> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/mark${query}`, {
+      method: 'POST',
+      body: JSON.stringify({ number }),
+    });
+  }
+
+  async claimWeeklyWin(gameId: string, category: string, userId?: string): Promise<{
+    success: boolean;
+    category: string;
+    completedAtCall: number;
+    claimedAt: string;
+  }> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/claim${query}`, {
+      method: 'POST',
+      body: JSON.stringify({ category }),
+    });
+  }
+
+  async getWeeklyResults(gameId: string): Promise<WeeklyResult> {
+    return this.request(`/api/v1/weekly-games/${gameId}/results`);
+  }
+
   async checkVipStatus(): Promise<boolean> {
     const userId = localStorage.getItem('app_user_id');
     if (!userId) {
@@ -770,6 +842,56 @@ export interface RegistrationCard {
   isActive: boolean;
   lastResetAt: string;
   createdAt: string;
+}
+
+export interface WeeklyGame {
+  id: string;
+  status: string;
+  prizes: any;
+  revealedCount: number;
+  revealIntervalMin: number;
+  lastRevealedAt: string;
+  resultDate: string;
+  startedAt: string;
+  playerCount: number;
+  revealedNumbers?: number[];
+  currentNumber?: number;
+}
+
+export interface WeeklyPlayerState {
+  game: {
+    id: string;
+    status: string;
+    prizes: any;
+    revealedCount: number;
+    revealIntervalMin: number;
+    lastRevealedAt: string;
+    resultDate: string;
+    startedAt: string;
+  };
+  player: {
+    id: string;
+    ticket: number[][];
+    markedNumbers: number[];
+    missedNumbers: number[];
+  };
+  revealedNumbers: number[];
+  todayNumbers: number[];
+  currentNumber: number | null;
+  claims: Array<{ category: string; completedAtCall: number; claimedAt: string }>;
+  wonCategories: string[];
+}
+
+export interface WeeklyResult {
+  gameId: string;
+  prizes: any;
+  results: Array<{
+    category: string;
+    winnerId: string | null;
+    playerName: string | null;
+    completedAtCall: number | null;
+    claimedAt: string | null;
+  }>;
 }
 
 // Solo Game Types
