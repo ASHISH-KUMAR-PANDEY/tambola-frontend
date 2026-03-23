@@ -38,6 +38,7 @@ import { useUIStore } from '../stores/uiStore';
 import { Logo } from '../components/Logo';
 import { RegistrationCard } from '../components/RegistrationCard';
 import { SoloGameCTA } from '../components/solo/SoloGameCTA';
+import { SoloLegends } from '../components/solo/SoloLegends';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
@@ -842,6 +843,9 @@ export default function Lobby() {
               {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
                 <SoloGameCTA />
               )}
+              {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
+                <SoloLegends />
+              )}
 
               {(activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
                 <RegistrationCard
@@ -1122,6 +1126,9 @@ export default function Lobby() {
             )}
             {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
               <SoloGameCTA hasMultiplayerGame={games.length > 0} />
+            )}
+            {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
+              <SoloLegends />
             )}
             </VStack>
           )}
