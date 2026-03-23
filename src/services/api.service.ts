@@ -711,6 +711,19 @@ class ApiService {
     return this.request(`/api/v1/weekly-games/${gameId}/results`);
   }
 
+  async updateWeeklyGameStatus(gameId: string, data: { status?: string; prizes?: any }): Promise<any> {
+    return this.request(`/api/v1/weekly-games/${gameId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWeeklyGame(gameId: string): Promise<void> {
+    await this.request(`/api/v1/weekly-games/${gameId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async checkVipStatus(): Promise<boolean> {
     const userId = localStorage.getItem('app_user_id');
     if (!userId) {

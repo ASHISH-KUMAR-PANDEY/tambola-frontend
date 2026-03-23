@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -15,6 +15,7 @@ import {
   NumberInputField,
   Select,
   Text,
+  Badge,
 } from '@chakra-ui/react';
 import { apiService } from '../services/api.service';
 import { useGameStore } from '../stores/gameStore';
@@ -44,6 +45,43 @@ export default function Organizer() {
   const [numbersPerDay, setNumbersPerDay] = useState(15);
   const [totalDays, setTotalDays] = useState(6);
   const [resultDate, setResultDate] = useState('');
+
+  // Weekly games list
+  const [weeklyGames, setWeeklyGames] = useState<any[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const loadWeeklyGames = useCallback(async () => {
+    try {
+      const res = await apiService.getWeeklyGames();
+      setWeeklyGames(res);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { loadWeeklyGames(); }, [loadWeeklyGames]);
+
+  const handleCompleteWeekly = async (gameId: string) => {
+    setCompletingId(gameId);
+    try {
+      await apiService.updateWeeklyGameStatus(gameId, { status: 'COMPLETED' });
+      toast({ title: 'Game completed', status: 'success', duration: 2000 });
+      loadWeeklyGames();
+    } catch (error) {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed', status: 'error', duration: 3000 });
+    } finally { setCompletingId(null); }
+  };
+
+  const handleDeleteWeekly = async (gameId: string) => {
+    if (!window.confirm('Delete this weekly game? This cannot be undone.')) return;
+    setDeletingId(gameId);
+    try {
+      await apiService.deleteWeeklyGame(gameId);
+      toast({ title: 'Game deleted', status: 'success', duration: 2000 });
+      loadWeeklyGames();
+    } catch (error) {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed', status: 'error', duration: 3000 });
+    } finally { setDeletingId(null); }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +117,7 @@ export default function Organizer() {
           resultDate: new Date(resultDate).toISOString(),
         });
         toast({ title: 'Weekly Game Created!', status: 'success', duration: 2000 });
+        loadWeeklyGames();
       }
     } catch (error) {
       toast({
@@ -291,6 +330,63 @@ export default function Organizer() {
               </VStack>
             </form>
           </Box>
+
+          {/* Weekly Games Management */}
+          {weeklyGames.length > 0 && (
+            <Box mt={6}>
+              <Heading size={{ base: 'sm', md: 'md' }} mb={4} color="white">
+                Weekly Games
+              </Heading>
+              <VStack spacing={3} align="stretch">
+                {weeklyGames.map((g) => (
+                  <Box key={g.id} p={4} bg="white" borderRadius="lg" border="1px" borderColor="grey.200">
+                    <HStack justify="space-between" mb={2}>
+                      <Text fontSize="sm" fontWeight="bold" color="grey.900" fontFamily="mono">
+                        {g.id.slice(0, 8)}
+                      </Text>
+                      <Badge colorScheme={g.status === 'ACTIVE' ? 'green' : g.status === 'COMPLETED' ? 'blue' : 'gray'}>
+                        {g.status}
+                      </Badge>
+                    </HStack>
+                    <HStack spacing={4} mb={3} flexWrap="wrap">
+                      <Text fontSize="xs" color="grey.600">
+                        Players: {g.playerCount || 0}
+                      </Text>
+                      <Text fontSize="xs" color="grey.600">
+                        Numbers: {g.revealedCount}/90
+                      </Text>
+                      {g.resultDate && (
+                        <Text fontSize="xs" color="grey.600">
+                          Result: {new Date(g.resultDate).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </HStack>
+                    <HStack spacing={2}>
+                      {g.status === 'ACTIVE' && (
+                        <Button
+                          size="sm"
+                          colorScheme="blue"
+                          isLoading={completingId === g.id}
+                          onClick={() => handleCompleteWeekly(g.id)}
+                        >
+                          Complete
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        variant="outline"
+                        isLoading={deletingId === g.id}
+                        onClick={() => handleDeleteWeekly(g.id)}
+                      >
+                        Delete
+                      </Button>
+                    </HStack>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+          )}
         </Box>
       </VStack>
     </Box>
