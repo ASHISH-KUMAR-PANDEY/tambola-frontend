@@ -53,6 +53,31 @@ export default function Lobby() {
   const { trackEvent } = useTambolaTracking();
   const isFlutterApp = !!localStorage.getItem('app_user_id');
 
+  // A/B experiment: 80% solo game, 20% individual (weekly drop) game
+  // Sticky per user — hash userId to a 0-99 bucket, stored in localStorage
+  // Existing solo users (who have solo-game-storage) are always kept in 'solo'
+  const [abVariant] = useState<'solo' | 'individual'>(() => {
+    const stored = localStorage.getItem('ab_solo_vs_individual');
+    if (stored === 'solo' || stored === 'individual') return stored;
+
+    // Existing user who has played solo before → keep them in solo (zero disruption)
+    if (localStorage.getItem('solo-game-storage')) {
+      localStorage.setItem('ab_solo_vs_individual', 'solo');
+      return 'solo';
+    }
+
+    // New user → randomize 80/20
+    const uid = user?.id || localStorage.getItem('app_user_id') || '';
+    let hash = 0;
+    for (let i = 0; i < uid.length; i++) {
+      hash = ((hash << 5) - hash + uid.charCodeAt(i)) | 0;
+    }
+    const bucket = Math.abs(hash) % 100;
+    const variant = bucket < 80 ? 'solo' : 'individual';
+    localStorage.setItem('ab_solo_vs_individual', variant);
+    return variant;
+  });
+
   // Preload YouTube IFrame API so it's cached when user enters Solo Game
   useEffect(() => { ensureYTAPI(); }, []);
 
@@ -814,7 +839,7 @@ export default function Lobby() {
 
           {games.length === 0 ? (
             <VStack spacing={{ base: 4, md: 6 }} w="100%">
-              {(activeTab === 'all' || activeTab === 'live') && (
+              {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
                 <SoloGameCTA />
               )}
 
@@ -1095,7 +1120,7 @@ export default function Lobby() {
               ))}
             </Grid>
             )}
-            {(activeTab === 'all' || activeTab === 'live') && (
+            {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
               <SoloGameCTA hasMultiplayerGame={games.length > 0} />
             )}
             </VStack>
@@ -1193,6 +1218,72 @@ export default function Lobby() {
             </Box>
           </Box>
         )}
+
+        {/* Individual (Weekly) Game Card — shown only for 'individual' A/B variant */}
+        {abVariant === 'individual' && <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+          <Box
+            borderRadius="12px"
+            overflow="hidden"
+            border="1px solid"
+            borderColor="#e5c07b"
+            bg="#fffbf0"
+            transition="all 0.2s"
+            _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
+            cursor="pointer"
+            onClick={() => {
+              trackEvent({ eventName: 'individual_cta_clicked', properties: { ab_variant: 'individual' } });
+              navigate('/individual');
+            }}
+          >
+            {/* Banner */}
+            <HStack
+              justify="center"
+              spacing={2}
+              py={2.5}
+              bg="#92400e"
+              w="100%"
+            >
+              <Box w="8px" h="8px" borderRadius="full" bg="#f87171" />
+              <Text fontSize="sm" fontWeight="bold" color="white" letterSpacing="wide">
+                अपनी सुविधा अनुसार खेलें!
+              </Text>
+            </HStack>
+
+            {/* Card body */}
+            <VStack spacing={1} py={5} px={4}>
+              <Text
+                fontSize={{ base: '2xl', md: '3xl' }}
+                fontWeight="900"
+                color="#1a1a1a"
+                textAlign="center"
+                lineHeight="1.2"
+              >
+                Individual Tambola
+              </Text>
+              <Text fontSize={{ base: 'sm', md: 'md' }} color="#9ca3af" textAlign="center">
+                हर रोज़ 15 नंबर, बड़े इनाम!
+              </Text>
+              <Box w="28px" h="3px" bg="#e5a00d" borderRadius="full" my={1} />
+            </VStack>
+
+            {/* CTA */}
+            <Box px={4} pb={4}>
+              <Button
+                w="100%"
+                size="lg"
+                h="52px"
+                fontSize="lg"
+                fontWeight="bold"
+                borderRadius="10px"
+                bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)"
+                color="white"
+                _hover={{ opacity: 0.9 }}
+              >
+                अभी खेलें
+              </Button>
+            </Box>
+          </Box>
+        </Box>}
 
         {/* How to Play Section (Hindi) — shown on Coming Sunday tab */}
         {activeTab === 'sunday' && <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mt={8}>
