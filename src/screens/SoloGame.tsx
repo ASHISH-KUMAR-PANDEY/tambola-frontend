@@ -86,6 +86,7 @@ export default function SoloGame() {
   const [shouldAutoplay, setShouldAutoplay] = useState(false);
   const [resumeAtSeconds, setResumeAtSeconds] = useState<number | undefined>(undefined);
   const [videoLoading, setVideoLoading] = useState(false); // loading overlay
+  const [showTapToPlay, setShowTapToPlay] = useState(false); // fallback when autoplay blocked
   const gameCompleteCalledRef = useRef(false);
   const nearEndToastShownRef = useRef(false);
   const pendingVideoIdRef = useRef<string | null>(null);
@@ -115,6 +116,7 @@ export default function SoloGame() {
   const {
     playerState,
     currentTime,
+    play: playVideo,
     pause: pauseVideo,
     mute: muteVideo,
     unMute: unMuteVideo,
@@ -124,6 +126,21 @@ export default function SoloGame() {
     autoplay: shouldAutoplay,
     startSeconds: resumeAtSeconds,
   });
+
+  // Autoplay fallback — if video doesn't start within 5s, show "Tap to Play"
+  useEffect(() => {
+    if (!videoLoading) { setShowTapToPlay(false); return; }
+    const timer = setTimeout(() => {
+      if (videoLoading) {
+        setShowTapToPlay(true);
+        trackEvent({
+          eventName: 'solo_autoplay_fallback_shown',
+          properties: { video_id: videoId, player_state: playerState },
+        });
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [videoLoading]);
 
   // Sync view state with player state
   useEffect(() => {
@@ -1206,10 +1223,43 @@ export default function SoloGame() {
                       backgroundPosition="center"
                       opacity={0.4}
                     />
-                    <Spinner size="lg" color="brand.500" thickness="3px" zIndex={1} />
-                    <Text color="white" fontSize="xs" mt={2} zIndex={1} fontWeight="medium">
-                      वीडियो लोड हो रहा है...
-                    </Text>
+                    {!showTapToPlay ? (
+                      <>
+                        <Spinner size="lg" color="brand.500" thickness="3px" zIndex={1} />
+                        <Text color="white" fontSize="xs" mt={2} zIndex={1} fontWeight="medium">
+                          वीडियो लोड हो रहा है...
+                        </Text>
+                      </>
+                    ) : (
+                      <Box
+                        as="button"
+                        zIndex={1}
+                        bg="brand.500"
+                        color="white"
+                        borderRadius="full"
+                        w="72px"
+                        h="72px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        fontSize="3xl"
+                        boxShadow="0 0 20px rgba(37, 141, 88, 0.5)"
+                        _hover={{ transform: 'scale(1.1)' }}
+                        _active={{ transform: 'scale(0.95)' }}
+                        transition="transform 0.15s ease"
+                        onClick={() => {
+                          playVideo();
+                          setVideoLoading(false);
+                          setShowTapToPlay(false);
+                          trackEvent({
+                            eventName: 'solo_autoplay_fallback_tapped',
+                            properties: { video_id: videoId },
+                          });
+                        }}
+                      >
+                        ▶
+                      </Box>
+                    )}
                   </Box>
                 )}
                 {/* Overlay to block clicks on YouTube iframe + mute toggle */}
