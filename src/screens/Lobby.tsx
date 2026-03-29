@@ -843,7 +843,7 @@ export default function Lobby() {
               {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
                 <SoloGameCTA />
               )}
-              {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
+              {(activeTab === 'all' || activeTab === 'live') && (
                 <SoloLegends />
               )}
 
@@ -1127,7 +1127,7 @@ export default function Lobby() {
             {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
               <SoloGameCTA hasMultiplayerGame={games.length > 0} />
             )}
-            {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
+            {(activeTab === 'all' || activeTab === 'live') && (
               <SoloLegends />
             )}
             </VStack>

@@ -1,12 +1,13 @@
 import { Box, VStack, HStack, Text } from '@chakra-ui/react';
 
 // ─── Winner Data (update weekly) ─────────────────────────────
+const WEEK_DATES = '22-29 March';
 const WINNERS = [
-  { category: 'पहले पांच', name: 'Neeraj Kumar', emoji: '🎯' },
-  { category: 'ऊपर वाली लाइन', name: 'Shiwaji Modi', emoji: '🥇' },
-  { category: 'बीच वाली लाइन', name: 'Akshay Mote', emoji: '🥇' },
-  { category: 'नीचे वाली लाइन', name: 'Sunny', emoji: '🥇' },
-  { category: 'सारे नंबर', name: 'Rajeev Rana', emoji: '🏆' },
+  { category: 'पहले पांच', name: 'Jaipal', emoji: '🎯' },
+  { category: 'ऊपर वाली लाइन', name: 'Viren Siddhpura', emoji: '🥇' },
+  { category: 'बीच वाली लाइन', name: 'Suraj Dhaka', emoji: '🥇' },
+  { category: 'नीचे वाली लाइन', name: 'Tushar Chaudhary', emoji: '🥇' },
+  { category: 'सारे नंबर', name: 'Jagat Pal Sharma', emoji: '🏆' },
 ];
 
 export function SoloLegends() {
@@ -29,6 +30,9 @@ export function SoloLegends() {
       >
         <Text fontSize="xs" fontWeight="bold" color="highlight.400" letterSpacing="wider" textTransform="uppercase">
           🏆 Live Tambola — पिछले हफ्ते के विजेता 🏆
+        </Text>
+        <Text fontSize="2xs" color="grey.400" mt={0.5}>
+          {WEEK_DATES}
         </Text>
       </Box>
 
