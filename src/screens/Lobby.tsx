@@ -54,29 +54,11 @@ export default function Lobby() {
   const { trackEvent } = useTambolaTracking();
   const isFlutterApp = !!localStorage.getItem('app_user_id');
 
-  // A/B experiment: 80% solo game, 20% individual (weekly drop) game
-  // Sticky per user — hash userId to a 0-99 bucket, stored in localStorage
-  // Existing solo users (who have solo-game-storage) are always kept in 'solo'
+  // A/B experiment concluded — 100% solo game for all users
+  // Individual game experiment ended Mar 29, 2026. All users now see solo.
   const [abVariant] = useState<'solo' | 'individual'>(() => {
-    const stored = localStorage.getItem('ab_solo_vs_individual');
-    if (stored === 'solo' || stored === 'individual') return stored;
-
-    // Existing user who has played solo before → keep them in solo (zero disruption)
-    if (localStorage.getItem('solo-game-storage')) {
-      localStorage.setItem('ab_solo_vs_individual', 'solo');
-      return 'solo';
-    }
-
-    // New user → randomize 80/20
-    const uid = user?.id || localStorage.getItem('app_user_id') || '';
-    let hash = 0;
-    for (let i = 0; i < uid.length; i++) {
-      hash = ((hash << 5) - hash + uid.charCodeAt(i)) | 0;
-    }
-    const bucket = Math.abs(hash) % 100;
-    const variant = bucket < 80 ? 'solo' : 'individual';
-    localStorage.setItem('ab_solo_vs_individual', variant);
-    return variant;
+    localStorage.setItem('ab_solo_vs_individual', 'solo');
+    return 'solo';
   });
 
   // Preload YouTube IFrame API so it's cached when user enters Solo Game
