@@ -17,6 +17,7 @@ import { InactivityHandler } from './components/InactivityHandler';
 import { InitializeTambolaAnalytics } from './components/InitializeTambolaAnalytics';
 import { AutoLogin } from './components/AutoLogin';
 import { FlutterAuth } from './components/FlutterAuth';
+import GamePreview from './screens/GamePreview';
 
 export const App = () => {
   return (
@@ -91,6 +92,8 @@ export const App = () => {
               </OrganizerRoute>
             }
           />
+          <Route path="/game-preview" element={<GamePreview />} />
+          <Route path="/lobby-preview" element={<Lobby />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

@@ -1,20 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Box, Center, Text, VStack, Progress } from '@chakra-ui/react';
-import { keyframes } from '@emotion/react';
+import { Box, Text, Progress } from '@chakra-ui/react';
 import { wsService } from '../services/websocket.service';
 import { apiService } from '../services/api.service';
 import { useAuthStore } from '../stores/authStore';
 import { useFlutterBridge } from '../hooks/useFlutterBridge';
 
 const DEBUG_API_URL = 'https://api.tambola.me';
-
-// Pulse animation for the logo/icon
-const pulse = keyframes`
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-`;
 
 // Send debug logs to backend
 const logToBackend = (event: string, data: any = {}) => {
@@ -218,82 +210,54 @@ export const AutoLogin = () => {
     <Box
       h="100vh"
       w="100vw"
-      bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
       position="relative"
       overflow="hidden"
     >
-      {/* Background decoration */}
+      {/* Full-screen SVG background */}
       <Box
+        as="img"
+        src="/splash-bg.svg"
+        alt=""
         position="absolute"
-        top="50%"
+        top="0"
         left="50%"
-        transform="translate(-50%, -50%)"
-        w="300px"
-        h="300px"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)"
-        filter="blur(40px)"
+        transform="translateX(-50%)"
+        h="100%"
+        minW="100%"
+        objectFit="cover"
+        objectPosition="center"
       />
 
-      <Center h="100%" position="relative" zIndex={1}>
-        <VStack spacing={8}>
-          {/* Animated game icon */}
-          <Box
-            animation={`${pulse} 2s ease-in-out infinite`}
-            fontSize="64px"
-            textShadow="0 0 30px rgba(99, 102, 241, 0.5)"
-          >
-            🎯
-          </Box>
-
-          {/* Hindi text */}
-          <VStack spacing={2}>
-            <Text
-              color="white"
-              fontSize="2xl"
-              fontWeight="bold"
-              textAlign="center"
-              textShadow="0 2px 10px rgba(0,0,0,0.3)"
-            >
-              गेम लोड हो रहा है
-            </Text>
-            <Text
-              color="whiteAlpha.700"
-              fontSize="md"
-              textAlign="center"
-            >
-              कृपया प्रतीक्षा करें...
-            </Text>
-          </VStack>
-
-          {/* Progress bar */}
-          <Box w="280px">
-            <Progress
-              value={progress}
-              size="sm"
-              colorScheme="purple"
-              bg="whiteAlpha.200"
-              borderRadius="full"
-              hasStripe
-              isAnimated
-              sx={{
-                '& > div': {
-                  background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
-                  boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-                }
-              }}
-            />
-            <Text
-              color="whiteAlpha.600"
-              fontSize="xs"
-              textAlign="center"
-              mt={2}
-            >
-              {progress}%
-            </Text>
-          </Box>
-        </VStack>
-      </Center>
+      {/* Loading indicator overlay */}
+      <Box
+        position="absolute"
+        top="69%"
+        left="50%"
+        transform="translateX(-50%)"
+        zIndex={1}
+        w="180px"
+      >
+        <Progress
+          value={progress}
+          size="xs"
+          bg="whiteAlpha.200"
+          borderRadius="full"
+          sx={{
+            '& > div': {
+              background: 'linear-gradient(90deg, #ECC440 0%, #FFFA8A 50%, #DDAC17 100%)',
+              borderRadius: 'full',
+            }
+          }}
+        />
+        <Text
+          color="whiteAlpha.600"
+          fontSize="xs"
+          textAlign="center"
+          mt={2}
+        >
+          Loading...
+        </Text>
+      </Box>
     </Box>
   );
 };
