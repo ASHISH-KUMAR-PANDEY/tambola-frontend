@@ -5,14 +5,12 @@ import {
   Button,
   Heading,
   Text,
-  Badge,
   Grid,
   GridItem,
   Spinner,
   Center,
   HStack,
   VStack,
-  Flex,
   useToast,
   Image,
   AspectRatio,
@@ -24,104 +22,28 @@ import {
   ModalFooter,
   Input,
   FormControl,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Icon,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
-import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type RegistrationCard as RegistrationCardType } from '../services/api.service';
+import { apiService, type Game, type PromotionalBanner, type YouTubeEmbed, type YouTubeLiveStream, type RegistrationCard as RegistrationCardType } from '../services/api.service';
 import { wsService } from '../services/websocket.service';
 import { useAuthStore } from '../stores/authStore';
 import { useGameStore } from '../stores/gameStore';
 import { useUIStore } from '../stores/uiStore';
-// Logo import removed - not used in new design
+import { Logo } from '../components/Logo';
 import { RegistrationCard } from '../components/RegistrationCard';
+import { SoloGameCTA } from '../components/solo/SoloGameCTA';
+import { SoloLegends } from '../components/solo/SoloLegends';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
-
-// Sunday Countdown Timer Component
-const SundayCountdown = () => {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-  useEffect(() => {
-    const getNextSunday = () => {
-      const now = new Date();
-      const day = now.getDay();
-      const daysUntilSunday = day === 0 ? 0 : 7 - day;
-      const nextSunday = new Date(now);
-      nextSunday.setDate(now.getDate() + daysUntilSunday);
-      nextSunday.setHours(20, 0, 0, 0); // 8 PM Sunday
-      if (nextSunday <= now) {
-        nextSunday.setDate(nextSunday.getDate() + 7);
-      }
-      return nextSunday;
-    };
-
-    const update = () => {
-      const now = new Date();
-      const target = getNextSunday();
-      const diff = target.getTime() - now.getTime();
-      if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimeLeft({ days, hours, minutes, seconds });
-    };
-
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const pad = (n: number) => n.toString().padStart(2, '0');
-
-  const TimeBlock = ({ value, label }: { value: string; label: string }) => (
-    <VStack spacing={0}>
-      <Text fontSize="2xl" fontWeight="extrabold" color="white" lineHeight="1.1">
-        {value}
-      </Text>
-      <Text fontSize="8px" color="rgba(255,255,255,0.6)" textTransform="uppercase" letterSpacing="0.5px">
-        {label}
-      </Text>
-    </VStack>
-  );
-
-  return (
-    <VStack spacing={1} mt={2}>
-      <Box
-        bg="linear-gradient(135deg, #C85A2A, #B34A1E)"
-        px={3}
-        py={0.5}
-        borderRadius="full"
-        mb={-1}
-        zIndex={1}
-      >
-        <Text fontSize="9px" fontWeight="bold" color="white" letterSpacing="0.5px">
-          शेष समय
-        </Text>
-      </Box>
-      <Flex
-        bg="rgba(0, 0, 0, 0.1)"
-        borderRadius="20px"
-        border="1px solid rgba(255,255,255,0.1)"
-        px={5}
-        py={2.5}
-        align="center"
-        gap={3}
-      >
-        <TimeBlock value={pad(timeLeft.days)} label="दिन" />
-        <Text fontSize="xl" fontWeight="bold" color="rgba(255,255,255,0.4)" mt={-2}>:</Text>
-        <TimeBlock value={pad(timeLeft.hours)} label="घंटे" />
-        <Text fontSize="xl" fontWeight="bold" color="rgba(255,255,255,0.4)" mt={-2}>:</Text>
-        <TimeBlock value={pad(timeLeft.minutes)} label="मिनट" />
-        <Text fontSize="xl" fontWeight="bold" color="rgba(255,255,255,0.4)" mt={-2}>:</Text>
-        <TimeBlock value={pad(timeLeft.seconds)} label="सेकंड" />
-      </Flex>
-    </VStack>
-  );
-};
+import { sendToFlutter } from '../utils/flutterBridge';
+import { ensureYTAPI } from '../hooks/useYouTubePlayer';
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -130,6 +52,20 @@ export default function Lobby() {
   const { setCurrentGame, setTicket, restoreGameState } = useGameStore();
   const { setConnected } = useUIStore();
   const { trackEvent } = useTambolaTracking();
+  const isFlutterApp = !!localStorage.getItem('app_user_id');
+
+  // A/B experiment concluded — 100% solo game for all users
+  // Individual game experiment ended Mar 29, 2026. All users now see solo.
+  const [abVariant] = useState<'solo' | 'individual'>(() => {
+    localStorage.setItem('ab_solo_vs_individual', 'solo');
+    return 'solo';
+  });
+
+  // Preload YouTube IFrame API so it's cached when user enters Solo Game
+  useEffect(() => { ensureYTAPI(); }, []);
+
+  // Tab navigation state
+  const [activeTab, setActiveTab] = useState<'all' | 'live' | 'sunday'>('all');
 
   const [games, setGames] = useState<Game[]>([]);
   const [myActiveGames, setMyActiveGames] = useState<Game[]>([]);
@@ -137,7 +73,9 @@ export default function Lobby() {
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null);
   const [currentBanner, setCurrentBanner] = useState<PromotionalBanner | null>(null);
   const [currentEmbed, setCurrentEmbed] = useState<YouTubeEmbed | null>(null);
+  const [videoMuted, setVideoMuted] = useState(true);
   const [currentRegistrationCard, setCurrentRegistrationCard] = useState<RegistrationCardType | null>(null);
+  const [currentLiveStream, setCurrentLiveStream] = useState<YouTubeLiveStream | null>(null);
   const [remindedGames, setRemindedGames] = useState<Set<string>>(() => {
     // Load reminded games from localStorage
     const saved = localStorage.getItem('remindedGames');
@@ -157,12 +95,6 @@ export default function Lobby() {
     // Check if VIP status was already verified in this session
     return localStorage.getItem('vip_verified') === 'true';
   });
-  const [activeTab, setActiveTab] = useState<'live' | 'ravivar'>(() => new Date().getDay() === 0 ? 'ravivar' : 'live');
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
-  const [isSundayRegistered, setIsSundayRegistered] = useState<boolean>(() => {
-    return localStorage.getItem('sunday_tambola_registered') === 'true';
-  });
-  const [showTerms, setShowTerms] = useState(false);
 
   // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
@@ -203,6 +135,7 @@ export default function Lobby() {
     loadMyActiveGames();
     loadCurrentBanner();
     loadCurrentEmbed();
+    loadCurrentLiveStream();
     loadActiveRegistrationCard();
 
     // Setup WebSocket event handlers
@@ -288,7 +221,7 @@ export default function Lobby() {
       const response = await apiService.getGames();
       const allGames = (response as any).games || response;
       const validGames = Array.isArray(allGames) ? allGames : [];
-      setGames(validGames.filter((g) => g.status === 'LOBBY' || g.status === 'ACTIVE'));
+      setGames(validGames.filter((g) => (g.status === 'LOBBY' || g.status === 'ACTIVE') && (g as any).gameMode !== 'WEEKLY'));
     } catch (error: any) {
       console.error('Failed to load games:', error);
       setGames([]);
@@ -303,6 +236,7 @@ export default function Lobby() {
     } finally {
       setIsLoading(false);
     }
+
   };
 
   const loadMyActiveGames = async () => {
@@ -330,6 +264,15 @@ export default function Lobby() {
       setCurrentEmbed(embed);
     } catch (error) {
       console.error('Failed to load YouTube embed:', error);
+    }
+  };
+
+  const loadCurrentLiveStream = async () => {
+    try {
+      const stream = await apiService.getCurrentYouTubeLiveStream();
+      setCurrentLiveStream(stream);
+    } catch (error) {
+      console.error('Failed to load live stream:', error);
     }
   };
 
@@ -548,6 +491,16 @@ export default function Lobby() {
     }
   };
 
+  const handleRefresh = () => {
+    setIsLoading(true);
+    loadGames();
+    toast({
+      title: 'रिफ्रेश हो गया',
+      status: 'success',
+      duration: 1000,
+    });
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -657,27 +610,6 @@ export default function Lobby() {
     return timeRemaining <= thirtyMinutesInMs;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'LOBBY':
-        return 'green';
-      case 'ACTIVE':
-        return 'orange';
-      case 'COMPLETED':
-        return 'grey';
-      default:
-        return 'grey';
-    }
-  };
 
   // GameCountdown Component
   const GameCountdown = ({ scheduledTime }: { scheduledTime: string }) => {
@@ -705,51 +637,157 @@ export default function Lobby() {
 
   if (isLoading) {
     return (
-      <Center
-        h="100vh"
-        bg="#351947"
-        backgroundImage="url('/lobby-bg.svg')"
-        backgroundSize="cover"
-        backgroundPosition="center"
-      >
-        <Spinner size="xl" color="#38FF99" thickness="4px" />
+      <Center h="100vh" w="100vw">
+        <Spinner size="xl" color="brand.500" thickness="4px" />
       </Center>
     );
   }
 
   return (
-    <Box
-      w="100vw"
-      minH="100vh"
-      bg="#351947"
-      backgroundImage="url('/lobby-bg.svg')"
-      backgroundSize="cover"
-      backgroundPosition="center"
-      backgroundAttachment="fixed"
-      position="relative"
-      overflow="hidden"
-    >
+    <Box w="100vw" minH="100vh" bgGradient="linear(to-t, #2B080C, #0E0028)">
+      <VStack spacing={{ base: 4, md: 6 }} w="100%" align="stretch" p={{ base: 3, md: 4 }}>
+        {/* Header — ← back | Stage logo centered | refresh → */}
+        <HStack w="100%" justify="space-between" align="center" pt={{ base: 1, md: 2 }}>
+          <Box
+            as="button"
+            onClick={() => {
+              if (isFlutterApp) {
+                if ((window as any).FlutterChannel?.postMessage) {
+                  sendToFlutter('backPressed');
+                } else {
+                  window.location.href = 'stage://har/hin';
+                }
+              } else {
+                handleLogout();
+              }
+            }}
+            p={1}
+            cursor="pointer"
+            w="24px"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
+          </Box>
+          <Logo height={{ base: '26px', md: '30px' }} />
+          <Box as="button" onClick={handleRefresh} p={1} cursor="pointer" w="24px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2v6h-6" />
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M3 22v-6h6" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </Box>
+        </HStack>
 
-      <VStack
-        spacing={0}
-        w="100%"
-        maxW="480px"
-        mx="auto"
-        align="stretch"
-        position="relative"
-        zIndex={1}
-        px={4}
-        pt={4}
-        pb={0}
-        h="100dvh"
-      >
+        {/* Tab Navigation — glassmorphic pill bar from glassbg.svg */}
+        <HStack
+          w="100%"
+          maxW={{ base: '100%', md: '600px' }}
+          mx="auto"
+          bg="rgba(255,255,255,0.08)"
+          border="1px solid rgba(255,255,255,0.22)"
+          borderRadius="full"
+          h={{ base: '44px', md: '54px' }}
+          p={{ base: '4px', md: '5px' }}
+          spacing={0}
+          justify="center"
+          css={{
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
+          {/* All tab */}
+          <Box
+            as="button"
+            flex={1}
+            h="100%"
+            borderRadius="full"
+            bg={activeTab === 'all' ? 'white' : 'transparent'}
+            boxShadow={activeTab === 'all' ? '0 0 12px 4px rgba(255,255,255,0.25), 0 0 24px 8px rgba(255,255,255,0.1)' : 'none'}
+            css={activeTab === 'all' ? {
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } : undefined}
+            color={activeTab === 'all' ? '#313131' : '#E1E1E1'}
+            fontWeight={activeTab === 'all' ? '600' : '500'}
+            fontSize={{ base: '13px', md: '14px' }}
+            transition="all 0.25s ease"
+            onClick={() => setActiveTab('all')}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            whiteSpace="nowrap"
+          >
+            सभी
+          </Box>
+          {/* Live tab */}
+          <Box
+            as="button"
+            flex={1}
+            h="100%"
+            borderRadius="full"
+            bg={activeTab === 'live' ? 'white' : 'transparent'}
+            boxShadow={activeTab === 'live' ? '0 0 12px 4px rgba(255,255,255,0.25), 0 0 24px 8px rgba(255,255,255,0.1)' : 'none'}
+            css={activeTab === 'live' ? {
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } : undefined}
+            color={activeTab === 'live' ? '#313131' : '#E1E1E1'}
+            fontWeight={activeTab === 'live' ? '600' : '500'}
+            fontSize={{ base: '13px', md: '14px' }}
+            transition="all 0.25s ease"
+            onClick={() => setActiveTab('live')}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap="6px"
+            whiteSpace="nowrap"
+          >
+            <Box w="8px" h="8px" borderRadius="full" bg="#41EE96" flexShrink={0} />
+            लाइव गेम
+          </Box>
+          {/* Coming Sunday tab */}
+          <Box
+            as="button"
+            flex={1}
+            h="100%"
+            borderRadius="full"
+            bg={activeTab === 'sunday' ? 'white' : 'transparent'}
+            boxShadow={activeTab === 'sunday' ? '0 0 12px 4px rgba(255,255,255,0.25), 0 0 24px 8px rgba(255,255,255,0.1)' : 'none'}
+            css={activeTab === 'sunday' ? {
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } : undefined}
+            color={activeTab === 'sunday' ? '#313131' : '#E1E1E1'}
+            fontWeight={activeTab === 'sunday' ? '600' : '500'}
+            fontSize={{ base: '13px', md: '14px' }}
+            transition="all 0.25s ease"
+            onClick={() => setActiveTab('sunday')}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap="6px"
+            whiteSpace="nowrap"
+          >
+            <svg width="16" height="16" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M12.358 5.57V11.78C12.358 12.11 12.227 12.43 11.992 12.66C11.758 12.9 11.44 13.03 11.108 13.03H0.893C0.561 13.03 0.243 12.9 0.009 12.66C-0.226 12.43 -0.357 12.11 -0.357 11.78V5.57H12.358Z" fill="#FEDB41" transform="translate(1,0)"/>
+              <path d="M9.708 2.08H11.108C11.44 2.08 11.758 2.22 11.992 2.45C12.227 2.68 12.358 3 12.358 3.33V5.57H-0.357V3.33C-0.357 3 -0.226 2.68 0.009 2.45C0.243 2.22 0.561 2.08 0.893 2.08H9.708Z" fill="#00ACEA" transform="translate(1,0)"/>
+              <path d="M8.303 8.46C8.497 9.45 7.881 10.78 6.058 11.52C6.021 11.54 5.978 11.54 5.941 11.52C4.124 10.8 3.503 9.46 3.696 8.46C3.825 7.78 4.3 7.34 4.915 7.34C5.261 7.34 5.63 7.48 6 7.76C6.363 7.49 6.738 7.35 7.078 7.35C7.694 7.35 8.168 7.79 8.303 8.46Z" fill="#D7443E" transform="translate(1,0)"/>
+              <path d="M2.432 3.45C2.365 3.45 2.302 3.424 2.255 3.377C2.208 3.33 2.182 3.267 2.182 3.2V0.969C2.182 0.902 2.208 0.839 2.255 0.792C2.302 0.745 2.365 0.719 2.432 0.719C2.498 0.719 2.562 0.745 2.608 0.792C2.655 0.839 2.682 0.902 2.682 0.969V3.2C2.682 3.267 2.655 3.33 2.608 3.377C2.562 3.424 2.498 3.45 2.432 3.45ZM9.708 3.45C9.641 3.45 9.578 3.424 9.531 3.377C9.484 3.33 9.458 3.267 9.458 3.2V0.969C9.458 0.902 9.484 0.839 9.531 0.792C9.578 0.745 9.641 0.719 9.708 0.719C9.774 0.719 9.837 0.745 9.884 0.792C9.931 0.839 9.958 0.902 9.958 0.969V3.2C9.958 3.267 9.931 3.33 9.884 3.377C9.837 3.424 9.774 3.45 9.708 3.45Z" fill="#FEDB41" transform="translate(1,0)"/>
+            </svg>
+            इस रविवार
+          </Box>
+        </HStack>
+
         {/* Organizer Controls - Always show for organizers */}
         {(user?.email === 'organizer@test.com' || user?.role === 'ORGANIZER') && (
-          <HStack spacing={2} justify="center" w="100%" flexWrap="wrap" mb={3}>
+          <HStack spacing={4} justify="center" w="100%" flexWrap="wrap">
             <Button
               colorScheme="brand"
               onClick={() => navigate('/organizer')}
-              size="sm"
+              size={{ base: 'sm', md: 'md' }}
               variant="solid"
             >
               Create Game
@@ -757,7 +795,7 @@ export default function Lobby() {
             <Button
               colorScheme="purple"
               onClick={() => navigate('/banner-management')}
-              size="sm"
+              size={{ base: 'sm', md: 'md' }}
               variant="solid"
             >
               Manage Banner
@@ -765,464 +803,644 @@ export default function Lobby() {
             <Button
               colorScheme="teal"
               onClick={() => navigate('/cohort-management')}
-              size="sm"
+              size={{ base: 'sm', md: 'md' }}
               variant="solid"
             >
               Manage Cohort
             </Button>
-            <Button
-              variant="outline"
-              colorScheme="red"
-              onClick={handleLogout}
-              size="sm"
-            >
-              Logout
-            </Button>
           </HStack>
         )}
 
-        {/* Tab Bar */}
-        <Flex
-          bg="rgba(0, 0, 0, 0.35)"
-          borderRadius="27px"
-          h="54px"
-          w="302px"
-          mx="auto"
-          mb={6}
-          position="relative"
-          align="center"
-          px="10px"
-          gap={0}
-          border="1px solid rgba(255, 255, 255, 0.15)"
-          border="1px solid rgba(255, 255, 255, 0.15)"
-        >
-          {/* Live Tambola Tab */}
-          <Flex
-            justify="center"
-            align="center"
-            borderRadius="17px"
-            cursor="pointer"
-            onClick={() => setActiveTab('live')}
-            bg={activeTab === 'live' ? 'linear-gradient(to right, #B31232, #FF6B2C)' : 'transparent'}
-            transition="all 0.3s"
-            gap={2}
-            h="34px"
-            px={4}
-            flex={activeTab === 'live' ? '0 0 129px' : '1'}
-            sx={activeTab === 'live' ? { backdropFilter: 'blur(9px)' } : {}}
-          >
-            <Box w="8px" h="8px" borderRadius="full" bg="#39DE8A" flexShrink={0} />
-            <Text
-              fontSize="13px"
-              fontWeight="bold"
-              color="white"
-              whiteSpace="nowrap"
-            >
-              लाइव तम्बोला
-            </Text>
-          </Flex>
-
-          {/* Ravivar Tambola Tab */}
-          <Flex
-            justify="center"
-            align="center"
-            borderRadius="17px"
-            cursor="pointer"
-            onClick={() => setActiveTab('ravivar')}
-            bg={activeTab === 'ravivar' ? 'linear-gradient(to right, #B31232, #FF6B2C)' : 'transparent'}
-            transition="all 0.3s"
-            gap={2}
-            h="34px"
-            px={4}
-            flex={activeTab === 'ravivar' ? '0 0 147px' : '1'}
-            sx={activeTab === 'ravivar' ? { backdropFilter: 'blur(9px)' } : {}}
-          >
-            <Image src="/calendar-icon.svg" alt="" w="18px" h="18px" flexShrink={0} />
-            <Text fontSize="13px" color="white" whiteSpace="nowrap">रविवार तम्बोला</Text>
-          </Flex>
-        </Flex>
-
-        {/* Main content - centered */}
-        <Flex flex={1} direction="column" align="center" justify="center" minH={0}>
-          <Box position="relative">
-            {/* Glowing rays behind badge */}
-            <Box
-              position="absolute"
-              top="50%"
-              left="50%"
-              transform="translate(-50%, -50%)"
-              w="120vw"
-              h="120vw"
-              pointerEvents="none"
-              sx={{
-                '@keyframes rayGlow': {
-                  '0%, 100%': { opacity: 0.15, transform: 'translate(-50%, -50%) scale(1) rotate(0deg)' },
-                  '33%': { opacity: 0.35, transform: 'translate(-50%, -50%) scale(1.05) rotate(2deg)' },
-                  '66%': { opacity: 0.2, transform: 'translate(-50%, -50%) scale(0.98) rotate(-1deg)' },
-                },
-                '@keyframes rayGlow2': {
-                  '0%, 100%': { opacity: 0.2, transform: 'translate(-50%, -50%) scale(1.02) rotate(0deg)' },
-                  '50%': { opacity: 0.4, transform: 'translate(-50%, -50%) scale(1.08) rotate(-2deg)' },
-                },
-                background: `
-                  conic-gradient(
-                    from 0deg at 50% 50%,
-                    transparent 0deg,
-                    rgba(200, 220, 255, 0.3) 5deg,
-                    transparent 10deg,
-                    transparent 20deg,
-                    rgba(200, 220, 255, 0.25) 25deg,
-                    transparent 30deg,
-                    transparent 40deg,
-                    rgba(200, 220, 255, 0.3) 45deg,
-                    transparent 50deg,
-                    transparent 60deg,
-                    rgba(200, 220, 255, 0.25) 65deg,
-                    transparent 70deg,
-                    transparent 80deg,
-                    rgba(200, 220, 255, 0.3) 85deg,
-                    transparent 90deg,
-                    transparent 100deg,
-                    rgba(200, 220, 255, 0.25) 105deg,
-                    transparent 110deg,
-                    transparent 120deg,
-                    rgba(200, 220, 255, 0.3) 125deg,
-                    transparent 130deg,
-                    transparent 140deg,
-                    rgba(200, 220, 255, 0.25) 145deg,
-                    transparent 150deg,
-                    transparent 160deg,
-                    rgba(200, 220, 255, 0.3) 165deg,
-                    transparent 170deg,
-                    transparent 180deg,
-                    rgba(200, 220, 255, 0.25) 185deg,
-                    transparent 190deg,
-                    transparent 200deg,
-                    rgba(200, 220, 255, 0.3) 205deg,
-                    transparent 210deg,
-                    transparent 220deg,
-                    rgba(200, 220, 255, 0.25) 225deg,
-                    transparent 230deg,
-                    transparent 240deg,
-                    rgba(200, 220, 255, 0.3) 245deg,
-                    transparent 250deg,
-                    transparent 260deg,
-                    rgba(200, 220, 255, 0.25) 265deg,
-                    transparent 270deg,
-                    transparent 280deg,
-                    rgba(200, 220, 255, 0.3) 285deg,
-                    transparent 290deg,
-                    transparent 300deg,
-                    rgba(200, 220, 255, 0.25) 305deg,
-                    transparent 310deg,
-                    transparent 320deg,
-                    rgba(200, 220, 255, 0.3) 325deg,
-                    transparent 330deg,
-                    transparent 340deg,
-                    rgba(200, 220, 255, 0.25) 345deg,
-                    transparent 350deg,
-                    transparent 360deg
-                  )
-                `,
-                animation: 'rayGlow 3s ease-in-out infinite',
-                filter: 'blur(8px)',
-              }}
-            />
-            <Box
-              position="absolute"
-              top="50%"
-              left="50%"
-              transform="translate(-50%, -50%)"
-              w="100vw"
-              h="100vw"
-              pointerEvents="none"
-              borderRadius="full"
-              sx={{
-                background: 'radial-gradient(ellipse at center, rgba(220, 230, 255, 0.2) 0%, rgba(200, 215, 255, 0.1) 40%, transparent 70%)',
-                animation: 'rayGlow2 2s ease-in-out infinite',
-                filter: 'blur(15px)',
-              }}
-            />
-            <Image src={activeTab === 'live' ? '/livebadge.svg' : '/sundaybadge.svg'} alt="TAMBOLA" w="360px" position="relative" zIndex={1} />
-            <Box
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              pointerEvents="none"
-              sx={{
-                '@keyframes bulbBlink': {
-                  '0%, 100%': { opacity: 0 },
-                  '50%': { opacity: 0.6 },
-                },
-                '@keyframes bulbBlink2': {
-                  '0%, 100%': { opacity: 0.6 },
-                  '50%': { opacity: 0 },
-                },
-                '&::before, &::after': {
-                  content: '""',
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  top: 0,
-                  left: 0,
-                  borderRadius: 'inherit',
-                  pointerEvents: 'none',
-                },
-                '&::before': {
-                  background: 'radial-gradient(circle at 8% 50%, rgba(255,220,100,0.5) 0%, transparent 4%), radial-gradient(circle at 92% 50%, rgba(255,220,100,0.5) 0%, transparent 4%), radial-gradient(circle at 15% 30%, rgba(255,220,100,0.4) 0%, transparent 3%), radial-gradient(circle at 85% 30%, rgba(255,220,100,0.4) 0%, transparent 3%), radial-gradient(circle at 15% 70%, rgba(255,220,100,0.4) 0%, transparent 3%), radial-gradient(circle at 85% 70%, rgba(255,220,100,0.4) 0%, transparent 3%)',
-                  animation: 'bulbBlink 1.5s ease-in-out infinite',
-                },
-                '&::after': {
-                  background: 'radial-gradient(circle at 10% 40%, rgba(255,220,100,0.4) 0%, transparent 3.5%), radial-gradient(circle at 90% 40%, rgba(255,220,100,0.4) 0%, transparent 3.5%), radial-gradient(circle at 10% 60%, rgba(255,220,100,0.4) 0%, transparent 3.5%), radial-gradient(circle at 90% 60%, rgba(255,220,100,0.4) 0%, transparent 3.5%)',
-                  animation: 'bulbBlink2 1.5s ease-in-out infinite',
-                },
-              }}
-            />
-          </Box>
-
-          {/* Sunday Countdown Timer - only on ravivar tab */}
-          {activeTab === 'ravivar' && (
-            <SundayCountdown />
+        {/* Games Section */}
+        <Box w="100%">
+          {/* Only show heading when there are games */}
+          {games.length > 0 && (
+            <Heading size={{ base: 'md', md: 'lg' }} mb={{ base: 3, md: 4 }} color="white" textAlign="center">
+              उपलब्ध गेम्स
+            </Heading>
           )}
 
-          <Box
-            as="button"
-            w="80%"
-            maxW="300px"
-            mt={3}
-            cursor="pointer"
-            transition="transform 0.15s"
-            _hover={{ transform: 'scale(1.02)' }}
-            _active={{ transform: 'scale(0.98)' }}
-            onClick={() => {
-              // Haptic feedback on tap
-              if (navigator.vibrate) {
-                navigator.vibrate(50);
-              }
-              if (activeTab === 'ravivar') {
-                // Toggle registration for Sunday Tambola
-                const newState = !isSundayRegistered;
-                setIsSundayRegistered(newState);
-                localStorage.setItem('sunday_tambola_registered', newState ? 'true' : 'false');
-                return;
-              }
-              if (games.length > 0) {
-                const joinableGame = games.find(g => canJoinGame(g.scheduledTime) || g.status === 'ACTIVE');
-                if (joinableGame) {
-                  handleJoinGame(joinableGame);
-                } else {
-                  navigate('/game-preview');
-                }
-              } else {
-                navigate('/game-preview');
-              }
-            }}
-          >
-            {activeTab === 'live' ? (
-              <Image src="/abhikheleCTA.svg" alt="अभी खेलें" w="100%" />
-            ) : isSundayRegistered ? (
-              <Image src="/registeredstate.svg" alt="आप रजिस्टर हो चुके हैं" w="100%" />
-            ) : (
-              <Image src="/registercta.svg" alt="रजिस्टर करें" w="100%" />
+          {games.length === 0 ? (
+            <VStack spacing={{ base: 4, md: 6 }} w="100%">
+              {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
+                <SoloGameCTA />
+              )}
+              {(activeTab === 'all' || activeTab === 'live') && (
+                <SoloLegends />
+              )}
+
+              {(activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
+                <RegistrationCard
+                  card={currentRegistrationCard}
+                  externalReminderSet={registrationReminderSet}
+                  onReminderChange={setRegistrationReminderSet}
+                />
+              )}
+
+              {(activeTab === 'sunday') && currentBanner && (
+                <Box
+                  w="100%"
+                  maxW={{ base: '100%', md: '800px', lg: '1000px' }}
+                  mx="auto"
+                  borderRadius="lg"
+                  overflow="hidden"
+                  boxShadow="xl"
+                  border="2px"
+                  borderColor="brand.500"
+                >
+                  <Image
+                    src={currentBanner.imageUrl.replace('http://', 'https://').replace('13.235.186.229:3000', 'api.tambola.me')}
+                    alt="Promotional banner"
+                    w="100%"
+                    objectFit="contain"
+                  />
+                </Box>
+              )}
+
+              {(activeTab === 'sunday') && currentEmbed && (
+                <Box
+                  w="100%"
+                  maxW={{ base: '100%', md: '800px', lg: '1000px' }}
+                  mx="auto"
+                  borderRadius="lg"
+                  overflow="hidden"
+                  boxShadow="xl"
+                  border="2px"
+                  borderColor="brand.500"
+                  position="relative"
+                >
+                  <AspectRatio ratio={16 / 9}>
+                    <iframe
+                      id="lobby-yt-embed-1"
+                      src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=1&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}&enablejsapi=1&origin=${window.location.origin}`}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  </AspectRatio>
+                  <Box
+                    as="button"
+                    position="absolute"
+                    bottom={3}
+                    right={3}
+                    bg="blackAlpha.700"
+                    color="white"
+                    borderRadius="full"
+                    w="36px"
+                    h="36px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontSize="lg"
+                    zIndex={2}
+                    cursor="pointer"
+                    _hover={{ bg: 'blackAlpha.800' }}
+                    onClick={() => {
+                      const iframe = document.getElementById('lobby-yt-embed-1') as HTMLIFrameElement;
+                      if (iframe?.contentWindow) {
+                        const cmd = videoMuted ? 'unMute' : 'mute';
+                        iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+                        setVideoMuted(!videoMuted);
+                      }
+                    }}
+                  >
+                    {videoMuted ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <line x1="23" y1="9" x2="17" y2="15" />
+                        <line x1="17" y1="9" x2="23" y2="15" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                    )}
+                  </Box>
+                </Box>
+              )}
+
+              {!currentBanner && !currentEmbed && (
+                <Box
+                  p={{ base: 4, md: 8 }}
+                  bg="grey.700"
+                  borderRadius="md"
+                  textAlign="center"
+                  border="1px"
+                  borderColor="grey.600"
+                  w="100%"
+                >
+                  <Text color="grey.300" fontSize={{ base: 'md', md: 'lg' }}>
+                    फिलहाल कोई गेम उपलब्ध नहीं है
+                  </Text>
+                </Box>
+              )}
+            </VStack>
+          ) : (
+            <VStack spacing={4} w="100%">
+            {(activeTab === 'all' || activeTab === 'sunday') && (
+            <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }} gap={{ base: 3, md: 4 }} w="100%">
+              {games.map((game) => (
+                <GridItem key={game.id}>
+                  <Box
+                    borderRadius="12px"
+                    overflow="hidden"
+                    border="1px solid"
+                    borderColor="#e5c07b"
+                    bg="#fffbf0"
+                    transition="all 0.2s"
+                    _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
+                    h="100%"
+                    w="100%"
+                  >
+                    {/* Live banner — like registration card's date strip */}
+                    {game.status === 'ACTIVE' && (
+                      <HStack
+                        justify="center"
+                        spacing={2}
+                        py={2.5}
+                        bg="#92400e"
+                        w="100%"
+                      >
+                        <Box w="8px" h="8px" borderRadius="full" bg="#f87171" />
+                        <Text fontSize="sm" fontWeight="bold" color="white" letterSpacing="wide">
+                          चल रहा है — जल्दी Join करो!
+                        </Text>
+                      </HStack>
+                    )}
+
+                    {/* Card body */}
+                    <VStack spacing={1} py={5} px={4}>
+                      {/* Title */}
+                      <Text
+                        fontSize={{ base: '2xl', md: '3xl' }}
+                        fontWeight="900"
+                        color="#1a1a1a"
+                        textAlign="center"
+                        lineHeight="1.2"
+                      >
+                        Sunday Tambola
+                      </Text>
+
+                      {/* Subtitle */}
+                      <Text
+                        fontSize={{ base: 'sm', md: 'md' }}
+                        color="#9ca3af"
+                        textAlign="center"
+                      >
+                        हर रविवार, बड़े इनाम!
+                      </Text>
+
+                      {/* Accent line */}
+                      <Box w="28px" h="3px" bg="#e5a00d" borderRadius="full" my={1} />
+
+                      {/* Player count */}
+                      <HStack spacing={2} pt={2}>
+                        <Icon viewBox="0 0 24 24" boxSize={5} color="#e5a00d">
+                          <path
+                            fill="currentColor"
+                            d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                          />
+                        </Icon>
+                        <Text fontSize="md" fontWeight="bold" color="#1a1a1a">
+                          {(game.playerCount || 0).toLocaleString('en-IN')}+{' '}
+                          <Text as="span" fontWeight="medium" color="#9ca3af">
+                            खिलाड़ी
+                          </Text>
+                        </Text>
+                      </HStack>
+                    </VStack>
+
+                    {/* Live video preview — only when game is ACTIVE and live stream exists */}
+                    {game.status === 'ACTIVE' && currentLiveStream && (
+                      <Box px={4} pb={3}>
+                        <Box borderRadius="10px" overflow="hidden" border="2px solid" borderColor="#e5a00d">
+                          <AspectRatio ratio={16 / 9}>
+                            <iframe
+                              src={`https://www.youtube.com/embed/${currentLiveStream.embedId}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0`}
+                              allow="autoplay; encrypted-media"
+                              style={{ border: 'none' }}
+                              title="Live stream preview"
+                            />
+                          </AspectRatio>
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* Countdown or CTA */}
+                    <Box px={4} pb={4}>
+                      {game.status === 'LOBBY' && <GameCountdown scheduledTime={game.scheduledTime} />}
+                    </Box>
+
+                    <Box px={4} pb={4}>
+
+                      {(() => {
+                        const isMyGame = myActiveGames.some((g) => g.id === game.id);
+                        const isCreator = game.createdBy === user?.id;
+                        const btnStyle = {
+                          w: '100%',
+                          size: 'lg' as const,
+                          h: '52px',
+                          fontSize: 'lg',
+                          fontWeight: 'bold',
+                          borderRadius: '10px',
+                        };
+
+                        if (isCreator) {
+                          if (game.status === 'LOBBY') {
+                            return (
+                              <VStack w="100%" spacing={2}>
+                                <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} onClick={() => handleStartGame(game.id)}>
+                                  Start Game
+                                </Button>
+                                <Button {...btnStyle} h="40px" fontSize="sm" colorScheme="red" variant="outline" onClick={() => handleDeleteGame(game.id)}>
+                                  Delete Game
+                                </Button>
+                              </VStack>
+                            );
+                          } else if (game.status === 'ACTIVE') {
+                            return (
+                              <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} onClick={() => navigate(`/game-control/${game.id}`)}>
+                                Manage Game
+                              </Button>
+                            );
+                          }
+                        }
+
+                        if (isMyGame) {
+                          return (
+                            <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} isLoading={joiningGameId === game.id} loadingText="शामिल हो रहे हैं..." onClick={() => handleRejoinGame(game)}>
+                              फिर से शामिल हों
+                            </Button>
+                          );
+                        }
+
+                        const canJoin = canJoinGame(game.scheduledTime);
+                        const isReminded = remindedGames.has(game.id);
+
+                        if (game.status === 'ACTIVE') {
+                          return (
+                            <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} isLoading={joiningGameId === game.id} loadingText="शामिल हो रहे हैं..." onClick={() => handleJoinGame(game)}>
+                              अभी Join करो
+                            </Button>
+                          );
+                        }
+
+                        if (canJoin) {
+                          return (
+                            <Button {...btnStyle} bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)" color="white" _hover={{ opacity: 0.9 }} isLoading={joiningGameId === game.id} loadingText="शामिल हो रहे हैं..." onClick={() => handleJoinGame(game)}>
+                              अभी Join करो
+                            </Button>
+                          );
+                        }
+
+                        return (
+                          <Button {...btnStyle} bg={isReminded ? 'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)' : 'transparent'} color={isReminded ? 'white' : '#d97706'} border="2px solid" borderColor="#d97706" _hover={{ opacity: 0.9 }} leftIcon={<BellIcon />} onClick={() => handleRemindMe(game.id)}>
+                            {isReminded ? 'रिमाइंडर सेट' : 'मुझे याद दिलाएं'}
+                          </Button>
+                        );
+                      })()}
+                    </Box>
+                  </Box>
+                </GridItem>
+              ))}
+            </Grid>
             )}
-          </Box>
-        </Flex>
+            {(activeTab === 'all' || activeTab === 'live') && abVariant === 'solo' && (
+              <SoloGameCTA hasMultiplayerGame={games.length > 0} />
+            )}
+            {(activeTab === 'all' || activeTab === 'live') && (
+              <SoloLegends />
+            )}
+            </VStack>
+          )}
+        </Box>
 
-        {/* Bottom CTAs */}
-        <HStack spacing={3} justify="center" pb={6} flexShrink={0}>
-          <Image src="/kaisekhele.svg" alt="कैसे खेलें" cursor="pointer" h="26px" onClick={() => setShowHowToPlay(true)} />
-          <Image src="/niyamsharte.svg" alt="नियम और शर्तें" cursor="pointer" h="26px" onClick={() => setShowTerms(true)} />
-        </HStack>
+        {/* Registration Card - shown when games exist */}
+        {games.length > 0 && (activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
+          <RegistrationCard
+            card={currentRegistrationCard}
+            externalReminderSet={registrationReminderSet}
+            onReminderChange={setRegistrationReminderSet}
+          />
+        )}
+
+        {/* Promotional Banner - shown on Coming Sunday tab when games exist */}
+        {games.length > 0 && activeTab === 'sunday' && currentBanner && (
+          <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+            <Box
+              borderRadius="lg"
+              overflow="hidden"
+              boxShadow="xl"
+              border="2px"
+              borderColor="brand.500"
+            >
+              <Image
+                src={currentBanner.imageUrl.replace('http://', 'https://').replace('13.235.186.229:3000', 'api.tambola.me')}
+                alt="Promotional banner"
+                w="100%"
+                objectFit="contain"
+              />
+            </Box>
+          </Box>
+        )}
+
+        {/* YouTube Video - shown on Coming Sunday tab when games exist */}
+        {games.length > 0 && activeTab === 'sunday' && currentEmbed && (
+          <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+            <Box
+              borderRadius="lg"
+              overflow="hidden"
+              boxShadow="xl"
+              border="2px"
+              borderColor="brand.500"
+              position="relative"
+            >
+              <AspectRatio ratio={16 / 9}>
+                <iframe
+                  id="lobby-yt-embed-2"
+                  src={`https://www.youtube.com/embed/${currentEmbed.embedId}?autoplay=1&mute=1&loop=1&controls=0&playsinline=1&playlist=${currentEmbed.embedId}&enablejsapi=1&origin=${window.location.origin}`}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </AspectRatio>
+              <Box
+                as="button"
+                position="absolute"
+                bottom={3}
+                right={3}
+                bg="blackAlpha.700"
+                color="white"
+                borderRadius="full"
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="lg"
+                zIndex={2}
+                cursor="pointer"
+                _hover={{ bg: 'blackAlpha.800' }}
+                onClick={() => {
+                  const iframe = document.getElementById('lobby-yt-embed-2') as HTMLIFrameElement;
+                  if (iframe?.contentWindow) {
+                    const cmd = videoMuted ? 'unMute' : 'mute';
+                    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+                    setVideoMuted(!videoMuted);
+                  }
+                }}
+              >
+                {videoMuted ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <line x1="23" y1="9" x2="17" y2="15" />
+                        <line x1="17" y1="9" x2="23" y2="15" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                    )}
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Individual (Weekly) Game Card — shown only for 'individual' A/B variant */}
+        {abVariant === 'individual' && <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto">
+          <Box
+            borderRadius="12px"
+            overflow="hidden"
+            border="1px solid"
+            borderColor="#e5c07b"
+            bg="#fffbf0"
+            transition="all 0.2s"
+            _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
+            cursor="pointer"
+            onClick={() => {
+              trackEvent({ eventName: 'individual_cta_clicked', properties: { ab_variant: 'individual' } });
+              navigate('/individual');
+            }}
+          >
+            {/* Banner */}
+            <HStack
+              justify="center"
+              spacing={2}
+              py={2.5}
+              bg="#92400e"
+              w="100%"
+            >
+              <Box w="8px" h="8px" borderRadius="full" bg="#f87171" />
+              <Text fontSize="sm" fontWeight="bold" color="white" letterSpacing="wide">
+                अपनी सुविधा अनुसार खेलें!
+              </Text>
+            </HStack>
+
+            {/* Card body */}
+            <VStack spacing={1} py={5} px={4}>
+              <Text
+                fontSize={{ base: '2xl', md: '3xl' }}
+                fontWeight="900"
+                color="#1a1a1a"
+                textAlign="center"
+                lineHeight="1.2"
+              >
+                Individual Tambola
+              </Text>
+              <Text fontSize={{ base: 'sm', md: 'md' }} color="#9ca3af" textAlign="center">
+                हर रोज़ 15 नंबर, बड़े इनाम!
+              </Text>
+              <Box w="28px" h="3px" bg="#e5a00d" borderRadius="full" my={1} />
+            </VStack>
+
+            {/* CTA */}
+            <Box px={4} pb={4}>
+              <Button
+                w="100%"
+                size="lg"
+                h="52px"
+                fontSize="lg"
+                fontWeight="bold"
+                borderRadius="10px"
+                bg="linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)"
+                color="white"
+                _hover={{ opacity: 0.9 }}
+              >
+                अभी खेलें
+              </Button>
+            </Box>
+          </Box>
+        </Box>}
+
+        {/* How to Play Section (Hindi) — shown on Coming Sunday tab */}
+        {activeTab === 'sunday' && <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mt={8}>
+          <Box
+            p={{ base: 6, md: 8 }}
+            bg="grey.800"
+            borderRadius="lg"
+            boxShadow="md"
+            border="1px"
+            borderColor="grey.700"
+          >
+            <Heading size={{ base: 'md', md: 'lg' }} mb={6} color="brand.500" textAlign="center">
+              कैसे खेलें
+            </Heading>
+            <VStack align="start" spacing={4} color="grey.300" fontSize={{ base: 'sm', md: 'md' }}>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">1.</Text>
+                <Text>गेम शुरू होने से 30 मिनट पहले "गेम में शामिल हों" बटन पर क्लिक करें।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">2.</Text>
+                <Text>आपको एक टिकट मिलेगी जिसमें 1 से 90 तक के नंबर होंगे।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">3.</Text>
+                <Text>गेम शुरू होने पर, आयोजक एक-एक करके नंबर बुलाएंगे।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">4.</Text>
+                <Text>अगर बुलाया गया नंबर आपकी टिकट पर है, तो उस पर क्लिक करके मार्क करें।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">5.</Text>
+                <Text>जब आप कोई पैटर्न पूरा कर लें (पहले पांच, ऊपर वाली लाइन, बीच वाली लाइन, नीचे वाली लाइन, या सारे नंबर), तो "जीत का दावा करें" बटन दबाएं।</Text>
+              </HStack>
+              <HStack align="start" spacing={3}>
+                <Text fontWeight="bold" color="brand.400" minW="30px">6.</Text>
+                <Text>सबसे पहले दावा करने वाले को इनाम मिलेगा!</Text>
+              </HStack>
+              <Box mt={4} p={4} bg="grey.900" borderRadius="md" borderLeft="4px" borderColor="brand.500">
+                <Text fontWeight="semibold" color="brand.400" mb={2}>इनाम के पैटर्न:</Text>
+                <VStack align="start" spacing={1} fontSize="sm">
+                  <Text>• <strong>पहले पांच:</strong> टिकट पर कोई भी 5 नंबर</Text>
+                  <Text>• <strong>ऊपर वाली लाइन:</strong> पहली लाइन के सभी नंबर</Text>
+                  <Text>• <strong>बीच वाली लाइन:</strong> बीच की लाइन के सभी नंबर</Text>
+                  <Text>• <strong>नीचे वाली लाइन:</strong> आखिरी लाइन के सभी नंबर</Text>
+                  <Text>• <strong>सारे नंबर:</strong> टिकट के सभी नंबर</Text>
+                </VStack>
+              </Box>
+            </VStack>
+          </Box>
+        </Box>}
+
+        {/* Terms and Conditions Section — collapsible dropdown */}
+        <Box w="100%" maxW={{ base: '100%', md: '900px', lg: '1200px' }} mx="auto" mb={8}>
+          <Accordion allowToggle>
+            <AccordionItem
+              border="none"
+              bg="grey.800"
+              borderRadius="lg"
+              boxShadow="md"
+              overflow="hidden"
+            >
+              <AccordionButton
+                px={{ base: 5, md: 6 }}
+                py={{ base: 4, md: 5 }}
+                _hover={{ bg: 'grey.700' }}
+              >
+                <Text flex="1" textAlign="center" fontWeight="bold" fontSize={{ base: 'md', md: 'lg' }} color="brand.500">
+                  Terms & Conditions
+                </Text>
+                <AccordionIcon color="brand.500" />
+              </AccordionButton>
+              <AccordionPanel px={{ base: 5, md: 6 }} pb={{ base: 5, md: 6 }}>
+                <VStack align="start" spacing={4} color="grey.400" fontSize={{ base: 'xs', md: 'sm' }}>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>1. Eligibility</Text>
+                    <Text>Players must be 18 years or older to participate. By joining, you confirm that you meet this requirement and agree to these terms.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>2. Game Rules</Text>
+                    <Text>All decisions made by the organizer are final. Players must follow the game rules and mark numbers honestly. Any form of cheating or manipulation will result in immediate disqualification.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>3. Prize Distribution</Text>
+                    <Text>Prizes will be awarded as announced at the start of the game. The organizer reserves the right to verify claims before awarding prizes. Winners must claim their prizes within the specified time period.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>4. Technical Issues</Text>
+                    <Text>The organizer is not responsible for technical issues, internet connectivity problems, or device malfunctions that may affect gameplay. Players participate at their own risk.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>5. Fair Play</Text>
+                    <Text>This platform is for entertainment purposes. Multiple accounts, bots, or automated scripts are strictly prohibited. Violation will result in permanent ban.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>6. Refunds</Text>
+                    <Text>Entry fees (if applicable) are non-refundable once the game has started. Refunds may be considered only in case of game cancellation by the organizer.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>7. Privacy</Text>
+                    <Text>Your personal information will be kept confidential and used only for game-related purposes. We do not share your data with third parties without consent.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>8. Dispute Resolution</Text>
+                    <Text>Any disputes arising from the game will be resolved by the organizer. The organizer's decision in all matters relating to the game is final and binding.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>9. Modifications</Text>
+                    <Text>The organizer reserves the right to modify these terms and conditions at any time. Continued participation constitutes acceptance of any changes.</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold" color="grey.300" mb={2}>10. Liability</Text>
+                    <Text>The organizer shall not be held liable for any losses, damages, or claims arising from participation in the game. Players participate voluntarily and at their own risk.</Text>
+                  </Box>
+                  <Box mt={4} p={3} bg="grey.900" borderRadius="md" borderLeft="3px" borderColor="red.500">
+                    <Text fontSize="xs" color="grey.500">
+                      By participating in this game, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions. If you do not agree, please do not participate.
+                    </Text>
+                  </Box>
+                </VStack>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+        </Box>
       </VStack>
-
-      {/* Kaise Khele Bottom Sheet */}
-      {showHowToPlay && (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          zIndex={1000}
-        >
-          {/* Backdrop */}
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            bg="blackAlpha.600"
-            onClick={() => setShowHowToPlay(false)}
-          />
-          {/* Sheet */}
-          <Box
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            maxH="85vh"
-            overflowY="auto"
-            sx={{
-              animation: 'slideUp 0.3s ease-out',
-              '@keyframes slideUp': {
-                from: { transform: 'translateY(100%)' },
-                to: { transform: 'translateY(0)' },
-              },
-              '@keyframes slideDown': {
-                from: { transform: 'translateY(0)' },
-                to: { transform: 'translateY(100%)' },
-              },
-              touchAction: 'none',
-            }}
-            onTouchStart={(e: React.TouchEvent) => {
-              const sheet = e.currentTarget;
-              const startY = e.touches[0].clientY;
-              let currentY = startY;
-
-              const onMove = (ev: TouchEvent) => {
-                currentY = ev.touches[0].clientY;
-                const diff = currentY - startY;
-                if (diff > 0) {
-                  sheet.style.transform = `translateY(${diff}px)`;
-                }
-              };
-
-              const onEnd = () => {
-                const diff = currentY - startY;
-                if (diff > 100) {
-                  sheet.style.animation = 'slideDown 0.2s ease-in forwards';
-                  setTimeout(() => setShowHowToPlay(false), 200);
-                } else {
-                  sheet.style.transform = 'translateY(0)';
-                  sheet.style.transition = 'transform 0.2s ease-out';
-                  setTimeout(() => { sheet.style.transition = ''; }, 200);
-                }
-                document.removeEventListener('touchmove', onMove);
-                document.removeEventListener('touchend', onEnd);
-              };
-
-              document.addEventListener('touchmove', onMove, { passive: false });
-              document.addEventListener('touchend', onEnd);
-            }}
-          >
-            {/* Bottom sheet SVG with built-in close icon */}
-            <Box position="relative" maxW="412px" mx="auto">
-              <Image
-                src={activeTab === 'ravivar' ? '/rkaisekhele.svg' : '/bottomsheet-kaisekhele.svg'}
-                alt="कैसे खेलें"
-                w="100%"
-                display="block"
-              />
-              {/* Invisible tap area over the SVG's close icon (top-right) */}
-              <Box
-                position="absolute"
-                top="8px"
-                right="8px"
-                w="40px"
-                h="40px"
-                cursor="pointer"
-                onClick={() => setShowHowToPlay(false)}
-              />
-            </Box>
-          </Box>
-        </Box>
-      )}
-
-      {/* नियम और शर्तें Bottom Sheet */}
-      {showTerms && (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          zIndex={1000}
-        >
-          {/* Backdrop */}
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            bg="blackAlpha.600"
-            onClick={() => setShowTerms(false)}
-          />
-          {/* Sheet */}
-          <Box
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            maxH="85vh"
-            overflowY="auto"
-            sx={{
-              animation: 'slideUp 0.3s ease-out',
-              '@keyframes slideUp': {
-                from: { transform: 'translateY(100%)' },
-                to: { transform: 'translateY(0)' },
-              },
-              '&::-webkit-scrollbar': { display: 'none' },
-              scrollbarWidth: 'none',
-              touchAction: 'pan-y',
-            }}
-          >
-            <Box position="relative" maxW="412px" mx="auto">
-              <Image
-                src="/tnc.svg"
-                alt="नियम और शर्तें"
-                w="100%"
-                display="block"
-              />
-              {/* Invisible tap area over the SVG's close icon (top-right) */}
-              <Box
-                position="absolute"
-                top="8px"
-                right="8px"
-                w="40px"
-                h="40px"
-                cursor="pointer"
-                onClick={() => setShowTerms(false)}
-              />
-            </Box>
-          </Box>
-        </Box>
-      )}
 
       {/* Name Input Modal */}
       <Modal isOpen={showNameModal} onClose={() => {}} closeOnOverlayClick={false} isCentered>
         <ModalOverlay bg="blackAlpha.800" />
         <ModalContent
           mx={4}
-          bg="#2D1540"
-          borderRadius="20px"
+          bg="grey.700"
           position="relative"
           overflow="visible"
-          border="2px solid rgba(212, 168, 67, 0.3)"
-          boxShadow="0 0 40px rgba(53, 25, 71, 0.8), 0 0 80px rgba(212, 168, 67, 0.15)"
           sx={{
             '&::before': {
               content: '""',
               position: 'absolute',
               inset: '-4px',
-              borderRadius: '22px',
+              borderRadius: 'md',
               padding: '4px',
-              background: 'linear-gradient(90deg, #FFD700, #38FF99, #FFD700)',
+              background: 'linear-gradient(90deg, #FFD700, #00FF00, #00FFFF, #FF00FF, #FFD700)',
               WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
               WebkitMaskComposite: 'xor',
               maskComposite: 'exclude',
-              animation: 'rotateBorder 3s linear infinite',
+              animation: 'rotateBorder 3s linear infinite, pulseBorder 1.5s ease-in-out infinite',
               backgroundSize: '300% 100%',
               zIndex: -1,
             },
             '@keyframes rotateBorder': {
-              '0%': { backgroundPosition: '0% 0%' },
-              '100%': { backgroundPosition: '300% 0%' },
+              '0%': {
+                backgroundPosition: '0% 0%',
+              },
+              '100%': {
+                backgroundPosition: '300% 0%',
+              },
+            },
+            '@keyframes pulseBorder': {
+              '0%, 100%': {
+                filter: 'brightness(1) drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))',
+              },
+              '50%': {
+                filter: 'brightness(1.5) drop-shadow(0 0 20px rgba(0, 255, 0, 0.8))',
+              },
             },
           }}
+          boxShadow="0 0 30px 5px rgba(0, 255, 0, 0.3), 0 0 60px 10px rgba(255, 215, 0, 0.2)"
         >
           <ModalHeader
             color="white"
@@ -1246,19 +1464,18 @@ export default function Lobby() {
                 }}
                 autoFocus
                 color="white"
-                bg="rgba(255, 255, 255, 0.08)"
-                borderColor="rgba(255, 255, 255, 0.2)"
+                bg="rgba(255, 255, 255, 0.1)"
+                borderColor="rgba(255, 255, 255, 0.3)"
                 borderWidth="2px"
-                borderRadius="12px"
-                _placeholder={{ color: 'rgba(255, 255, 255, 0.4)' }}
+                _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
                 _hover={{
-                  borderColor: 'rgba(255, 255, 255, 0.35)',
-                  bg: 'rgba(255, 255, 255, 0.12)'
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                  bg: 'rgba(255, 255, 255, 0.15)'
                 }}
                 _focus={{
-                  borderColor: '#38FF99',
-                  boxShadow: '0 0 0 1px #38FF99, 0 0 15px rgba(56, 255, 153, 0.2)',
-                  bg: 'rgba(255, 255, 255, 0.12)'
+                  borderColor: '#FFD700',
+                  boxShadow: '0 0 0 1px #FFD700, 0 0 15px rgba(255, 215, 0, 0.3)',
+                  bg: 'rgba(255, 255, 255, 0.15)'
                 }}
                 fontSize="md"
                 fontWeight="medium"
@@ -1271,27 +1488,27 @@ export default function Lobby() {
               isDisabled={!tempName.trim()}
               w="100%"
               size="lg"
-              bg="linear-gradient(135deg, #C41230 0%, #9B0624 100%)"
+              bg="brand.500"
               color="white"
               fontWeight="bold"
               fontSize="lg"
-              borderRadius="12px"
               _hover={{
-                bg: 'linear-gradient(135deg, #D41840 0%, #AB1634 100%)',
+                bg: 'brand.600',
                 transform: 'scale(1.02)',
-                boxShadow: '0 0 20px rgba(156, 6, 36, 0.5)',
+                boxShadow: '0 0 20px rgba(37, 141, 88, 0.6)',
               }}
               _active={{
+                bg: 'brand.700',
                 transform: 'scale(0.98)',
               }}
               _disabled={{
-                bg: 'rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.3)',
+                bg: 'grey.600',
+                color: 'grey.400',
                 opacity: 0.5,
                 cursor: 'not-allowed',
               }}
               transition="all 0.2s"
-              boxShadow="0 4px 15px rgba(156, 6, 36, 0.4)"
+              boxShadow="0 4px 15px rgba(37, 141, 88, 0.4)"
             >
               जारी रखें
             </Button>

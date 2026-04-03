@@ -639,6 +639,91 @@ class ApiService {
    * Check if user is VIP
    * Uses userId from localStorage (no auth token required)
    */
+  // ===== Weekly Game APIs =====
+
+  async createWeeklyGame(data: {
+    prizes: any;
+    revealIntervalMin: number;
+    resultDate: string;
+  }): Promise<WeeklyGame> {
+    return this.request<WeeklyGame>('/api/v1/weekly-games', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getWeeklyGames(): Promise<WeeklyGame[]> {
+    const response = await this.request<{ games: WeeklyGame[] }>('/api/v1/weekly-games');
+    return response.games;
+  }
+
+  async getWeeklyGame(gameId: string): Promise<WeeklyGame> {
+    return this.request<WeeklyGame>(`/api/v1/weekly-games/${gameId}`);
+  }
+
+  async joinWeeklyGame(gameId: string, userId?: string, userName?: string): Promise<{
+    playerId: string;
+    ticket: number[][];
+    gameId: string;
+  }> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (userName) params.append('userName', userName);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/join${query}`, {
+      method: 'POST',
+    });
+  }
+
+  async getWeeklyPlayerState(gameId: string, userId?: string): Promise<WeeklyPlayerState> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/my-state${query}`);
+  }
+
+  async markWeeklyNumber(gameId: string, number: number, userId?: string): Promise<{ success: boolean }> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/mark${query}`, {
+      method: 'POST',
+      body: JSON.stringify({ number }),
+    });
+  }
+
+  async claimWeeklyWin(gameId: string, category: string, userId?: string): Promise<{
+    success: boolean;
+    category: string;
+    completedAtCall: number;
+    claimedAt: string;
+  }> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/weekly-games/${gameId}/claim${query}`, {
+      method: 'POST',
+      body: JSON.stringify({ category }),
+    });
+  }
+
+  async getWeeklyResults(gameId: string): Promise<WeeklyResult> {
+    return this.request(`/api/v1/weekly-games/${gameId}/results`);
+  }
+
+  async updateWeeklyGameStatus(gameId: string, data: { status?: string; prizes?: any }): Promise<any> {
+    return this.request(`/api/v1/weekly-games/${gameId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWeeklyGame(gameId: string): Promise<void> {
+    await this.request(`/api/v1/weekly-games/${gameId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async checkVipStatus(): Promise<boolean> {
     const userId = localStorage.getItem('app_user_id');
     if (!userId) {
@@ -650,6 +735,94 @@ class ApiService {
     }
     const data = await response.json();
     return data.isVIP;
+  }
+
+  // ========== Solo Game API ==========
+
+  async getSoloCurrentWeek(): Promise<SoloWeekResponse> {
+    return this.request<SoloWeekResponse>(`/api/v1/solo/current-week${this.getSoloQuery()}`);
+  }
+
+  private getSoloQuery(): string {
+    const userId = localStorage.getItem('app_user_id');
+    return userId ? `?userId=${userId}` : '';
+  }
+
+  async startSoloGame(gameNumber: number = 1): Promise<StartSoloGameResponse> {
+    const query = this.getSoloQuery();
+    const gameParam = gameNumber === 2 ? `${query ? '&' : '?'}gameNumber=2` : '';
+    return this.request<StartSoloGameResponse>(`/api/v1/solo/start-game${query}${gameParam}`, {
+      method: 'POST',
+    });
+  }
+
+  async claimSoloCategory(data: {
+    soloGameId: string;
+    category: string;
+    currentNumberIndex: number;
+  }): Promise<SoloClaimResponse> {
+    return this.request<SoloClaimResponse>(`/api/v1/solo/claim${this.getSoloQuery()}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMySoloGame(): Promise<MySoloGameResponse> {
+    return this.request<MySoloGameResponse>(`/api/v1/solo/my-game${this.getSoloQuery()}`);
+  }
+
+  async getSoloLeaderboard(weekId?: string, gameNumber?: number): Promise<SoloLeaderboardResponse> {
+    const params = new URLSearchParams();
+    if (weekId) params.set('weekId', weekId);
+    if (gameNumber) params.set('gameNumber', String(gameNumber));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<SoloLeaderboardResponse>(`/api/v1/solo/leaderboard${query}`);
+  }
+
+  async getSoloCategoryRankings(weekId?: string, gameNumber?: number): Promise<CategoryRankingsResponse> {
+    const baseQuery = this.getSoloQuery();
+    const weekParam = weekId ? `&weekId=${weekId}` : '';
+    const gameParam = gameNumber ? `&gameNumber=${gameNumber}` : '';
+    return this.request<CategoryRankingsResponse>(`/api/v1/solo/category-rankings${baseQuery}${weekParam}${gameParam}`);
+  }
+
+  async updateSoloProgress(data: {
+    soloGameId: string;
+    currentIndex: number;
+    markedNumbers: number[];
+  }): Promise<void> {
+    await this.request(`/api/v1/solo/update-progress${this.getSoloQuery()}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeSoloGame(data: {
+    soloGameId: string;
+    markedNumbers: number[];
+  }): Promise<void> {
+    await this.request(`/api/v1/solo/complete-game${this.getSoloQuery()}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ========== Solo Week Configuration (Organizer) ==========
+
+  async configureSoloWeek(data: {
+    videoUrl: string;
+    numberSequence: number[];
+    numberTimestamps: number[];
+    gameNumber?: number;
+  }): Promise<ConfigureSoloWeekResponse> {
+    return this.request<ConfigureSoloWeekResponse>('/api/v1/solo/configure-week', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSoloWeekConfig(): Promise<SoloWeekConfigResponse> {
+    return this.request<SoloWeekConfigResponse>('/api/v1/solo/week-config');
   }
 }
 
@@ -682,6 +855,227 @@ export interface RegistrationCard {
   isActive: boolean;
   lastResetAt: string;
   createdAt: string;
+}
+
+export interface WeeklyGame {
+  id: string;
+  status: string;
+  prizes: any;
+  revealedCount: number;
+  revealIntervalMin: number;
+  lastRevealedAt: string;
+  resultDate: string;
+  startedAt: string;
+  playerCount: number;
+  revealedNumbers?: number[];
+  currentNumber?: number;
+}
+
+export interface WeeklyPlayerState {
+  game: {
+    id: string;
+    status: string;
+    prizes: any;
+    revealedCount: number;
+    revealIntervalMin: number;
+    lastRevealedAt: string;
+    resultDate: string;
+    startedAt: string;
+  };
+  player: {
+    id: string;
+    ticket: number[][];
+    markedNumbers: number[];
+    missedNumbers: number[];
+  };
+  revealedNumbers: number[];
+  todayNumbers: number[];
+  currentNumber: number | null;
+  claims: Array<{ category: string; completedAtCall: number; claimedAt: string }>;
+  wonCategories: string[];
+}
+
+export interface WeeklyResult {
+  gameId: string;
+  prizes: any;
+  results: Array<{
+    category: string;
+    winnerId: string | null;
+    playerName: string | null;
+    completedAtCall: number | null;
+    claimedAt: string | null;
+  }>;
+}
+
+// Solo Game Types
+export interface SoloWeekResponse {
+  week: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: 'ACTIVE' | 'FINALIZED';
+    finalizedAt?: string;
+    videoUrl?: string;
+    videoId?: string;
+    isConfigured?: boolean;
+    isGame2Configured?: boolean;
+  };
+  stats: { playerCount: number };
+  userStatus: {
+    hasPlayed: boolean;
+    gameStatus: string | null;
+    game2Status: {
+      available: boolean;
+      cooldownEndsAt: string | null;
+      hasPlayed: boolean;
+      gameStatus: string | null;
+    };
+  };
+  flags: { isSoloGameDay: boolean; isSunday: boolean };
+}
+
+export interface StartSoloGameResponse {
+  soloGameId: string;
+  weekId: string;
+  gameNumber: number;
+  ticket: number[][];
+  numberSequence: number[];
+  status: string;
+  videoUrl: string | null;
+  videoId: string | null;
+  numberTimestamps: number[];
+}
+
+export interface SoloClaimResponse {
+  claim: {
+    id: string;
+    category: string;
+    numberCountAtClaim: number;
+    claimedAt: string;
+  };
+  gameComplete: boolean;
+}
+
+export interface SoloGameData {
+  id: string;
+  weekId: string;
+  gameNumber: number;
+  ticket: number[][];
+  numberSequence: number[];
+  markedNumbers: number[];
+  currentIndex: number;
+  status: 'IN_PROGRESS' | 'COMPLETED';
+  startedAt: string;
+  completedAt?: string;
+  claims: Array<{
+    id: string;
+    category: string;
+    numberCountAtClaim: number;
+    claimedAt: string;
+  }>;
+}
+
+export interface MySoloGameResponse {
+  game: SoloGameData | null;
+  game1: SoloGameData | null;
+  game2: SoloGameData | null;
+  game2Status: {
+    available: boolean;
+    cooldownEndsAt: string | null;
+    configured: boolean;
+  };
+  videoUrl?: string;
+  videoId?: string;
+  numberTimestamps?: number[];
+  game2VideoUrl?: string;
+  game2VideoId?: string;
+  game2NumberTimestamps?: number[];
+  isConfigured?: boolean;
+  canPlay: boolean;
+  isSunday: boolean;
+  currentWeek: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: string;
+  };
+}
+
+export interface SoloLeaderboardEntry {
+  category: string;
+  userId: string;
+  userName: string | null;
+  numberCountAtClaim: number;
+  claimedAt: string;
+  isFinalized: boolean;
+}
+
+export interface SoloLeaderboardResponse {
+  week: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: string;
+    finalizedAt?: string;
+  };
+  leaderboard: SoloLeaderboardEntry[];
+  playerCount?: number;
+}
+
+export interface CategoryRankingEntry {
+  rank: number;
+  userName: string;
+  numberCountAtClaim: number;
+  isCurrentUser: boolean;
+}
+
+export interface CategoryRankingsResponse {
+  rankings: Record<string, CategoryRankingEntry[]>;
+  userRanks: Record<string, number | null>;
+  totalClaimers: Record<string, number>;
+}
+
+export interface ConfigureSoloWeekResponse {
+  success: boolean;
+  week: {
+    id: string;
+    videoUrl: string;
+    videoId: string;
+    numberSequence: number[];
+    numberTimestamps: number[];
+    configuredAt: string;
+  };
+}
+
+export interface SoloWeekConfigResponse {
+  week: {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    status: string;
+    videoUrl: string | null;
+    videoId: string | null;
+    numberSequence: number[];
+    numberTimestamps: number[];
+    videoStartTime: number | null;
+    numberInterval: number | null;
+    configuredAt: string | null;
+    configuredBy: string | null;
+    // Game 2 config
+    game2VideoUrl: string | null;
+    game2VideoId: string | null;
+    game2NumberSequence: number[];
+    game2NumberTimestamps: number[];
+    game2VideoStartTime: number | null;
+    game2ConfiguredAt: string | null;
+    game2ConfiguredBy: string | null;
+  };
+  gameCount: number;
+  game2Count: number;
+  isConfigured: boolean;
+  isGame2Configured: boolean;
+  canReconfigure: boolean;
+  canReconfigureGame2: boolean;
 }
 
 // Export singleton instance

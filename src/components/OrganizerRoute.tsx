@@ -27,8 +27,8 @@ export const OrganizerRoute = ({ children }: OrganizerRouteProps) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Only allow organizer@test.com to access
-  if (user?.email !== 'organizer@test.com') {
+  // Only allow organizer to access
+  if (user?.email !== 'organizer@test.com' && user?.role !== 'ORGANIZER') {
     return <Navigate to="/lobby" replace />;
   }
 

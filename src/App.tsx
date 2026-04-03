@@ -8,9 +8,13 @@ import Lobby from './screens/Lobby';
 import Game from './screens/Game';
 import Organizer from './screens/Organizer';
 import GameControl from './screens/GameControl';
+import SoloGame from './screens/SoloGame';
+import SoloManagement from './screens/SoloManagement';
 import BannerManagement from './screens/BannerManagement';
 import CohortManagement from './screens/CohortManagement';
 import WheelDisplay from './screens/WheelDisplay';
+import Individual from './screens/Individual';
+import WeeklyGame from './screens/WeeklyGame';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
 import { InactivityHandler } from './components/InactivityHandler';
@@ -61,6 +65,14 @@ export const App = () => {
             }
           />
           <Route
+            path="/soloGame"
+            element={
+              <ProtectedRoute>
+                <SoloGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/organizer"
             element={
               <OrganizerRoute>
@@ -94,6 +106,30 @@ export const App = () => {
           />
           <Route path="/game-preview" element={<GamePreview />} />
           <Route path="/lobby-preview" element={<Lobby />} />
+          <Route
+            path="/individual"
+            element={
+              <ProtectedRoute>
+                <Individual />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/individual/:gameId"
+            element={
+              <ProtectedRoute>
+                <WeeklyGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/solo-management"
+            element={
+              <OrganizerRoute>
+                <SoloManagement />
+              </OrganizerRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

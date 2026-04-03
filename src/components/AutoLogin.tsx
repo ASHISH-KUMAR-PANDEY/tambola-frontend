@@ -128,7 +128,7 @@ export const AutoLogin = () => {
 
           // Redirect to Stage login
           const stageLoginUrl = 'https://stage.in/hi/login';
-          const returnUrl = encodeURIComponent(window.location.origin);
+          const returnUrl = encodeURIComponent(window.location.href);
           window.location.href = `${stageLoginUrl}?isTambolaFlow=true&returnUrl=${returnUrl}`;
           return;
         }
