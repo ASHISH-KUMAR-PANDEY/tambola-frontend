@@ -60,18 +60,18 @@ const fetchVijetaWinners = async (tab: 'live' | 'sunday'): Promise<VijeyaWinner[
   if (tab === 'sunday') {
     return [
       { name: 'Rahul Sharma', prize: 'iPhone 17 Winner', category: 'Full House', date: '30 मार्च, 2026' },
-      { name: 'Priya Singh', prize: 'MacBook Air Winner', category: 'Top Line', date: '30 मार्च, 2026' },
+      { name: 'Priya Singh', prize: 'Smart TV Winner', category: 'Top Line', date: '30 मार्च, 2026' },
       { name: 'Amit Kumar', prize: 'Smart TV Winner', category: 'Middle Line', date: '30 मार्च, 2026' },
-      { name: 'Neha Gupta', prize: 'Smart Watch Winner', category: 'Bottom Line', date: '30 मार्च, 2026' },
-      { name: 'Vikram Patel', prize: 'Earbuds Winner', category: 'Early Five', date: '30 मार्च, 2026' },
+      { name: 'Neha Gupta', prize: 'Smart TV Winner', category: 'Bottom Line', date: '30 मार्च, 2026' },
+      { name: 'Vikram Patel', prize: 'Smart Watch Winner', category: 'Early Five', date: '30 मार्च, 2026' },
     ];
   }
   return [
     { name: 'Saurav Dutta', prize: 'iPhone 17 Winner', category: 'Full House', date: '3 अप्रैल, 2026' },
     { name: 'Ananya Mishra', prize: 'Smart TV Winner', category: 'Top Line', date: '3 अप्रैल, 2026' },
-    { name: 'Rohan Verma', prize: 'MacBook Air Winner', category: 'Middle Line', date: '2 अप्रैल, 2026' },
-    { name: 'Kavita Joshi', prize: 'Smart Watch Winner', category: 'Bottom Line', date: '2 अप्रैल, 2026' },
-    { name: 'Deepak Yadav', prize: 'Earbuds Winner', category: 'Early Five', date: '1 अप्रैल, 2026' },
+    { name: 'Rohan Verma', prize: 'Smart TV Winner', category: 'Middle Line', date: '2 अप्रैल, 2026' },
+    { name: 'Kavita Joshi', prize: 'Smart TV Winner', category: 'Bottom Line', date: '2 अप्रैल, 2026' },
+    { name: 'Deepak Yadav', prize: 'Smart Watch Winner', category: 'Early Five', date: '1 अप्रैल, 2026' },
   ];
 };
 
@@ -107,6 +107,70 @@ const getVijetaTabDates = () => {
     liveRange: `${formatHindiDate(mon)} - ${formatHindiDate(sat)}`,
     sundayDate: formatHindiDate(sun),
   };
+};
+
+// Bottom Nav component with sliding pill animation
+const BottomNav = ({ activeTab, onTabChange }: { activeTab: 'tambola' | 'vijeta' | 'howtoplay'; onTabChange: (tab: 'tambola' | 'vijeta' | 'howtoplay') => void }) => {
+  const pillPositions = { tambola: '2.5%', vijeta: '35%', howtoplay: '67.5%' };
+  const pillWidths = { tambola: '30%', vijeta: '30%', howtoplay: '30%' };
+
+  return (
+    <Box w="100%" maxW="480px" mx="auto" bg="#1A1A1A" flexShrink={0} h="64px" position="relative" overflow="hidden">
+      {/* Sliding pill indicator */}
+      <Box
+        position="absolute"
+        top="10px"
+        left={pillPositions[activeTab]}
+        w={pillWidths[activeTab]}
+        h="44px"
+        borderRadius="22px"
+        bg="linear-gradient(90deg, #E8363C, #F97738)"
+        transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        pointerEvents="none"
+      />
+      {/* Tab buttons */}
+      <Flex h="100%" align="center" position="relative" zIndex={1}>
+        {[
+          { key: 'tambola' as const, label: 'तम्बोला', icon: (
+            <svg width="20" height="20" viewBox="35 27 20 20" fill="none"><path d="M47.9241 28.9004C46.7577 29.2847 45.7374 30.0177 45.0009 31.0004C44.264 30.0175 43.2433 29.2845 42.0765 28.9004C42.4099 28.4362 42.849 28.058 43.3575 27.7972C43.866 27.5363 44.4294 27.4003 45.0009 27.4004C46.2045 27.4004 47.2713 27.992 47.9241 28.9004ZM37.3521 38.4644C37.6862 36.8032 38.5519 35.2959 39.8184 34.1702C41.0848 33.0445 42.6832 32.3615 44.3721 32.2244C44.0183 31.6033 43.5302 31.0691 42.9436 30.6608C42.357 30.2525 41.6866 29.9803 40.9813 29.8641C40.2761 29.748 39.5538 29.7908 38.8672 29.9895C38.1806 30.1882 37.547 30.5377 37.0128 31.0125C36.4785 31.4873 36.057 32.0754 35.7791 32.7339C35.5012 33.3924 35.3738 34.1047 35.4063 34.8187C35.4389 35.5327 35.6304 36.2305 35.967 36.861C36.3037 37.4915 36.7769 38.0389 37.3521 38.4632M52.6485 38.4632C53.2237 38.0389 53.6969 37.4915 54.0335 36.861C54.3701 36.2305 54.5617 35.5327 54.5942 34.8187C54.6267 34.1047 54.4994 33.3924 54.2215 32.7339C53.9435 32.0754 53.5221 31.4873 52.9878 31.0125C52.4535 30.5377 51.82 30.1882 51.1334 29.9895C50.4468 29.7908 49.7245 29.748 49.0192 29.8641C48.314 29.9803 47.6436 30.2525 47.0569 30.6608C46.4703 31.0691 45.9823 31.6033 45.6285 32.2244C47.3172 32.3614 48.9155 33.0443 50.1819 34.1697C51.4483 35.2952 52.3141 36.8023 52.6485 38.4632ZM51.5997 40.0004C51.5997 41.7508 50.9043 43.4296 49.6666 44.6673C48.4288 45.905 46.7501 46.6004 44.9997 46.6004C43.2492 46.6004 41.5705 45.905 40.3328 44.6673C39.095 43.4296 38.3997 41.7508 38.3997 40.0004C38.3997 38.25 39.095 36.5712 40.3328 35.3335C41.5705 34.0957 43.2492 33.4004 44.9997 33.4004C46.7501 33.4004 48.4288 34.0957 49.6666 35.3335C50.9043 36.5712 51.5997 38.25 51.5997 40.0004ZM42.5997 37.6004C42.5997 37.7595 42.6629 37.9121 42.7754 38.0247C42.8879 38.1372 43.0405 38.2004 43.1997 38.2004H45.8877C45.7645 38.3764 45.6365 38.5704 45.5037 38.7824C44.9241 39.7088 44.2701 40.9976 44.1045 42.326C44.0927 42.4051 44.0968 42.4858 44.1167 42.5633C44.1365 42.6408 44.1716 42.7135 44.22 42.7772C44.2683 42.8409 44.3289 42.8943 44.3982 42.9343C44.4675 42.9742 44.5441 42.9999 44.6235 43.0098C44.7029 43.0198 44.7834 43.0137 44.8604 42.9921C44.9374 42.9704 45.0093 42.9335 45.0719 42.8837C45.1344 42.8338 45.1864 42.772 45.2247 42.7018C45.263 42.6315 45.2868 42.5544 45.2949 42.4748C45.4293 41.4032 45.9753 40.292 46.5213 39.4184C46.8275 38.9296 47.1654 38.4614 47.5329 38.0168L47.5473 38L47.5521 37.9952C47.6279 37.9084 47.6772 37.8015 47.6939 37.6875C47.7106 37.5734 47.6942 37.457 47.6464 37.352C47.5987 37.2471 47.5218 37.1581 47.4248 37.0957C47.3278 37.0334 47.215 37.0003 47.0997 37.0004H43.1997C43.0405 37.0004 42.8879 37.0636 42.7754 37.1761C42.6629 37.2886 42.5997 37.4413 42.5997 37.6004Z" fill="white"/></svg>
+          )},
+          { key: 'vijeta' as const, label: 'विजेता', icon: (
+            <svg width="20" height="20" viewBox="166 26 22 22" fill="none"><path d="M186.75 28.75H183.933C183.883 28.75 183.835 28.7302 183.8 28.6951C183.765 28.6599 183.745 28.6122 183.745 28.5625V27.9962C183.744 27.5991 183.586 27.2185 183.305 26.938C183.023 26.6575 182.642 26.5 182.245 26.5L171.755 26.5122C171.358 26.5129 170.978 26.6708 170.697 26.9514C170.417 27.2319 170.259 27.6121 170.258 28.0089V28.5625C170.258 28.6122 170.238 28.6599 170.203 28.6951C170.168 28.7302 170.12 28.75 170.07 28.75H167.25C167.051 28.75 166.86 28.829 166.72 28.9697C166.579 29.1103 166.5 29.3011 166.5 29.5V30.25C166.5 32.8061 167.906 35.5211 170.087 36.1258C170.151 36.1437 170.21 36.179 170.256 36.2278C170.301 36.2765 170.333 36.3369 170.347 36.4023C170.617 37.6628 171.45 38.8633 172.757 39.8528C173.737 40.5948 174.906 41.1419 175.957 41.3753C176.04 41.3939 176.114 41.4403 176.168 41.5067C176.221 41.5732 176.25 41.6558 176.25 41.7409V45.8125C176.25 45.8622 176.23 45.9099 176.195 45.9451C176.16 45.9802 176.112 46 176.062 46H173.271C172.867 46 172.521 46.3103 172.501 46.7139C172.496 46.8153 172.512 46.9167 172.547 47.0118C172.583 47.1069 172.637 47.1939 172.707 47.2674C172.777 47.3409 172.861 47.3994 172.955 47.4394C173.048 47.4794 173.148 47.5 173.25 47.5H180.729C181.132 47.5 181.479 47.1897 181.499 46.7861C181.504 46.6847 181.488 46.5833 181.453 46.4882C181.417 46.3931 181.363 46.3061 181.293 46.2326C181.223 46.1591 181.139 46.1006 181.045 46.0606C180.952 46.0206 180.852 46 180.75 46H177.938C177.888 46 177.84 45.9802 177.805 45.9451C177.77 45.9099 177.75 45.8622 177.75 45.8125V41.7409C177.75 41.6558 177.779 41.5732 177.832 41.5067C177.886 41.4403 177.96 41.3939 178.043 41.3753C179.094 41.1409 180.263 40.5948 181.243 39.8528C182.55 38.8633 183.382 37.6628 183.653 36.4023C183.667 36.3369 183.699 36.2765 183.744 36.2278C183.79 36.179 183.849 36.1437 183.913 36.1258C186.094 35.5211 187.5 32.8061 187.5 30.25V29.5C187.5 29.3011 187.421 29.1103 187.28 28.9697C187.14 28.829 186.949 28.75 186.75 28.75ZM170.25 34.2916C170.25 34.3244 170.241 34.3567 170.225 34.3851C170.208 34.4135 170.184 34.4371 170.156 34.4534C170.127 34.4698 170.095 34.4784 170.062 34.4784C170.029 34.4784 169.997 34.4697 169.969 34.4533C169.488 34.1669 169.137 33.7328 168.931 33.4272C168.373 32.598 168.04 31.5208 168.003 30.4445C168.002 30.4193 168.006 30.3942 168.015 30.3706C168.024 30.3471 168.038 30.3255 168.056 30.3074C168.073 30.2892 168.094 30.2748 168.117 30.2649C168.141 30.2551 168.166 30.25 168.191 30.25H170.066C170.116 30.25 170.163 30.2698 170.198 30.3049C170.234 30.3401 170.253 30.3878 170.253 30.4375C170.252 31.7242 170.25 33.197 170.25 34.2916ZM185.069 33.4272C184.863 33.7328 184.512 34.1669 184.031 34.4533C184.003 34.4697 183.97 34.4784 183.938 34.4784C183.905 34.4784 183.872 34.4698 183.844 34.4533C183.815 34.4369 183.792 34.4133 183.775 34.3848C183.759 34.3563 183.75 34.324 183.75 34.2911C183.75 33.0484 183.75 31.6366 183.748 30.4375C183.748 30.3878 183.767 30.3401 183.803 30.3049C183.838 30.2698 183.885 30.25 183.935 30.25H185.81C185.835 30.25 185.86 30.2551 185.884 30.2649C185.907 30.2748 185.928 30.2892 185.945 30.3074C185.963 30.3255 185.976 30.3471 185.985 30.3706C185.994 30.3942 185.999 30.4193 185.998 30.4445C185.961 31.5208 185.627 32.598 185.069 33.4272Z" fill="white"/></svg>
+          )},
+          { key: 'howtoplay' as const, label: 'कैसे जीतें', icon: (
+            <svg width="20" height="20" viewBox="299 27 20 20" fill="none"><path d="M309 27C303.477 27 299 31.477 299 37C299 42.523 303.477 47 309 47C314.523 47 319 42.523 319 37C319 31.477 314.523 27 309 27ZM310 43H308V41H310V43ZM310 38.859V40H308V38C308 37.7348 308.105 37.4804 308.293 37.2929C308.48 37.1054 308.735 37 309 37C310.103 37 311 36.103 311 35C311 33.897 310.103 33 309 33C307.897 33 307 33.897 307 35H305C305 33.9391 305.421 32.9217 306.172 32.1716C306.922 31.4214 307.939 31 309 31C310.061 31 311.078 31.4214 311.828 32.1716C312.579 32.9217 313 33.9391 313 35C312.999 35.8848 312.703 36.7441 312.16 37.4427C311.617 38.1412 310.857 38.6395 310 38.859Z" fill="white"/></svg>
+          )},
+        ].map(tab => (
+          <Flex
+            key={tab.key}
+            flex={1}
+            align="center"
+            justify="center"
+            gap="6px"
+            cursor="pointer"
+            h="100%"
+            onClick={() => onTabChange(tab.key)}
+            _active={{ opacity: 0.7 }}
+            transition="opacity 0.15s"
+          >
+            <Box opacity={activeTab === tab.key ? 1 : 0.6} transition="opacity 0.2s">
+              {tab.icon}
+            </Box>
+            <Text
+              fontSize="clamp(12px, 3vw, 14px)"
+              fontWeight={activeTab === tab.key ? 'bold' : 'semibold'}
+              color="white"
+              opacity={activeTab === tab.key ? 1 : 0.6}
+              fontFamily="system-ui, -apple-system, sans-serif"
+              transition="opacity 0.2s, font-weight 0.2s"
+            >
+              {tab.label}
+            </Text>
+          </Flex>
+        ))}
+      </Flex>
+    </Box>
+  );
 };
 
 // Positions of the 5 winner cards in vijeta-bg.svg (as % of viewBox 412x990)
@@ -499,14 +563,47 @@ export default function Lobby() {
   });
   const [activeTab, setActiveTab] = useState<'live' | 'ravivar'>(() => new Date().getDay() === 0 ? 'ravivar' : 'live');
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(() => new Date().getDay() === 0 ? 'sunday' : 'live');
+  const [isSundayTutorialPlaying, setIsSundayTutorialPlaying] = useState(false);
+  const sundayTutorialRef = useRef<HTMLVideoElement>(null);
   const [isSundayRegistered, setIsSundayRegistered] = useState<boolean>(() => {
     return localStorage.getItem('sunday_tambola_registered') === 'true';
   });
   const [showTerms, setShowTerms] = useState(false);
   const [sundayRegistered, setSundayRegistered] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [sundayGameLive, setSundayGameLive] = useState(false);
   const sundayCTARef = useRef<HTMLDivElement>(null);
   const handleConfettiDone = useCallback(() => setShowConfetti(false), []);
+
+  // Check if Sunday game is within 2 hours — CTA changes to "join now"
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      const day = now.getDay();
+      const daysUntilSunday = day === 0 ? 0 : 7 - day;
+      const nextSunday = new Date(now);
+      nextSunday.setDate(now.getDate() + daysUntilSunday);
+      nextSunday.setHours(20, 0, 0, 0);
+      if (nextSunday <= now) nextSunday.setDate(nextSunday.getDate() + 7);
+      const diff = nextSunday.getTime() - now.getTime();
+      setSundayGameLive(diff <= 2 * 60 * 60 * 1000); // 2 hours
+    };
+    check();
+    const id = setInterval(check, 30000); // check every 30s
+    return () => clearInterval(id);
+  }, []);
+
+  // Pause sunday tutorial video when accordion closes or screen exits
+  useEffect(() => {
+    if (openAccordion !== 'sunday' || !showHowToPlay) {
+      const video = sundayTutorialRef.current;
+      if (video) {
+        video.pause();
+        setIsSundayTutorialPlaying(false);
+      }
+    }
+  }, [openAccordion, showHowToPlay]);
 
   // Vijeta (Winners) screen state
   const [vijetaTab, setVijetaTab] = useState<'live' | 'sunday'>('live');
@@ -537,6 +634,12 @@ export default function Lobby() {
   }, []);
 
   const handleSundayCTAClick = () => {
+    if (sundayGameLive) {
+      // Within 2 hours of game — navigate to game screen
+      if (navigator.vibrate) navigator.vibrate(50);
+      navigate('/game-preview?type=sunday');
+      return;
+    }
     if (navigator.vibrate) navigator.vibrate(sundayRegistered ? 30 : [30, 50, 80]);
     if (!sundayRegistered) {
       setShowConfetti(true);
@@ -1198,6 +1301,8 @@ export default function Lobby() {
                 w="80.6%"
                 h="6.3%"
                 cursor="pointer"
+                overflow="hidden"
+                borderRadius="12px"
                 onClick={() => {
                   if (navigator.vibrate) navigator.vibrate(50);
                   if (games.length > 0) {
@@ -1207,6 +1312,23 @@ export default function Lobby() {
                   } else {
                     navigate('/game-preview');
                   }
+                }}
+                sx={{
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: '-100%',
+                    w: '60%',
+                    h: '100%',
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,200,150,0.4) 40%, rgba(255,255,255,0.6) 50%, rgba(255,200,150,0.4) 60%, transparent 100%)',
+                    animation: 'shimmer 2.5s infinite',
+                    transform: 'skewX(-20deg)',
+                  },
+                  '@keyframes shimmer': {
+                    '0%': { left: '-100%' },
+                    '100%': { left: '200%' },
+                  },
                 }}
               />
             </>
@@ -1225,13 +1347,30 @@ export default function Lobby() {
             w="80.6%"
             cursor="pointer"
             onClick={handleSundayCTAClick}
+            overflow="hidden"
+            borderRadius="12px"
             sx={{
               transition: 'transform 0.15s ease',
               '&:active': { transform: 'scale(0.96)' },
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: '-100%',
+                w: '60%',
+                h: '100%',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,200,150,0.4) 40%, rgba(255,255,255,0.6) 50%, rgba(255,200,150,0.4) 60%, transparent 100%)',
+                animation: 'shimmer 2.5s infinite',
+                transform: 'skewX(-20deg)',
+              },
+              '@keyframes shimmer': {
+                '0%': { left: '-100%' },
+                '100%': { left: '200%' },
+              },
             }}
           >
             <Image
-              src={sundayRegistered ? "/clicked-cta.svg" : "/register-cta.svg"}
+              src={sundayGameLive ? "/cta-live.svg" : sundayRegistered ? "/clicked-cta.svg" : "/register-cta.svg"}
               alt=""
               w="100%"
               display="block"
@@ -1241,19 +1380,15 @@ export default function Lobby() {
       </Box>
 
       {/* Fixed bottom navigation */}
-      <Box w="100%" maxW="480px" mx="auto" bg="#1A1A1A" flexShrink={0} position="relative">
-        <Image src="/bottom-nav.svg?v=2" alt="" w="100%" display="block" />
-        <Flex position="absolute" top={0} left={0} w="100%" h="100%">
-          <Box flex={1} cursor="pointer" onClick={() => { /* already on tambola */ }} />
-          <Box flex={1} cursor="pointer" onClick={() => setShowTerms(true)} />
-          <Box flex={1} cursor="pointer" onClick={() => setShowHowToPlay(true)} />
-        </Flex>
-      </Box>
+      <BottomNav activeTab="tambola" onTabChange={(tab) => {
+        if (tab === 'vijeta') setShowTerms(true);
+        else if (tab === 'howtoplay') setShowHowToPlay(true);
+      }} />
 
       {/* Confetti burst on Sunday registration */}
       <ConfettiBurst show={showConfetti} onDone={handleConfettiDone} anchorRef={sundayCTARef} />
 
-      {/* Kaise Khele Bottom Sheet */}
+      {/* कैसे जीतें (How to Play) Full Screen Overlay */}
       {showHowToPlay && (
         <Box
           position="fixed"
@@ -1262,87 +1397,272 @@ export default function Lobby() {
           right={0}
           bottom={0}
           zIndex={1000}
+          bg="#0E0A0A"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
         >
-          {/* Backdrop */}
           <Box
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            bg="blackAlpha.600"
-            onClick={() => setShowHowToPlay(false)}
-          />
-          {/* Sheet */}
-          <Box
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            maxH="85vh"
-            overflowY="auto"
-            sx={{
-              animation: 'slideUp 0.3s ease-out',
-              '@keyframes slideUp': {
-                from: { transform: 'translateY(100%)' },
-                to: { transform: 'translateY(0)' },
-              },
-              '@keyframes slideDown': {
-                from: { transform: 'translateY(0)' },
-                to: { transform: 'translateY(100%)' },
-              },
-              touchAction: 'none',
-            }}
-            onTouchStart={(e: React.TouchEvent) => {
-              const sheet = e.currentTarget;
-              const startY = e.touches[0].clientY;
-              let currentY = startY;
-
-              const onMove = (ev: TouchEvent) => {
-                currentY = ev.touches[0].clientY;
-                const diff = currentY - startY;
-                if (diff > 0) {
-                  sheet.style.transform = `translateY(${diff}px)`;
-                }
-              };
-
-              const onEnd = () => {
-                const diff = currentY - startY;
-                if (diff > 100) {
-                  sheet.style.animation = 'slideDown 0.2s ease-in forwards';
-                  setTimeout(() => setShowHowToPlay(false), 200);
-                } else {
-                  sheet.style.transform = 'translateY(0)';
-                  sheet.style.transition = 'transform 0.2s ease-out';
-                  setTimeout(() => { sheet.style.transition = ''; }, 200);
-                }
-                document.removeEventListener('touchmove', onMove);
-                document.removeEventListener('touchend', onEnd);
-              };
-
-              document.addEventListener('touchmove', onMove, { passive: false });
-              document.addEventListener('touchend', onEnd);
-            }}
+            w="100%"
+            maxW="480px"
+            flex={1}
+            display="flex"
+            flexDirection="column"
+            overflow="hidden"
           >
-            {/* Bottom sheet SVG with built-in close icon */}
-            <Box position="relative" maxW="412px" mx="auto">
-              <Image
-                src={activeTab === 'ravivar' ? '/rkaisekhele.svg' : '/bottomsheet-kaisekhele.svg'}
-                alt="कैसे खेलें"
-                w="100%"
-                display="block"
-              />
-              {/* Invisible tap area over the SVG's close icon (top-right) */}
+            {/* Scrollable accordion content */}
+            <Box flex={1} overflowY="auto" px="16px" pt="48px" pb="20px">
+              {/* Accordion 1: लाइव तम्बोला कैसे खेलें */}
               <Box
-                position="absolute"
-                top="8px"
-                right="8px"
-                w="40px"
-                h="40px"
-                cursor="pointer"
-                onClick={() => setShowHowToPlay(false)}
-              />
+                mb="16px"
+                bg="rgba(255,255,255,0.06)"
+                borderRadius="12px"
+                overflow="hidden"
+                backdropFilter="blur(8px)"
+              >
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  cursor="pointer"
+                  px="20px"
+                  py="18px"
+                  onClick={() => setOpenAccordion(openAccordion === 'live' ? null : 'live')}
+                >
+                  <Text fontSize="clamp(14px, 3.8vw, 17px)" fontWeight="bold" color="white" fontFamily="system-ui, -apple-system, sans-serif">
+                    लाइव तम्बोला कैसे खेलें
+                  </Text>
+                  <Box as="svg" w="16px" h="16px" viewBox="0 0 16 16" fill="none" flexShrink={0} ml="12px"
+                    transform={openAccordion === 'live' ? 'rotate(180deg)' : 'rotate(0deg)'} transition="transform 0.25s ease">
+                    <path d="M13.37 5.31C13.47 5.41 13.55 5.52 13.6 5.65C13.65 5.78 13.68 5.91 13.68 6.05C13.68 6.19 13.65 6.32 13.6 6.45C13.55 6.58 13.47 6.69 13.37 6.79L8.6 11.76C8.52 11.83 8.43 11.89 8.33 11.94C8.22 11.98 8.11 12 8 12C7.89 12 7.78 11.98 7.67 11.94C7.57 11.89 7.48 11.83 7.4 11.76L2.63 6.79C2.21 6.38 2.21 5.72 2.63 5.31C3.05 4.9 3.72 4.9 4.14 5.31L8 9.38L11.87 5.3C12.28 4.9 12.96 4.9 13.37 5.31Z" fill="white"/>
+                  </Box>
+                </Flex>
+                {openAccordion === 'live' && (
+                  <Box px="20px" pb="20px">
+                    {[
+                      { title: 'वीडियो देखो, नंबर सुनो', desc: 'लाइव वीडियो चलेगा — नंबर एक-एक करके बुलाए जाएंगे। ऑरेंज बॉक्स में मौजूदा नंबर दिखेगा।' },
+                      { title: 'टिकट पर नंबर मार्क करो', desc: 'आपको एक टिकट अपने आप मिलेगी। जो नंबर बुलाया जाए और टिकट पर हो — उसे क्लिक करो, वो हरा हो जाएगा!' },
+                      { title: 'लाइन पूरी करो, दावा करो!', desc: '5 तरीके हैं जीतने के — पहले पाँच नंबर, ऊपर/बीच/नीचे लाइन, या फुल हाउस। पूरा होते ही \'जीत का दावा करो\' बटन दबाओ!' },
+                      { title: 'देखो कितने और लोगों ने दावा किया', desc: 'दावा करते ही पता चलेगा — आपके साथ और कितने खिलाड़ियों ने ये कैटेगरी जीती!' },
+                      { title: 'रविवार को विजेता की घोषणा', desc: 'हफ्ते भर खेलो — हर रविवार सबसे जल्दी दावा करने वाले जीतेंगे!' },
+                    ].map((step, i) => (
+                      <Flex key={i} mb="16px" align="flex-start" gap="12px">
+                        <Flex
+                          w="24px"
+                          h="24px"
+                          borderRadius="full"
+                          bg="linear-gradient(135deg, #B31232, #FF6B2C)"
+                          align="center"
+                          justify="center"
+                          flexShrink={0}
+                          mt="2px"
+                        >
+                          <Text fontSize="12px" fontWeight="bold" color="white">{i + 1}</Text>
+                        </Flex>
+                        <Box>
+                          <Text fontSize="clamp(12px, 3.2vw, 14px)" fontWeight="bold" color="white" fontFamily="system-ui, -apple-system, sans-serif" mb="2px">
+                            {step.title}
+                          </Text>
+                          <Text fontSize="clamp(11px, 2.8vw, 13px)" color="rgba(255,255,255,0.75)" fontFamily="system-ui, -apple-system, sans-serif" lineHeight="1.5">
+                            {step.desc}
+                          </Text>
+                        </Box>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              {/* Accordion 2: रविवार तम्बोला कैसे खेलें */}
+              <Box
+                mb="16px"
+                bg="rgba(255,255,255,0.06)"
+                borderRadius="12px"
+                overflow="hidden"
+                backdropFilter="blur(8px)"
+              >
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  cursor="pointer"
+                  px="20px"
+                  py="18px"
+                  onClick={() => setOpenAccordion(openAccordion === 'sunday' ? null : 'sunday')}
+                >
+                  <Text fontSize="clamp(14px, 3.8vw, 17px)" fontWeight="bold" color="white" fontFamily="system-ui, -apple-system, sans-serif">
+                    रविवार तम्बोला कैसे खेलें
+                  </Text>
+                  <Box as="svg" w="16px" h="16px" viewBox="0 0 16 16" fill="none" flexShrink={0} ml="12px"
+                    transform={openAccordion === 'sunday' ? 'rotate(180deg)' : 'rotate(0deg)'} transition="transform 0.25s ease">
+                    <path d="M13.37 5.31C13.47 5.41 13.55 5.52 13.6 5.65C13.65 5.78 13.68 5.91 13.68 6.05C13.68 6.19 13.65 6.32 13.6 6.45C13.55 6.58 13.47 6.69 13.37 6.79L8.6 11.76C8.52 11.83 8.43 11.89 8.33 11.94C8.22 11.98 8.11 12 8 12C7.89 12 7.78 11.98 7.67 11.94C7.57 11.89 7.48 11.83 7.4 11.76L2.63 6.79C2.21 6.38 2.21 5.72 2.63 5.31C3.05 4.9 3.72 4.9 4.14 5.31L8 9.38L11.87 5.3C12.28 4.9 12.96 4.9 13.37 5.31Z" fill="white"/>
+                  </Box>
+                </Flex>
+                {openAccordion === 'sunday' && (
+                  <Box px="20px" pb="20px">
+                    {/* Sunday tutorial video */}
+                    <Box
+                      w="100%"
+                      borderRadius="12px"
+                      overflow="hidden"
+                      mb="20px"
+                      bg="rgba(255,255,255,0.05)"
+                      border="1px solid rgba(255,255,255,0.1)"
+                      position="relative"
+                      cursor="pointer"
+                      onClick={() => {
+                        const video = sundayTutorialRef.current;
+                        if (!video) return;
+                        if (video.paused) {
+                          video.muted = false;
+                          video.play().catch(() => {
+                            video.muted = true;
+                            video.play();
+                          });
+                          setIsSundayTutorialPlaying(true);
+                        } else {
+                          video.pause();
+                          setIsSundayTutorialPlaying(false);
+                        }
+                      }}
+                    >
+                      <AspectRatio ratio={16 / 9}>
+                        <video
+                          ref={sundayTutorialRef}
+                          src="/sunday-tutorial.mp4"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', background: '#1A1A1A' }}
+                          playsInline
+                          preload="metadata"
+                          onEnded={() => setIsSundayTutorialPlaying(false)}
+                        />
+                      </AspectRatio>
+                      {/* Play icon overlay */}
+                      {!isSundayTutorialPlaying && (
+                        <Flex
+                          position="absolute"
+                          top={0}
+                          left={0}
+                          right={0}
+                          bottom={0}
+                          align="center"
+                          justify="center"
+                          bg="rgba(0,0,0,0.35)"
+                        >
+                          <Flex
+                            w="48px"
+                            h="48px"
+                            borderRadius="full"
+                            bg="rgba(255,255,255,0.2)"
+                            align="center"
+                            justify="center"
+                          >
+                            <Box
+                              as="div"
+                              w={0}
+                              h={0}
+                              ml="3px"
+                              borderLeft="14px solid white"
+                              borderTop="9px solid transparent"
+                              borderBottom="9px solid transparent"
+                            />
+                          </Flex>
+                        </Flex>
+                      )}
+                    </Box>
+                    {[
+                      { desc: 'गेम शुरू होने से 30 मिनट पहले \'गेम में शामिल हों\' बटन पर क्लिक करें।' },
+                      { desc: 'आपको एक टिकट मिलेगी जिसमें 1 से 90 तक के नंबर होंगे।' },
+                      { desc: 'गेम शुरू होने पर, आयोजक एक-एक करके नंबर बुलाएंगे।' },
+                      { desc: 'अगर बुलाया गया नंबर आपकी टिकट पर है, तो उस पर क्लिक करके मार्क करें।' },
+                      { desc: 'जब आप कोई पैटर्न पूरा कर लें, तो \'जीत का दावा करें\' बटन दबाएं।' },
+                    ].map((step, i) => (
+                      <Flex key={i} mb="14px" align="flex-start" gap="12px">
+                        <Flex
+                          w="24px"
+                          h="24px"
+                          borderRadius="full"
+                          bg="linear-gradient(135deg, #B31232, #FF6B2C)"
+                          align="center"
+                          justify="center"
+                          flexShrink={0}
+                          mt="2px"
+                        >
+                          <Text fontSize="12px" fontWeight="bold" color="white">{i + 1}</Text>
+                        </Flex>
+                        <Text fontSize="clamp(11px, 2.8vw, 13px)" color="rgba(255,255,255,0.85)" fontFamily="system-ui, -apple-system, sans-serif" lineHeight="1.5">
+                          {step.desc}
+                        </Text>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              {/* Accordion 3: नियम और शर्तें */}
+              <Box
+                mb="16px"
+                bg="rgba(255,255,255,0.06)"
+                borderRadius="12px"
+                overflow="hidden"
+                backdropFilter="blur(8px)"
+              >
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  cursor="pointer"
+                  px="20px"
+                  py="18px"
+                  onClick={() => setOpenAccordion(openAccordion === 'terms' ? null : 'terms')}
+                >
+                  <Text fontSize="clamp(14px, 3.8vw, 17px)" fontWeight="bold" color="white" fontFamily="system-ui, -apple-system, sans-serif">
+                    नियम और शर्तें
+                  </Text>
+                  <Box as="svg" w="16px" h="16px" viewBox="0 0 16 16" fill="none" flexShrink={0} ml="12px"
+                    transform={openAccordion === 'terms' ? 'rotate(180deg)' : 'rotate(0deg)'} transition="transform 0.25s ease">
+                    <path d="M13.37 5.31C13.47 5.41 13.55 5.52 13.6 5.65C13.65 5.78 13.68 5.91 13.68 6.05C13.68 6.19 13.65 6.32 13.6 6.45C13.55 6.58 13.47 6.69 13.37 6.79L8.6 11.76C8.52 11.83 8.43 11.89 8.33 11.94C8.22 11.98 8.11 12 8 12C7.89 12 7.78 11.98 7.67 11.94C7.57 11.89 7.48 11.83 7.4 11.76L2.63 6.79C2.21 6.38 2.21 5.72 2.63 5.31C3.05 4.9 3.72 4.9 4.14 5.31L8 9.38L11.87 5.3C12.28 4.9 12.96 4.9 13.37 5.31Z" fill="white"/>
+                  </Box>
+                </Flex>
+                {openAccordion === 'terms' && (
+                  <Box px="20px" pb="20px">
+                    {[
+                      { title: 'योग्यता', desc: 'खेलने के लिए आपकी उम्र 18 साल या उससे ज़्यादा होनी चाहिए।' },
+                      { title: 'खेल के नियम', desc: 'आयोजक का फ़ैसला अंतिम होगा। किसी भी तरह की धोखाधड़ी पर खिलाड़ी को बाहर किया जाएगा।' },
+                      { title: 'इनाम वितरण', desc: 'इनाम वैसे ही दिए जाएंगे जैसे घोषित किए गए हैं। आयोजक के पास दावों की जाँच करने का अधिकार है।' },
+                      { title: 'तकनीकी समस्या', desc: 'इंटरनेट या डिवाइस से जुड़ी किसी भी समस्या के लिए आयोजक ज़िम्मेदार नहीं होगा।' },
+                      { title: 'फेयर प्ले', desc: 'एक से ज़्यादा अकाउंट, बॉट या स्क्रिप्ट का इस्तेमाल सख़्त मना है।' },
+                      { title: 'रिफंड', desc: 'खेल शुरू होने के बाद एंट्री फीस वापस नहीं की जाएगी।' },
+                    ].map((item, i) => (
+                      <Flex key={i} mb="16px" align="flex-start" gap="12px">
+                        <Flex
+                          w="24px"
+                          h="24px"
+                          borderRadius="full"
+                          bg="linear-gradient(135deg, #B31232, #FF6B2C)"
+                          align="center"
+                          justify="center"
+                          flexShrink={0}
+                          mt="2px"
+                        >
+                          <Text fontSize="12px" fontWeight="bold" color="white">{i + 1}</Text>
+                        </Flex>
+                        <Box>
+                          <Text fontSize="clamp(12px, 3.2vw, 14px)" fontWeight="bold" color="white" fontFamily="system-ui, -apple-system, sans-serif" mb="2px">
+                            {item.title}
+                          </Text>
+                          <Text fontSize="clamp(11px, 2.8vw, 13px)" color="rgba(255,255,255,0.75)" fontFamily="system-ui, -apple-system, sans-serif" lineHeight="1.5">
+                            {item.desc}
+                          </Text>
+                        </Box>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+              </Box>
             </Box>
+
+            {/* Fixed bottom navigation — howtoplay active state */}
+            <BottomNav activeTab="howtoplay" onTabChange={(tab) => {
+              if (tab === 'tambola') { setShowHowToPlay(false); setOpenAccordion(null); }
+              else if (tab === 'vijeta') { setShowHowToPlay(false); setOpenAccordion(null); setShowTerms(true); }
+            }} />
           </Box>
         </Box>
       )}
@@ -1656,14 +1976,10 @@ export default function Lobby() {
           </Box>
 
           {/* Fixed bottom navigation — vijeta active state */}
-          <Box w="100%" maxW="480px" mx="auto" bg="#1A1A1A" flexShrink={0} position="relative">
-            <Image src="/bottom-nav-vijeta.svg?v=1" alt="" w="100%" display="block" />
-            <Flex position="absolute" top={0} left={0} w="100%" h="100%">
-              <Box flex={1} cursor="pointer" onClick={() => setShowTerms(false)} />
-              <Box flex={1} cursor="pointer" />
-              <Box flex={1} cursor="pointer" onClick={() => { setShowTerms(false); setShowHowToPlay(true); }} />
-            </Flex>
-          </Box>
+          <BottomNav activeTab="vijeta" onTabChange={(tab) => {
+            if (tab === 'tambola') setShowTerms(false);
+            else if (tab === 'howtoplay') { setShowTerms(false); setShowHowToPlay(true); }
+          }} />
         </Box>
       )}
 

@@ -460,7 +460,7 @@ export default function Game() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (!ticket) {
     return (
-      <Center h="100dvh" bg="#351947">
+      <Center h="100dvh" bg="#0E0A0A">
         <VStack spacing={4}>
           <Spinner size="xl" color="#FFA233" thickness="4px" />
           <Text color="rgba(255,255,255,0.4)" fontSize="sm">गेम में जुड़ रहे हैं...</Text>
@@ -471,7 +471,7 @@ export default function Game() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Box w="100vw" minH="100dvh" bg="#351947" overflowX="hidden">
+    <Box w="100vw" minH="100dvh" bg="#0E0A0A" overflowX="hidden">
       <style>{gameStyles}</style>
 
       {/* Sunburst bg */}
@@ -584,7 +584,7 @@ export default function Game() {
                 <Box
                   key={i}
                   w="22px" h="22px" borderRadius="full"
-                  bg={color} border="2px solid #351947"
+                  bg={color} border="2px solid #0E0A0A"
                   zIndex={AVATAR_COLORS.length - i}
                 />
               ))}
