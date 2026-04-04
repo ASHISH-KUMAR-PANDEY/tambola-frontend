@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -123,8 +123,146 @@ const SundayCountdown = () => {
   );
 };
 
+// Confetti burst component — renders confetti particles that animate and auto-remove
+const CONFETTI_COLORS = ['#FF6B6B', '#FFE66D', '#4ECDC4', '#38FF99', '#FF9F43', '#A55EEA', '#FF78C4', '#45B7D1'];
+const ConfettiBurst = ({ show, onDone }: { show: boolean; onDone: () => void }) => {
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; rotation: number; scale: number; dx: number; dy: number; shape: number }>>([]);
+
+  useEffect(() => {
+    if (!show) return;
+    const newParticles = Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: 50 + (Math.random() - 0.5) * 20,
+      y: 50,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rotation: Math.random() * 360,
+      scale: 0.5 + Math.random() * 0.8,
+      dx: (Math.random() - 0.5) * 80,
+      dy: -(30 + Math.random() * 60),
+      shape: Math.floor(Math.random() * 3),
+    }));
+    setParticles(newParticles);
+    const timer = setTimeout(() => { setParticles([]); onDone(); }, 1200);
+    return () => clearTimeout(timer);
+  }, [show, onDone]);
+
+  if (particles.length === 0) return null;
+
+  return (
+    <Box
+      position="fixed"
+      top={0}
+      left={0}
+      w="100vw"
+      h="100vh"
+      pointerEvents="none"
+      zIndex={9999}
+      overflow="hidden"
+    >
+      {particles.map((p) => (
+        <Box
+          key={p.id}
+          position="absolute"
+          left={`${p.x}%`}
+          top={`${p.y}%`}
+          w={p.shape === 2 ? '10px' : '8px'}
+          h={p.shape === 2 ? '10px' : p.shape === 1 ? '8px' : '12px'}
+          bg={p.color}
+          borderRadius={p.shape === 2 ? '50%' : p.shape === 1 ? '2px' : '1px'}
+          sx={{
+            animation: `confettiFall 1.2s ease-out forwards`,
+            '--dx': `${p.dx}px`,
+            '--dy': `${p.dy}px`,
+            '--rot': `${p.rotation}deg`,
+            '--rot2': `${p.rotation + 360 + Math.random() * 360}deg`,
+            '--scale': p.scale,
+            '@keyframes confettiFall': {
+              '0%': {
+                transform: 'translate(0, 0) rotate(var(--rot)) scale(var(--scale))',
+                opacity: 1,
+              },
+              '100%': {
+                transform: 'translate(var(--dx), calc(var(--dy) + 300px)) rotate(var(--rot2)) scale(0.2)',
+                opacity: 0,
+              },
+            },
+          } as any}
+        />
+      ))}
+    </Box>
+  );
+};
+
+// Video preview for Live Tambola card — autoplays muted for ~6s then pauses
+// TODO: Replace VIDEO_PREVIEW_URL with actual recorded game preview video
+const VIDEO_PREVIEW_URL = '/live-preview.mp4'; // placeholder — feed actual video later
+const VIDEO_PREVIEW_DURATION = 6000; // ms to play before pausing
+
+const LiveVideoPreview = ({ onClick }: { onClick: () => void }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      // Stop after VIDEO_PREVIEW_DURATION ms
+      timerRef.current = setTimeout(() => {
+        video.pause();
+      }, VIDEO_PREVIEW_DURATION);
+    };
+
+    const handleEnded = () => {
+      // If video is shorter than duration, just let it end naturally
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+
+    // Attempt autoplay (muted videos autoplay on most mobile browsers)
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('ended', handleEnded);
+    video.play().catch(() => {
+      // Autoplay blocked — video stays on first frame as poster
+    });
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('ended', handleEnded);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  return (
+    <Box
+      position="absolute"
+      top="18.7%"
+      left="9.7%"
+      w="80.6%"
+      h="21.7%"
+      cursor="pointer"
+      onClick={onClick}
+      overflow="hidden"
+      borderRadius="8px"
+    >
+      <video
+        ref={videoRef}
+        src={VIDEO_PREVIEW_URL}
+        muted
+        playsInline
+        preload="auto"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      />
+    </Box>
+  );
+};
+
 // Live countdown overlay — just the numbers, positioned over the banner's static timer
-const SundayBannerCountdown = () => {
+const SundayBannerCountdown = ({ isSundayOnly = false }: { isSundayOnly?: boolean }) => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -186,10 +324,10 @@ const SundayBannerCountdown = () => {
   return (
     <Flex
       position="absolute"
-      top="75.7%"
+      top={isSundayOnly ? "44.4%" : "75.1%"}
       left="25.2%"
       w="49.5%"
-      h="8.2%"
+      h={isSundayOnly ? "18.2%" : "8.1%"}
       align="center"
       justify="center"
       gap="6px"
@@ -264,6 +402,36 @@ export default function Lobby() {
   });
   const [showTerms, setShowTerms] = useState(false);
   const [sundayRegistered, setSundayRegistered] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const handleConfettiDone = useCallback(() => setShowConfetti(false), []);
+
+  // Day detection logic:
+  // Sunday (day=0): Show ONLY Sunday Tambola card — no Live Tambola
+  // Mon-Sat (day=1-6): Show BOTH Live Tambola + Sunday Tambola cards
+  const [dayOfWeek, setDayOfWeek] = useState(() => new Date().getDay());
+  const isSunday = dayOfWeek === 0;
+
+  // Re-check day at midnight in case user keeps app open across days
+  useEffect(() => {
+    const checkDay = () => setDayOfWeek(new Date().getDay());
+    const now = new Date();
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+    const midnightTimer = setTimeout(() => {
+      checkDay();
+      // After first midnight, check every hour
+      const hourlyInterval = setInterval(checkDay, 3600000);
+      return () => clearInterval(hourlyInterval);
+    }, msUntilMidnight + 1000);
+    return () => clearTimeout(midnightTimer);
+  }, []);
+
+  const handleSundayCTAClick = () => {
+    if (navigator.vibrate) navigator.vibrate(sundayRegistered ? 30 : [30, 50, 80]);
+    if (!sundayRegistered) {
+      setShowConfetti(true);
+    }
+    setSundayRegistered(!sundayRegistered);
+  };
 
   // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
@@ -830,79 +998,93 @@ export default function Lobby() {
       {/* Scrollable content area */}
       <Box flex={1} overflowY="auto" overflowX="hidden">
         <Box w="100%" maxW="480px" mx="auto" position="relative">
-          <Image src="/lobby-bg.svg?v=8" alt="" w="100%" display="block" />
-
-          {/* Pulsating live broadcast icon on the "लाइव तम्बोला" tag */}
+          {/*
+            Layout logic:
+            - Sunday (isSunday=true): Only Sunday Tambola card — lobby-bg-sunday.svg
+            - Mon-Sat (isSunday=false): Both Live + Sunday cards — lobby-bg.svg
+          */}
           <Image
-            src="/liveicon.svg"
+            src={isSunday ? "/lobby-bg-sunday.svg?v=1" : "/lobby-bg.svg?v=9"}
             alt=""
+            w="100%"
+            display="block"
+          />
+
+          {/* ===== LIVE TAMBOLA OVERLAYS (Mon-Sat only) ===== */}
+          {!isSunday && (
+            <>
+              {/* Pulsating live broadcast icon on the "लाइव तम्बोला" tag */}
+              <Image
+                src="/liveicon.svg"
+                alt=""
+                position="absolute"
+                top="16.2%"
+                left="12.5%"
+                w="16px"
+                h="16px"
+                pointerEvents="none"
+                sx={{
+                  animation: 'livePulse 1.5s ease-in-out infinite',
+                  '@keyframes livePulse': {
+                    '0%': { transform: 'scale(1)', opacity: 1, filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.6))' },
+                    '50%': { transform: 'scale(1.25)', opacity: 0.7, filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.9))' },
+                    '100%': { transform: 'scale(1)', opacity: 1, filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.6))' },
+                  },
+                }}
+              />
+
+              {/* Live Tambola video preview — autoplays muted for ~6s then stops */}
+              <LiveVideoPreview
+                onClick={() => {
+                  if (navigator.vibrate) navigator.vibrate(50);
+                  if (games.length > 0) {
+                    const joinableGame = games.find(g => canJoinGame(g.scheduledTime) || g.status === 'ACTIVE');
+                    if (joinableGame) handleJoinGame(joinableGame);
+                    else navigate('/game-preview');
+                  } else {
+                    navigate('/game-preview');
+                  }
+                }}
+              />
+
+              {/* Clickable Live CTA — "अभी खेल में शामिल होइए" */}
+              <Box
+                position="absolute"
+                top="42.3%"
+                left="9.7%"
+                w="80.6%"
+                h="6.3%"
+                cursor="pointer"
+                onClick={() => {
+                  if (navigator.vibrate) navigator.vibrate(50);
+                  if (games.length > 0) {
+                    const joinableGame = games.find(g => canJoinGame(g.scheduledTime) || g.status === 'ACTIVE');
+                    if (joinableGame) handleJoinGame(joinableGame);
+                    else navigate('/game-preview');
+                  } else {
+                    navigate('/game-preview');
+                  }
+                }}
+              />
+            </>
+          )}
+
+          {/* ===== SUNDAY TAMBOLA OVERLAYS (always visible) ===== */}
+          {/* Timer position changes based on which layout is active */}
+          <SundayBannerCountdown isSundayOnly={isSunday} />
+
+          {/* Sunday Tambola CTA — toggles register/unregister on click */}
+          <Box
             position="absolute"
-            top="16.2%"
-            left="12.5%"
-            w="16px"
-            h="16px"
-            pointerEvents="none"
+            top={isSunday ? "81.8%" : "91.9%"}
+            left="9.7%"
+            w="80.6%"
+            cursor="pointer"
+            onClick={handleSundayCTAClick}
             sx={{
-              animation: 'livePulse 1.5s ease-in-out infinite',
-              '@keyframes livePulse': {
-                '0%': { transform: 'scale(1)', opacity: 1, filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.6))' },
-                '50%': { transform: 'scale(1.25)', opacity: 0.7, filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.9))' },
-                '100%': { transform: 'scale(1)', opacity: 1, filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.6))' },
-              },
+              transition: 'transform 0.15s ease',
+              '&:active': { transform: 'scale(0.96)' },
             }}
-          />
-
-          {/* Clickable video area — navigates to game */}
-          <Box
-            position="absolute"
-            top="18.8%"
-            left="9.7%"
-            w="80.6%"
-            h="21.9%"
-            cursor="pointer"
-            onClick={() => {
-              if (navigator.vibrate) navigator.vibrate(50);
-              if (games.length > 0) {
-                const joinableGame = games.find(g => canJoinGame(g.scheduledTime) || g.status === 'ACTIVE');
-                if (joinableGame) handleJoinGame(joinableGame);
-                else navigate('/game-preview');
-              } else {
-                navigate('/game-preview');
-              }
-            }}
-          />
-
-          {/* Clickable Live CTA — "अभी खेल में शामिल होइए" */}
-          <Box
-            position="absolute"
-            top="42.6%"
-            left="9.7%"
-            w="80.6%"
-            h="5.6%"
-            cursor="pointer"
-            onClick={() => {
-              if (navigator.vibrate) navigator.vibrate(50);
-              if (games.length > 0) {
-                const joinableGame = games.find(g => canJoinGame(g.scheduledTime) || g.status === 'ACTIVE');
-                if (joinableGame) handleJoinGame(joinableGame);
-                else navigate('/game-preview');
-              } else {
-                navigate('/game-preview');
-              }
-            }}
-          />
-
-          {/* Live countdown timer overlay on Sunday Tambola card */}
-          <SundayBannerCountdown />
-
-          {/* Sunday Tambola CTA — toggles on click */}
-          <Box
-            position="absolute"
-            top="92.5%"
-            left="9.7%"
-            w="80.6%"
-            cursor="pointer"
-            onClick={() => setSundayRegistered(true)}
           >
             <Image
               src={sundayRegistered ? "/clicked-cta.svg" : "/register-cta.svg"}
@@ -916,13 +1098,16 @@ export default function Lobby() {
 
       {/* Fixed bottom navigation */}
       <Box w="100%" maxW="480px" mx="auto" bg="#0E0028" flexShrink={0} position="relative">
-        <Image src="/bottom-nav.svg" alt="" w="100%" display="block" />
+        <Image src="/bottom-nav.svg?v=2" alt="" w="100%" display="block" />
         <Flex position="absolute" top={0} left={0} w="100%" h="100%">
           <Box flex={1} cursor="pointer" onClick={() => { /* already on tambola */ }} />
           <Box flex={1} cursor="pointer" onClick={() => setShowTerms(true)} />
           <Box flex={1} cursor="pointer" onClick={() => setShowHowToPlay(true)} />
         </Flex>
       </Box>
+
+      {/* Confetti burst on Sunday registration */}
+      <ConfettiBurst show={showConfetti} onDone={handleConfettiDone} />
 
       {/* Kaise Khele Bottom Sheet */}
       {showHowToPlay && (

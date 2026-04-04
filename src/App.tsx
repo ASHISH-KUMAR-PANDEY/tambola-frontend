@@ -49,7 +49,7 @@ export const App = () => {
           <Route path="/wheel" element={<WheelDisplay />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/lobby" element={<Lobby />} />
+          <Route path="/lobby" element={<LobbyRedesigned />} />
           <Route
             path="/game/:gameId"
             element={
