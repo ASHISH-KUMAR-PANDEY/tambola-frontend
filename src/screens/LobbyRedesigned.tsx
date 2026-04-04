@@ -37,6 +37,102 @@ import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { useCountdown, formatCountdown } from '../hooks/useCountdown';
 import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
+// ===== VIJETA (Winners) SCREEN TYPES =====
+// Winner info displayed on the 5 winner cards
+interface VijeyaWinner {
+  name: string;
+  prize: string;          // e.g. "iPhone 17 Winner", "Smart TV Winner"
+  category: string;       // e.g. "Full House", "Top Line", "Early Five"
+  date: string;           // e.g. "2 अप्रैल, 2026"
+}
+
+// Testimonial video for the carousel
+interface TestimonialVideo {
+  videoUrl: string;       // URL of the winner testimonial video
+  winnerName: string;
+}
+
+// TODO: Replace with actual API call when backend endpoint is ready
+// tab: 'live' = Mon-Sat daily game winners, 'sunday' = Sunday special game winners
+const fetchVijetaWinners = async (tab: 'live' | 'sunday'): Promise<VijeyaWinner[]> => {
+  // Placeholder — backend will return winners from recent/completed games
+  // API: GET /api/winners/recent?type=live|sunday
+  if (tab === 'sunday') {
+    return [
+      { name: 'Rahul Sharma', prize: 'iPhone 17 Winner', category: 'Full House', date: '30 मार्च, 2026' },
+      { name: 'Priya Singh', prize: 'MacBook Air Winner', category: 'Top Line', date: '30 मार्च, 2026' },
+      { name: 'Amit Kumar', prize: 'Smart TV Winner', category: 'Middle Line', date: '30 मार्च, 2026' },
+      { name: 'Neha Gupta', prize: 'Smart Watch Winner', category: 'Bottom Line', date: '30 मार्च, 2026' },
+      { name: 'Vikram Patel', prize: 'Earbuds Winner', category: 'Early Five', date: '30 मार्च, 2026' },
+    ];
+  }
+  return [
+    { name: 'Saurav Dutta', prize: 'iPhone 17 Winner', category: 'Full House', date: '3 अप्रैल, 2026' },
+    { name: 'Ananya Mishra', prize: 'Smart TV Winner', category: 'Top Line', date: '3 अप्रैल, 2026' },
+    { name: 'Rohan Verma', prize: 'MacBook Air Winner', category: 'Middle Line', date: '2 अप्रैल, 2026' },
+    { name: 'Kavita Joshi', prize: 'Smart Watch Winner', category: 'Bottom Line', date: '2 अप्रैल, 2026' },
+    { name: 'Deepak Yadav', prize: 'Earbuds Winner', category: 'Early Five', date: '1 अप्रैल, 2026' },
+  ];
+};
+
+// TODO: Replace with actual API call when backend endpoint is ready
+const fetchTestimonialVideos = async (): Promise<TestimonialVideo[]> => {
+  // Placeholder — backend will return winner testimonial videos
+  // API: GET /api/testimonials or similar
+  return [
+    { videoUrl: '', winnerName: "Winner's Name" },
+  ];
+};
+
+// Hindi month names for tab date labels
+const HINDI_MONTHS = ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
+const formatHindiDate = (d: Date) => `${d.getDate()} ${HINDI_MONTHS[d.getMonth()]}`;
+
+const getVijetaTabDates = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon...6=Sat
+  // Current week Mon–Sat
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((day === 0 ? 6 : day - 1)));
+  const sat = new Date(mon);
+  sat.setDate(mon.getDate() + 5);
+  // Most recent Sunday
+  const sun = new Date(now);
+  sun.setDate(now.getDate() - (day === 0 ? 0 : day));
+  // If today is Mon–Sat and that Sunday is before this week's Monday, use it; otherwise previous
+  if (sun >= mon) sun.setDate(sun.getDate() - 7);
+  return {
+    liveRange: `${formatHindiDate(mon)} - ${formatHindiDate(sat)}`,
+    sundayDate: formatHindiDate(sun),
+  };
+};
+
+// Positions of the 5 winner cards in vijeta-bg.svg (as % of viewBox 412x990)
+const WINNER_CARD_POSITIONS = [
+  { top: '12.32%', height: '8.18%' },  // Card 1 — 1st place (orange)
+  { top: '22.12%', height: '8.18%' },  // Card 2 — 2nd place (blue)
+  { top: '31.92%', height: '8.18%' },  // Card 3 — 3rd place (blue)
+  { top: '41.72%', height: '8.18%' },  // Card 4 — 4th place (blue)
+  { top: '51.52%', height: '8.18%' },  // Card 5 — 5th place (teal)
+];
+
+// Top tab position (as % of viewBox 412x990)
+// Tab container: rotated rect at x=312 y=44, after rotation spans ~x=99 to x=312, y=44 to y=98
+const TAB_POS = {
+  top: '4.4%',
+  left: '24%',
+  width: '52%',
+  height: '5.5%',
+};
+
+// Testimonial video area position (center card's inner video rect)
+const TESTIMONIAL_VIDEO_POS = {
+  top: '75.20%',
+  left: '19.1%',
+  width: '61.9%',
+  height: '14.44%',
+};
+
 // Sunday Countdown Timer Component
 const SundayCountdown = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -125,26 +221,30 @@ const SundayCountdown = () => {
 
 // Confetti burst component — renders confetti particles that animate and auto-remove
 const CONFETTI_COLORS = ['#FF6B6B', '#FFE66D', '#4ECDC4', '#38FF99', '#FF9F43', '#A55EEA', '#FF78C4', '#45B7D1'];
-const ConfettiBurst = ({ show, onDone }: { show: boolean; onDone: () => void }) => {
+const ConfettiBurst = ({ show, onDone, anchorRef }: { show: boolean; onDone: () => void; anchorRef?: React.RefObject<HTMLDivElement> }) => {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; rotation: number; scale: number; dx: number; dy: number; shape: number }>>([]);
 
   useEffect(() => {
     if (!show) return;
+    // Burst from near the CTA button if anchorRef provided
+    // Burst from centre of the card
+    const originX = 50;
+    const originY = 50;
     const newParticles = Array.from({ length: 40 }, (_, i) => ({
       id: i,
-      x: 50 + (Math.random() - 0.5) * 20,
-      y: 50,
+      x: originX + (Math.random() - 0.5) * 20,
+      y: originY + (Math.random() - 0.5) * 10,
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
       rotation: Math.random() * 360,
       scale: 0.5 + Math.random() * 0.8,
-      dx: (Math.random() - 0.5) * 80,
-      dy: -(30 + Math.random() * 60),
+      dx: (Math.random() - 0.5) * 160,
+      dy: -(50 + Math.random() * 100),
       shape: Math.floor(Math.random() * 3),
     }));
     setParticles(newParticles);
-    const timer = setTimeout(() => { setParticles([]); onDone(); }, 1200);
+    const timer = setTimeout(() => { setParticles([]); onDone(); }, 2000);
     return () => clearTimeout(timer);
-  }, [show, onDone]);
+  }, [show, onDone, anchorRef]);
 
   if (particles.length === 0) return null;
 
@@ -170,7 +270,7 @@ const ConfettiBurst = ({ show, onDone }: { show: boolean; onDone: () => void }) 
           bg={p.color}
           borderRadius={p.shape === 2 ? '50%' : p.shape === 1 ? '2px' : '1px'}
           sx={{
-            animation: `confettiFall 1.2s ease-out forwards`,
+            animation: `confettiFall 2s ease-out forwards`,
             '--dx': `${p.dx}px`,
             '--dy': `${p.dy}px`,
             '--rot': `${p.rotation}deg`,
@@ -403,7 +503,14 @@ export default function Lobby() {
   const [showTerms, setShowTerms] = useState(false);
   const [sundayRegistered, setSundayRegistered] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const sundayCTARef = useRef<HTMLDivElement>(null);
   const handleConfettiDone = useCallback(() => setShowConfetti(false), []);
+
+  // Vijeta (Winners) screen state
+  const [vijetaTab, setVijetaTab] = useState<'live' | 'sunday'>('live');
+  const [vijetaWinners, setVijetaWinners] = useState<VijeyaWinner[]>([]);
+  const [testimonialVideos, setTestimonialVideos] = useState<TestimonialVideo[]>([]);
+  const testimonialVideoRef = useRef<HTMLVideoElement>(null);
 
   // Day detection logic:
   // Sunday (day=0): Show ONLY Sunday Tambola card — no Live Tambola
@@ -432,6 +539,31 @@ export default function Lobby() {
     }
     setSundayRegistered(!sundayRegistered);
   };
+
+  // Load vijeta winners and testimonial videos when vijeta screen opens or tab changes
+  useEffect(() => {
+    if (!showTerms) return;
+    let cancelled = false;
+    const load = async () => {
+      const [winners, videos] = await Promise.all([
+        fetchVijetaWinners(vijetaTab),
+        fetchTestimonialVideos(),
+      ]);
+      if (cancelled) return;
+      setVijetaWinners(winners);
+      setTestimonialVideos(videos);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [showTerms, vijetaTab]);
+
+  // Autoplay testimonial video muted for preview when vijeta opens
+  useEffect(() => {
+    if (!showTerms || testimonialVideos.length === 0) return;
+    const video = testimonialVideoRef.current;
+    if (!video || !testimonialVideos[0].videoUrl) return;
+    video.play().catch(() => { /* autoplay blocked */ });
+  }, [showTerms, testimonialVideos]);
 
   // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
@@ -1075,6 +1207,7 @@ export default function Lobby() {
 
           {/* Sunday Tambola CTA — toggles register/unregister on click */}
           <Box
+            ref={sundayCTARef}
             position="absolute"
             top={isSunday ? "81.8%" : "91.9%"}
             left="9.7%"
@@ -1107,7 +1240,7 @@ export default function Lobby() {
       </Box>
 
       {/* Confetti burst on Sunday registration */}
-      <ConfettiBurst show={showConfetti} onDone={handleConfettiDone} />
+      <ConfettiBurst show={showConfetti} onDone={handleConfettiDone} anchorRef={sundayCTARef} />
 
       {/* Kaise Khele Bottom Sheet */}
       {showHowToPlay && (
@@ -1212,7 +1345,9 @@ export default function Lobby() {
           right={0}
           bottom={0}
           zIndex={1000}
-          bg="linear-gradient(135deg, #0E0028 0%, #2B080C 100%)"
+          bg="#0E0A0A"
+          display="flex"
+          flexDirection="column"
           sx={{
             animation: 'fadeIn 0.2s ease-out',
             '@keyframes fadeIn': {
@@ -1221,137 +1356,199 @@ export default function Lobby() {
             },
           }}
         >
-          <VStack spacing={0} h="100%" maxW="480px" mx="auto">
-            {/* Header */}
-            <Flex w="100%" align="center" justify="space-between" px={4} pt={4} pb={2}>
-              <Text fontSize="lg" fontWeight="bold" color="white">विजेता</Text>
-              <Box
-                as="button"
-                onClick={() => setShowTerms(false)}
-                color="white"
-                fontSize="24px"
-                lineHeight="1"
-                p={1}
-              >
-                ✕
-              </Box>
-            </Flex>
+          {/* Scrollable vijeta content */}
+          <Box flex={1} overflowY="auto" overflowX="hidden">
+            <Box w="100%" maxW="480px" mx="auto" position="relative">
+              <Image
+                src="/vijeta-bg.svg?v=9"
+                alt=""
+                w="100%"
+                display="block"
+              />
 
-            {/* Today / Sunday Tabs */}
-            <Flex justify="center" pb={4}>
+              {/* ===== DYNAMIC TOP TABS (लाइव तम्बोला / संडे तम्बोला) ===== */}
+              {/* Active pill indicator — matches original SVG pill (87x34 inside 213x54 container) */}
               <Box
-                bg="rgba(0, 0, 0, 0.15)"
-                backdropFilter="blur(12px)"
+                position="absolute"
+                top="5.45%"
+                left={vijetaTab === 'live' ? '26.5%' : '52.2%'}
+                w="21.1%"
+                h="3.43%"
                 borderRadius="full"
-                border="1px solid rgba(255,255,255,0.1)"
-                px={1}
-                py={1}
+                bg="rgba(255,255,255,0.4)"
+                transition="left 0.2s ease"
+                pointerEvents="none"
+              />
+              {/* Transparent click targets + text labels */}
+              <Flex
+                position="absolute"
+                top={TAB_POS.top}
+                left={TAB_POS.left}
+                w={TAB_POS.width}
+                h={TAB_POS.height}
+                align="center"
               >
-                <Image src="/toptab-vijeta.svg" alt="Daily / Sunday" h="36px" />
-              </Box>
-            </Flex>
-
-            {/* Prize Category Icons */}
-            <Flex w="100%" px={2} pb={4} justify="space-around">
-              {[
-                { icon: '🏆', label: 'Full\nHouse', color: '#FFD700' },
-                { icon: '🥇', label: 'First\nFive', color: '#C0C0C0' },
-                { icon: '🎯', label: 'Top\nLine', color: '#CD7F32' },
-                { icon: '🎪', label: 'Bottom\nLine', color: '#E8A0BF' },
-                { icon: '⭐', label: 'Early\nFive', color: '#87CEEB' },
-              ].map((prize, i) => (
-                <VStack key={i} spacing={1} cursor="pointer">
-                  <Flex
-                    w="48px" h="48px"
-                    borderRadius="full"
-                    bg="rgba(255,255,255,0.1)"
-                    border="2px solid"
-                    borderColor={i === 0 ? prize.color : 'rgba(255,255,255,0.15)'}
-                    align="center"
-                    justify="center"
-                    fontSize="22px"
-                  >
-                    {prize.icon}
-                  </Flex>
+                <VStack
+                  flex={1}
+                  h="100%"
+                  spacing={0}
+                  align="center"
+                  justify="center"
+                  cursor="pointer"
+                  onClick={() => setVijetaTab('live')}
+                >
                   <Text
-                    fontSize="9px"
-                    color={i === 0 ? 'white' : 'whiteAlpha.600'}
-                    textAlign="center"
+                    fontSize="clamp(10px, 2.6vw, 13px)"
+                    fontWeight={vijetaTab === 'live' ? 'bold' : 'medium'}
+                    color="white"
+                    fontFamily="system-ui, -apple-system, sans-serif"
                     lineHeight="1.2"
-                    whiteSpace="pre-line"
                   >
-                    {prize.label}
+                    लाइव तम्बोला
+                  </Text>
+                  <Text
+                    fontSize="clamp(7px, 1.8vw, 9px)"
+                    color="rgba(255,255,255,0.7)"
+                    fontFamily="system-ui, -apple-system, sans-serif"
+                    lineHeight="1.1"
+                  >
+                    {getVijetaTabDates().liveRange}
                   </Text>
                 </VStack>
-              ))}
-            </Flex>
+                <VStack
+                  flex={1}
+                  h="100%"
+                  spacing={0}
+                  align="center"
+                  justify="center"
+                  cursor="pointer"
+                  onClick={() => setVijetaTab('sunday')}
+                >
+                  <Text
+                    fontSize="clamp(10px, 2.6vw, 13px)"
+                    fontWeight={vijetaTab === 'sunday' ? 'bold' : 'medium'}
+                    color="white"
+                    fontFamily="system-ui, -apple-system, sans-serif"
+                    lineHeight="1.2"
+                  >
+                    संडे तम्बोला
+                  </Text>
+                  <Text
+                    fontSize="clamp(7px, 1.8vw, 9px)"
+                    color="rgba(255,255,255,0.7)"
+                    fontFamily="system-ui, -apple-system, sans-serif"
+                    lineHeight="1.1"
+                  >
+                    {getVijetaTabDates().sundayDate}
+                  </Text>
+                </VStack>
+              </Flex>
 
-            {/* Winners Section */}
-            <Box w="100%" px={4} flex={1} overflowY="auto">
-              <Text fontSize="md" fontWeight="bold" color="white" mb={3}>
-                विजेताओं की जानकारी
-              </Text>
-
-              {/* Winner Cards - placeholder data */}
-              <VStack spacing={3} pb={4}>
-                {games.filter(g => g.winners && g.winners.length > 0).length > 0 ? (
-                  games
-                    .filter(g => g.winners && g.winners.length > 0)
-                    .flatMap(g => g.winners!.map((w, i) => (
-                      <Box
-                        key={`${g.id}-${i}`}
-                        w="100%"
-                        bg="rgba(255,255,255,0.08)"
-                        borderRadius="12px"
-                        border="1px solid rgba(255,255,255,0.1)"
-                        p={3}
-                      >
-                        <HStack spacing={3}>
-                          <Flex
-                            w="40px" h="40px"
-                            borderRadius="full"
-                            bg="rgba(255,255,255,0.15)"
-                            align="center"
-                            justify="center"
-                            fontSize="18px"
-                          >
-                            🏆
-                          </Flex>
-                          <VStack align="start" spacing={0}>
-                            <Text fontSize="sm" fontWeight="bold" color="white">
-                              {w.userName || 'Player'}
-                            </Text>
-                            <Text fontSize="xs" color="whiteAlpha.600">
-                              {w.category}
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </Box>
-                    )))
-                ) : (
-                  <VStack spacing={3} py={8}>
-                    <Text fontSize="40px">🏆</Text>
-                    <Text fontSize="sm" color="whiteAlpha.500" textAlign="center">
-                      अभी तक कोई विजेता नहीं
+              {/* ===== DYNAMIC WINNER CARD OVERLAYS ===== */}
+              {/* Positioned over the 5 static winner cards in the SVG */}
+              {vijetaWinners.slice(0, 5).map((winner, i) => (
+                <Flex
+                  key={`${vijetaTab}-${i}`}
+                  position="absolute"
+                  top={WINNER_CARD_POSITIONS[i].top}
+                  left="5.8%"
+                  w="88.3%"
+                  h={WINNER_CARD_POSITIONS[i].height}
+                  align="center"
+                  px="18%"
+                  pointerEvents="none"
+                >
+                  <VStack align="start" spacing={0} flex={1}>
+                    <Text
+                      fontSize="clamp(13px, 3.5vw, 16px)"
+                      fontWeight="bold"
+                      color="white"
+                      lineHeight="1.3"
+                      fontFamily="system-ui, -apple-system, sans-serif"
+                      noOfLines={1}
+                    >
+                      {winner.name}
                     </Text>
-                    <Text fontSize="xs" color="whiteAlpha.400" textAlign="center">
-                      खेल के बाद विजेताओं की जानकारी यहाँ दिखाई जाएगी
+                    <Text
+                      fontSize="clamp(10px, 2.5vw, 13px)"
+                      color="rgba(255,255,255,0.85)"
+                      lineHeight="1.3"
+                      fontFamily="system-ui, -apple-system, sans-serif"
+                      noOfLines={1}
+                    >
+                      {winner.prize}
+                    </Text>
+                    <Text
+                      fontSize="clamp(9px, 2.2vw, 12px)"
+                      color="rgba(255,255,255,0.7)"
+                      lineHeight="1.3"
+                      fontFamily="system-ui, -apple-system, sans-serif"
+                      noOfLines={1}
+                    >
+                      Category: {winner.category}  •  {winner.date}
                     </Text>
                   </VStack>
-                )}
-              </VStack>
-            </Box>
+                </Flex>
+              ))}
 
-            {/* Bottom Nav in winners view */}
-            <Box flexShrink={0} w="100%" position="relative">
-              <Image src="/bottom-nav-vijeta.svg" alt="" w="100%" display="block" />
-              <Flex position="absolute" top={0} left={0} w="100%" h="100%">
-                <Box flex={1} cursor="pointer" onClick={() => setShowTerms(false)} />
-                <Box flex={1} cursor="pointer" />
-                <Box flex={1} cursor="pointer" onClick={() => { setShowTerms(false); setShowHowToPlay(true); }} />
-              </Flex>
+              {/* ===== TESTIMONIAL VIDEO OVERLAY ===== */}
+              {/* Positioned over the center testimonial card's video area */}
+              {testimonialVideos.length > 0 && testimonialVideos[0].videoUrl && (
+                <Box
+                  position="absolute"
+                  top={TESTIMONIAL_VIDEO_POS.top}
+                  left={TESTIMONIAL_VIDEO_POS.left}
+                  w={TESTIMONIAL_VIDEO_POS.width}
+                  h={TESTIMONIAL_VIDEO_POS.height}
+                  overflow="hidden"
+                  borderRadius="12px"
+                >
+                  <video
+                    ref={testimonialVideoRef}
+                    src={testimonialVideos[0].videoUrl}
+                    muted
+                    playsInline
+                    loop
+                    preload="auto"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Dynamic winner name below testimonial video */}
+              {testimonialVideos.length > 0 && (
+                <Text
+                  position="absolute"
+                  top="90.5%"
+                  left="13.1%"
+                  w="73.8%"
+                  textAlign="center"
+                  fontSize="clamp(12px, 3vw, 15px)"
+                  fontWeight="bold"
+                  color="white"
+                  pointerEvents="none"
+                  noOfLines={1}
+                >
+                  {testimonialVideos[0].winnerName}
+                </Text>
+              )}
             </Box>
-          </VStack>
+          </Box>
+
+          {/* Fixed bottom navigation — vijeta active state */}
+          <Box w="100%" maxW="480px" mx="auto" bg="#1A1A1A" flexShrink={0} position="relative">
+            <Image src="/bottom-nav-vijeta.svg?v=1" alt="" w="100%" display="block" />
+            <Flex position="absolute" top={0} left={0} w="100%" h="100%">
+              <Box flex={1} cursor="pointer" onClick={() => setShowTerms(false)} />
+              <Box flex={1} cursor="pointer" />
+              <Box flex={1} cursor="pointer" onClick={() => { setShowTerms(false); setShowHowToPlay(true); }} />
+            </Flex>
+          </Box>
         </Box>
       )}
 
