@@ -16,19 +16,19 @@
 <rect x="312" y="44" width="54" height="213" rx="27" transform="rotate(90 312 44)" fill="black" fill-opacity="0.35" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
 <foreignObject x="91" y="36" width="123" height="70"><html:div style="backdrop-filter:blur(9px);clip-path:url(#bgblur_1_24322_9876_clip_path);height:100%;width:100%" /></foreignObject><g data-figma-bg-blur-radius="18">
 </g>
-<rect x="24" y="122" width="364" height="81" rx="12" fill="#F75435" />
+<rect x="24" y="122" width="364" height="81" rx="12" fill="url(#cardGold)" />
 <rect x="34" y="132" width="60" height="60" fill="url(#pattern0_24322_9876)" />
 <rect x="337" y="145" width="35" height="35" fill="url(#pattern1_24322_9876)" />
-<rect x="24" y="219" width="364" height="81" rx="12" fill="#157CB5" />
+<rect x="24" y="219" width="364" height="81" rx="12" fill="url(#cardBlue)" />
 <rect x="34" y="229" width="60" height="60" fill="url(#pattern2_24322_9876)" />
 <rect x="337" y="242" width="35" height="35" fill="url(#pattern3_24322_9876)" />
-<rect x="24" y="316" width="364" height="81" rx="12" fill="#157CB5" />
+<rect x="24" y="316" width="364" height="81" rx="12" fill="url(#cardBlue)" />
 <rect x="34" y="326" width="60" height="60" fill="url(#pattern4_24322_9876)" />
 <rect x="337" y="339" width="35" height="35" fill="url(#pattern5_24322_9876)" />
-<rect x="24" y="413" width="364" height="81" rx="12" fill="#157CB5" />
+<rect x="24" y="413" width="364" height="81" rx="12" fill="url(#cardBlue)" />
 <rect x="34" y="423" width="60" height="60" fill="url(#pattern6_24322_9876)" />
 <rect x="337" y="436" width="35" height="35" fill="url(#pattern7_24322_9876)" />
-<rect x="24" y="510" width="364" height="81" rx="12" fill="#4FA3A5" />
+<rect x="24" y="510" width="364" height="81" rx="12" fill="url(#cardPurple)" />
 <rect x="34" y="520" width="60" height="60" fill="url(#pattern8_24322_9876)" />
 <rect x="337" y="533" width="35" height="35" fill="url(#pattern9_24322_9876)" />
 <rect x="8" y="631" width="396" height="1" fill="url(#paint1_radial_24322_9876)" />
@@ -49,6 +49,21 @@
 </g>
 </g>
 <defs>
+<linearGradient id="cardGold" x1="0" y1="0" x2="364" y2="81" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#9E7B1E"/>
+<stop offset="0.5" stop-color="#B8922E"/>
+<stop offset="1" stop-color="#856718"/>
+</linearGradient>
+<linearGradient id="cardBlue" x1="0" y1="0" x2="364" y2="81" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#2D6FB5"/>
+<stop offset="0.5" stop-color="#3880C8"/>
+<stop offset="1" stop-color="#1C5590"/>
+</linearGradient>
+<linearGradient id="cardPurple" x1="0" y1="0" x2="364" y2="81" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#7260A0"/>
+<stop offset="0.5" stop-color="#806DAE"/>
+<stop offset="1" stop-color="#504070"/>
+</linearGradient>
 <clipPath id="bgblur_1_24322_9876_clip_path" transform="translate(-91 -36)"><rect x="109" y="54" width="87" height="34" rx="17" />
 </clipPath><pattern id="pattern0_24322_9876" patternContentUnits="objectBoundingBox" width="1" height="1">
 <use xlink:href="#image0_24322_9876" transform="scale(0.00153139)" />

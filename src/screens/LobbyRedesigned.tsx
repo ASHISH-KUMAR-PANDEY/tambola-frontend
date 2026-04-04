@@ -80,7 +80,9 @@ const fetchTestimonialVideos = async (): Promise<TestimonialVideo[]> => {
   // Placeholder — backend will return winner testimonial videos
   // API: GET /api/testimonials or similar
   return [
-    { videoUrl: '', winnerName: "Winner's Name" },
+    { videoUrl: '/testimonial-1.mp4', winnerName: 'Saurav Dutta' },
+    { videoUrl: '/testimonial-2.mp4', winnerName: 'Priya Singh' },
+    { videoUrl: '/testimonial-3.mp4', winnerName: 'Amit Kumar' },
   ];
 };
 
@@ -178,7 +180,7 @@ const SundayCountdown = () => {
       <Text fontSize="2xl" fontWeight="extrabold" color="white" lineHeight="1.1">
         {value}
       </Text>
-      <Text fontSize="8px" color="rgba(255,255,255,0.6)" textTransform="uppercase" letterSpacing="0.5px">
+      <Text fontSize="9px" color="rgba(255,255,255,0.8)" textTransform="uppercase" letterSpacing="0.5px">
         {label}
       </Text>
     </VStack>
@@ -407,13 +409,13 @@ const SundayBannerCountdown = ({ isSundayOnly = false }: { isSundayOnly?: boolea
   const colonStyle = {
     fontSize: 'clamp(14px, 3.5vw, 20px)',
     fontWeight: 'bold' as const,
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.5)',
     lineHeight: '1',
   };
 
   const labelStyle = {
-    fontSize: 'clamp(6px, 1.5vw, 9px)',
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 'clamp(7px, 1.8vw, 10px)',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: '1',
     textAlign: 'center' as const,
     fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -510,6 +512,8 @@ export default function Lobby() {
   const [vijetaTab, setVijetaTab] = useState<'live' | 'sunday'>('live');
   const [vijetaWinners, setVijetaWinners] = useState<VijeyaWinner[]>([]);
   const [testimonialVideos, setTestimonialVideos] = useState<TestimonialVideo[]>([]);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [isTestimonialPlaying, setIsTestimonialPlaying] = useState(false);
   const testimonialVideoRef = useRef<HTMLVideoElement>(null);
 
   // Day detection logic:
@@ -557,13 +561,20 @@ export default function Lobby() {
     return () => { cancelled = true; };
   }, [showTerms, vijetaTab]);
 
-  // Autoplay testimonial video muted for preview when vijeta opens
+  // Reset testimonial state when vijeta closes, or pause on video change
   useEffect(() => {
-    if (!showTerms || testimonialVideos.length === 0) return;
+    if (!showTerms) {
+      setActiveTestimonial(0);
+      setIsTestimonialPlaying(false);
+      return;
+    }
+    // Pause current video when switching testimonials
     const video = testimonialVideoRef.current;
-    if (!video || !testimonialVideos[0].videoUrl) return;
-    video.play().catch(() => { /* autoplay blocked */ });
-  }, [showTerms, testimonialVideos]);
+    if (video) {
+      video.pause();
+      setIsTestimonialPlaying(false);
+    }
+  }, [showTerms, activeTestimonial]);
 
   // Initialize playerName from localStorage or backend on mount
   useEffect(() => {
@@ -1108,7 +1119,7 @@ export default function Lobby() {
     return (
       <Center
         h="100vh"
-        bg="linear-gradient(135deg, #0E0028 0%, #2B080C 100%)"
+        bg="linear-gradient(135deg, #0E0A0A 0%, #2B080C 100%)"
         backgroundImage="url('/lobby-bg.svg')"
         backgroundSize="cover"
         backgroundPosition="center"
@@ -1122,7 +1133,7 @@ export default function Lobby() {
     <Box
       w="100vw"
       h="100vh"
-      bg="#0E0028"
+      bg="#0E0A0A"
       position="relative"
       display="flex"
       flexDirection="column"
@@ -1230,7 +1241,7 @@ export default function Lobby() {
       </Box>
 
       {/* Fixed bottom navigation */}
-      <Box w="100%" maxW="480px" mx="auto" bg="#0E0028" flexShrink={0} position="relative">
+      <Box w="100%" maxW="480px" mx="auto" bg="#1A1A1A" flexShrink={0} position="relative">
         <Image src="/bottom-nav.svg?v=2" alt="" w="100%" display="block" />
         <Flex position="absolute" top={0} left={0} w="100%" h="100%">
           <Box flex={1} cursor="pointer" onClick={() => { /* already on tambola */ }} />
@@ -1360,7 +1371,7 @@ export default function Lobby() {
           <Box flex={1} overflowY="auto" overflowX="hidden">
             <Box w="100%" maxW="480px" mx="auto" position="relative">
               <Image
-                src="/vijeta-bg.svg?v=9"
+                src="/vijeta-bg.svg?v=13"
                 alt=""
                 w="100%"
                 display="block"
@@ -1399,7 +1410,7 @@ export default function Lobby() {
                 >
                   <Text
                     fontSize="clamp(10px, 2.6vw, 13px)"
-                    fontWeight={vijetaTab === 'live' ? 'bold' : 'medium'}
+                    fontWeight={vijetaTab === 'live' ? 'bold' : 'semibold'}
                     color="white"
                     fontFamily="system-ui, -apple-system, sans-serif"
                     lineHeight="1.2"
@@ -1407,8 +1418,9 @@ export default function Lobby() {
                     लाइव तम्बोला
                   </Text>
                   <Text
-                    fontSize="clamp(7px, 1.8vw, 9px)"
-                    color="rgba(255,255,255,0.7)"
+                    fontSize="clamp(8px, 1.9vw, 10px)"
+                    fontWeight="semibold"
+                    color="rgba(255,255,255,0.85)"
                     fontFamily="system-ui, -apple-system, sans-serif"
                     lineHeight="1.1"
                   >
@@ -1426,7 +1438,7 @@ export default function Lobby() {
                 >
                   <Text
                     fontSize="clamp(10px, 2.6vw, 13px)"
-                    fontWeight={vijetaTab === 'sunday' ? 'bold' : 'medium'}
+                    fontWeight={vijetaTab === 'sunday' ? 'bold' : 'semibold'}
                     color="white"
                     fontFamily="system-ui, -apple-system, sans-serif"
                     lineHeight="1.2"
@@ -1434,8 +1446,9 @@ export default function Lobby() {
                     संडे तम्बोला
                   </Text>
                   <Text
-                    fontSize="clamp(7px, 1.8vw, 9px)"
-                    color="rgba(255,255,255,0.7)"
+                    fontSize="clamp(8px, 1.9vw, 10px)"
+                    fontWeight="semibold"
+                    color="rgba(255,255,255,0.85)"
                     fontFamily="system-ui, -apple-system, sans-serif"
                     lineHeight="1.1"
                   >
@@ -1471,7 +1484,7 @@ export default function Lobby() {
                     </Text>
                     <Text
                       fontSize="clamp(10px, 2.5vw, 13px)"
-                      color="rgba(255,255,255,0.85)"
+                      color="rgba(255,255,255,0.95)"
                       lineHeight="1.3"
                       fontFamily="system-ui, -apple-system, sans-serif"
                       noOfLines={1}
@@ -1480,7 +1493,7 @@ export default function Lobby() {
                     </Text>
                     <Text
                       fontSize="clamp(9px, 2.2vw, 12px)"
-                      color="rgba(255,255,255,0.7)"
+                      color="rgba(255,255,255,0.85)"
                       lineHeight="1.3"
                       fontFamily="system-ui, -apple-system, sans-serif"
                       noOfLines={1}
@@ -1492,8 +1505,8 @@ export default function Lobby() {
               ))}
 
               {/* ===== TESTIMONIAL VIDEO OVERLAY ===== */}
-              {/* Positioned over the center testimonial card's video area */}
-              {testimonialVideos.length > 0 && testimonialVideos[0].videoUrl && (
+              {/* Video player positioned over center testimonial card */}
+              {testimonialVideos.length > 0 && testimonialVideos[activeTestimonial]?.videoUrl && (
                 <Box
                   position="absolute"
                   top={TESTIMONIAL_VIDEO_POS.top}
@@ -1502,14 +1515,26 @@ export default function Lobby() {
                   h={TESTIMONIAL_VIDEO_POS.height}
                   overflow="hidden"
                   borderRadius="12px"
+                  cursor="pointer"
+                  onClick={() => {
+                    const video = testimonialVideoRef.current;
+                    if (!video) return;
+                    if (video.paused) {
+                      video.muted = false;
+                      video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
+                      setIsTestimonialPlaying(true);
+                    } else {
+                      video.pause();
+                      setIsTestimonialPlaying(false);
+                    }
+                  }}
                 >
                   <video
                     ref={testimonialVideoRef}
-                    src={testimonialVideos[0].videoUrl}
-                    muted
+                    src={testimonialVideos[activeTestimonial].videoUrl}
                     playsInline
-                    loop
                     preload="auto"
+                    onEnded={() => setIsTestimonialPlaying(false)}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -1517,7 +1542,73 @@ export default function Lobby() {
                       display: 'block',
                     }}
                   />
+                  {/* Play/pause icon overlay */}
+                  {!isTestimonialPlaying && (
+                    <Flex
+                      position="absolute"
+                      top={0}
+                      left={0}
+                      w="100%"
+                      h="100%"
+                      align="center"
+                      justify="center"
+                      bg="rgba(0,0,0,0.3)"
+                      pointerEvents="none"
+                    >
+                      <Box
+                        w="48px"
+                        h="48px"
+                        borderRadius="full"
+                        bg="rgba(255,255,255,0.15)"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+                          <polygon points="6,3 18,10 6,17" />
+                        </svg>
+                      </Box>
+                    </Flex>
+                  )}
                 </Box>
+              )}
+
+              {/* Left/right nav arrows for testimonial carousel */}
+              {testimonialVideos.length > 1 && (
+                <>
+                  <Flex
+                    position="absolute"
+                    top="80%"
+                    left="2%"
+                    w="12%"
+                    h="5%"
+                    align="center"
+                    justify="center"
+                    cursor="pointer"
+                    opacity={activeTestimonial > 0 ? 1 : 0.3}
+                    onClick={() => {
+                      if (activeTestimonial > 0) setActiveTestimonial(activeTestimonial - 1);
+                    }}
+                  >
+                    <Text fontSize="24px" color="white" fontWeight="bold">‹</Text>
+                  </Flex>
+                  <Flex
+                    position="absolute"
+                    top="80%"
+                    right="2%"
+                    w="12%"
+                    h="5%"
+                    align="center"
+                    justify="center"
+                    cursor="pointer"
+                    opacity={activeTestimonial < testimonialVideos.length - 1 ? 1 : 0.3}
+                    onClick={() => {
+                      if (activeTestimonial < testimonialVideos.length - 1) setActiveTestimonial(activeTestimonial + 1);
+                    }}
+                  >
+                    <Text fontSize="24px" color="white" fontWeight="bold">›</Text>
+                  </Flex>
+                </>
               )}
 
               {/* Dynamic winner name below testimonial video */}
@@ -1534,8 +1625,32 @@ export default function Lobby() {
                   pointerEvents="none"
                   noOfLines={1}
                 >
-                  {testimonialVideos[0].winnerName}
+                  {testimonialVideos[activeTestimonial]?.winnerName}
                 </Text>
+              )}
+
+              {/* Dot indicators for testimonial carousel */}
+              {testimonialVideos.length > 1 && (
+                <Flex
+                  position="absolute"
+                  top="93.5%"
+                  left="13.1%"
+                  w="73.8%"
+                  justify="center"
+                  gap="6px"
+                  pointerEvents="none"
+                >
+                  {testimonialVideos.map((_, i) => (
+                    <Box
+                      key={i}
+                      w="6px"
+                      h="6px"
+                      borderRadius="full"
+                      bg={i === activeTestimonial ? 'white' : 'rgba(255,255,255,0.4)'}
+                      transition="background 0.2s"
+                    />
+                  ))}
+                </Flex>
               )}
             </Box>
           </Box>
