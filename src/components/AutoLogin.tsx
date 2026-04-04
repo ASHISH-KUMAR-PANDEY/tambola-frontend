@@ -126,10 +126,9 @@ export const AutoLogin = () => {
             }
           }
 
-          // Redirect to Stage login
-          const stageLoginUrl = 'https://stage.in/hi/login';
-          const returnUrl = encodeURIComponent(window.location.href);
-          window.location.href = `${stageLoginUrl}?isTambolaFlow=true&returnUrl=${returnUrl}`;
+          // Bypass login — go directly to lobby
+          setProgress(100);
+          navigate('/lobby', { replace: true });
           return;
         }
 
@@ -206,6 +205,27 @@ export const AutoLogin = () => {
     handleAutoLogin();
   }, [searchParams, navigate, setUser, loadUser]);
 
+  const confettiPieces = [
+    { color: '#FFD700', shape: 'circle', size: 8,  left: '8%',  delay: 0,   duration: 3.2, startY: -5  },
+    { color: '#F15F4E', shape: 'rect',   size: 10, left: '15%', delay: 0.5, duration: 3.8, startY: -8  },
+    { color: '#4B70B6', shape: 'circle', size: 6,  left: '25%', delay: 1.2, duration: 3.0, startY: -3  },
+    { color: '#FFD700', shape: 'rect',   size: 9,  left: '35%', delay: 0.3, duration: 3.5, startY: -10 },
+    { color: '#F15F4E', shape: 'circle', size: 7,  left: '45%', delay: 1.8, duration: 3.3, startY: -6  },
+    { color: '#92B1DD', shape: 'rect',   size: 8,  left: '55%', delay: 0.8, duration: 3.7, startY: -4  },
+    { color: '#FFD700', shape: 'circle', size: 10, left: '65%', delay: 1.5, duration: 3.1, startY: -9  },
+    { color: '#F15F4E', shape: 'rect',   size: 6,  left: '72%', delay: 0.2, duration: 3.6, startY: -7  },
+    { color: '#4B70B6', shape: 'circle', size: 9,  left: '82%', delay: 1.0, duration: 3.4, startY: -2  },
+    { color: '#FFD700', shape: 'rect',   size: 7,  left: '90%', delay: 0.7, duration: 3.9, startY: -11 },
+    { color: '#92B1DD', shape: 'circle', size: 8,  left: '12%', delay: 2.0, duration: 3.2, startY: -6  },
+    { color: '#F15F4E', shape: 'rect',   size: 11, left: '40%', delay: 1.3, duration: 3.0, startY: -8  },
+    { color: '#4B70B6', shape: 'rect',   size: 7,  left: '60%', delay: 2.2, duration: 3.5, startY: -4  },
+    { color: '#FFD700', shape: 'circle', size: 6,  left: '78%', delay: 0.9, duration: 3.8, startY: -10 },
+    { color: '#F15F4E', shape: 'circle', size: 9,  left: '50%', delay: 1.6, duration: 3.3, startY: -3  },
+    { color: '#92B1DD', shape: 'rect',   size: 8,  left: '20%', delay: 2.5, duration: 3.6, startY: -7  },
+    { color: '#FFD700', shape: 'rect',   size: 5,  left: '88%', delay: 0.4, duration: 3.1, startY: -5  },
+    { color: '#4B70B6', shape: 'circle', size: 10, left: '5%',  delay: 1.9, duration: 3.4, startY: -9  },
+  ];
+
   return (
     <Box
       h="100vh"
@@ -213,6 +233,24 @@ export const AutoLogin = () => {
       position="relative"
       overflow="hidden"
     >
+      <style>{`
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0; }
+          10% { opacity: 1; }
+          50% { opacity: 0.9; }
+          100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; }
+        }
+        @keyframes confettiSway {
+          0%, 100% { translate: 0 0; }
+          25% { translate: 15px 0; }
+          75% { translate: -15px 0; }
+        }
+        @keyframes sparkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.3); }
+        }
+      `}</style>
+
       {/* Full-screen SVG background */}
       <Box
         as="img"
@@ -227,6 +265,25 @@ export const AutoLogin = () => {
         objectFit="cover"
         objectPosition="center"
       />
+
+      {/* Animated confetti */}
+      {confettiPieces.map((p, i) => (
+        <Box
+          key={i}
+          position="absolute"
+          top={`${p.startY}%`}
+          left={p.left}
+          w={`${p.size}px`}
+          h={p.shape === 'rect' ? `${p.size * 1.5}px` : `${p.size}px`}
+          bg={p.color}
+          borderRadius={p.shape === 'circle' ? '50%' : '2px'}
+          zIndex={1}
+          pointerEvents="none"
+          sx={{
+            animation: `confettiFall ${p.duration}s ${p.delay}s ease-in infinite, confettiSway ${p.duration * 0.8}s ${p.delay}s ease-in-out infinite`,
+          }}
+        />
+      ))}
 
       {/* Loading indicator overlay */}
       <Box

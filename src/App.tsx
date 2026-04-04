@@ -22,6 +22,7 @@ import { InitializeTambolaAnalytics } from './components/InitializeTambolaAnalyt
 import { AutoLogin } from './components/AutoLogin';
 import { FlutterAuth } from './components/FlutterAuth';
 import GamePreview from './screens/GamePreview';
+import LobbyRedesigned from './screens/LobbyRedesigned';
 
 export const App = () => {
   return (
@@ -48,14 +49,7 @@ export const App = () => {
           <Route path="/wheel" element={<WheelDisplay />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/lobby"
-            element={
-              <ProtectedRoute>
-                <Lobby />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/lobby" element={<Lobby />} />
           <Route
             path="/game/:gameId"
             element={
@@ -105,7 +99,7 @@ export const App = () => {
             }
           />
           <Route path="/game-preview" element={<GamePreview />} />
-          <Route path="/lobby-preview" element={<Lobby />} />
+          <Route path="/lobby-preview" element={<LobbyRedesigned />} />
           <Route
             path="/individual"
             element={
