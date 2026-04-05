@@ -1,13 +1,13 @@
 import { Box, VStack, HStack, Text } from '@chakra-ui/react';
 
 // ─── Winner Data (update weekly) ─────────────────────────────
-const WEEK_DATES = '22-29 March';
+const WEEK_DATES = '29 March - 4 April';
 const WINNERS = [
-  { category: 'पहले पांच', name: 'Jaipal', emoji: '🎯' },
-  { category: 'ऊपर वाली लाइन', name: 'Viren Siddhpura', emoji: '🥇' },
-  { category: 'बीच वाली लाइन', name: 'Suraj Dhaka', emoji: '🥇' },
-  { category: 'नीचे वाली लाइन', name: 'Tushar Chaudhary', emoji: '🥇' },
-  { category: 'सारे नंबर', name: 'Jagat Pal Sharma', emoji: '🏆' },
+  { category: 'पहले पांच', name: 'Ravindra Singh Shekhawat', emoji: '🎯' },
+  { category: 'ऊपर वाली लाइन', name: 'Manoj', emoji: '🥇' },
+  { category: 'बीच वाली लाइन', name: 'Nitesh Kumar', emoji: '🥇' },
+  { category: 'नीचे वाली लाइन', name: 'Pardeep', emoji: '🥇' },
+  { category: 'सारे नंबर', name: 'Lalit', emoji: '🏆' },
 ];
 
 export function SoloLegends() {
