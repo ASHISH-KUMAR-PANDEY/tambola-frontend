@@ -33,13 +33,12 @@ import { SoloClaimButtons } from '../components/solo/SoloClaimButtons';
 import { SoloGameResults } from '../components/solo/SoloGameResults';
 import { SoloLeaderboard } from '../components/solo/SoloLeaderboard';
 import { HowToPlay } from '../components/solo/HowToPlay';
-import { SoloGameReady } from '../components/solo/SoloGameReady';
 import { InstallWall } from '../components/solo/InstallWall';
 import { Logo } from '../components/Logo';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import { useFlutterBridge } from '../hooks/useFlutterBridge';
 
-type ViewState = 'loading' | 'start' | 'ready' | 'not_configured' | 'playing' | 'paused' | 'completed' | 'sunday';
+type ViewState = 'loading' | 'start' | 'not_configured' | 'playing' | 'paused' | 'completed' | 'sunday';
 
 const numberPulse = keyframes`
   0% { transform: scale(1); }
@@ -268,59 +267,7 @@ export default function SoloGame() {
           } else if (result.isConfigured === false) {
             setViewState('not_configured');
           } else {
-            // Fresh user — auto-start game to get ticket, then show ready screen
-            try {
-              const startResult = await apiService.startSoloGame(1);
-              if (startResult?.game) {
-                const g = startResult.game;
-                initGame({
-                  soloGameId: g.id,
-                  weekId: g.weekId,
-                  gameNumber: 1,
-                  ticket: g.ticket,
-                  numberSequence: g.numberSequence,
-                });
-                setGame1Info(g as SoloGameData);
-                // Store video info
-                if (result.videoId) {
-                  game1VideoRef.current = { videoId: result.videoId, timestamps: result.numberTimestamps || [] };
-                  pendingVideoIdRef.current = result.videoId;
-                  if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
-                }
-                setActiveGameNumber(1);
-                setViewState('ready');
-              } else {
-                setViewState('start');
-              }
-            } catch {
-              // Game may have been created by a concurrent call (React strict mode).
-              // Re-fetch to check.
-              try {
-                const retry = await apiService.getMySoloGame();
-                const rg = retry.game1 || retry.game;
-                if (rg?.ticket) {
-                  initGame({
-                    soloGameId: rg.id,
-                    weekId: rg.weekId,
-                    gameNumber: 1,
-                    ticket: rg.ticket,
-                    numberSequence: rg.numberSequence,
-                  });
-                  setGame1Info(rg as SoloGameData);
-                  if (result.videoId) {
-                    game1VideoRef.current = { videoId: result.videoId, timestamps: result.numberTimestamps || [] };
-                    pendingVideoIdRef.current = result.videoId;
-                    if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
-                  }
-                  setActiveGameNumber(1);
-                  setViewState('ready');
-                } else {
-                  setViewState('start');
-                }
-              } catch {
-                setViewState('start');
-              }
-            }
+            setViewState('start');
           }
           return;
         }
@@ -986,40 +933,6 @@ export default function SoloGame() {
             वापस
           </Button>
         </HStack>
-
-        {/* Ready Screen — ticket visible, tap to play */}
-        {viewState === 'ready' && ticket && (
-          <SoloGameReady
-            ticket={ticket}
-            videoThumbnail={pendingVideoIdRef.current ? `https://img.youtube.com/vi/${pendingVideoIdRef.current}/hqdefault.jpg` : null}
-            onPlay={() => {
-              setVideoLoading(true);
-              setShouldAutoplay(true);
-              if (pendingVideoIdRef.current) {
-                setVideoId(pendingVideoIdRef.current);
-                pendingVideoIdRef.current = null;
-              }
-              setViewState('playing');
-              setPlaying(true);
-              trackEvent({
-                eventName: 'solo_game_started',
-                properties: {
-                  solo_game_id: soloGameId,
-                  game_number: activeGameNumber,
-                  started_from: 'ready_screen',
-                },
-              });
-            }}
-            isFirstTime={!localStorage.getItem('solo-played-before')}
-            playerCount={(() => {
-              const base = Math.max(200, 12);
-              const today = new Date();
-              const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-              return base + (seed * 9301 + 49297) % 150;
-            })()}
-            isLoading={false}
-          />
-        )}
 
         {/* Not Configured */}
         {viewState === 'not_configured' && (
