@@ -33,10 +33,13 @@ import { SoloClaimButtons } from '../components/solo/SoloClaimButtons';
 import { SoloGameResults } from '../components/solo/SoloGameResults';
 import { SoloLeaderboard } from '../components/solo/SoloLeaderboard';
 import { HowToPlay } from '../components/solo/HowToPlay';
+import { SoloGameReady } from '../components/solo/SoloGameReady';
+import { InstallWall } from '../components/solo/InstallWall';
 import { Logo } from '../components/Logo';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
+import { useFlutterBridge } from '../hooks/useFlutterBridge';
 
-type ViewState = 'loading' | 'start' | 'not_configured' | 'playing' | 'paused' | 'completed' | 'sunday';
+type ViewState = 'loading' | 'start' | 'ready' | 'not_configured' | 'playing' | 'paused' | 'completed' | 'sunday';
 
 const numberPulse = keyframes`
   0% { transform: scale(1); }
@@ -78,6 +81,13 @@ export default function SoloGame() {
   // Name collection (same localStorage key as main game)
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState('');
+
+  // Install wall (after first solo claim, web users only — never in Flutter WebView)
+  const { isFlutterApp } = useFlutterBridge();
+  const [showInstallWall, setShowInstallWall] = useState(false);
+  const [installWallCategory, setInstallWallCategory] = useState<WinCategory | null>(null);
+  const [installWallNumbersAtWin, setInstallWallNumbersAtWin] = useState(0);
+  const installWallShownRef = useRef(false);
 
   // Video state
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -258,7 +268,59 @@ export default function SoloGame() {
           } else if (result.isConfigured === false) {
             setViewState('not_configured');
           } else {
-            setViewState('start');
+            // Fresh user — auto-start game to get ticket, then show ready screen
+            try {
+              const startResult = await apiService.startSoloGame(1);
+              if (startResult?.game) {
+                const g = startResult.game;
+                initGame({
+                  soloGameId: g.id,
+                  weekId: g.weekId,
+                  gameNumber: 1,
+                  ticket: g.ticket,
+                  numberSequence: g.numberSequence,
+                });
+                setGame1Info(g as SoloGameData);
+                // Store video info
+                if (result.videoId) {
+                  game1VideoRef.current = { videoId: result.videoId, timestamps: result.numberTimestamps || [] };
+                  pendingVideoIdRef.current = result.videoId;
+                  if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
+                }
+                setActiveGameNumber(1);
+                setViewState('ready');
+              } else {
+                setViewState('start');
+              }
+            } catch {
+              // Game may have been created by a concurrent call (React strict mode).
+              // Re-fetch to check.
+              try {
+                const retry = await apiService.getMySoloGame();
+                const rg = retry.game1 || retry.game;
+                if (rg?.ticket) {
+                  initGame({
+                    soloGameId: rg.id,
+                    weekId: rg.weekId,
+                    gameNumber: 1,
+                    ticket: rg.ticket,
+                    numberSequence: rg.numberSequence,
+                  });
+                  setGame1Info(rg as SoloGameData);
+                  if (result.videoId) {
+                    game1VideoRef.current = { videoId: result.videoId, timestamps: result.numberTimestamps || [] };
+                    pendingVideoIdRef.current = result.videoId;
+                    if (result.numberTimestamps) setNumberTimestamps(result.numberTimestamps);
+                  }
+                  setActiveGameNumber(1);
+                  setViewState('ready');
+                } else {
+                  setViewState('start');
+                }
+              } catch {
+                setViewState('start');
+              }
+            }
           }
           return;
         }
@@ -718,6 +780,10 @@ export default function SoloGame() {
       },
     });
     try {
+      // Snapshot whether this will be the user's FIRST claim in this game,
+      // BEFORE we mutate the store. Used by the install wall trigger below.
+      const wasFirstClaim = useSoloGameStore.getState().claims.size === 0;
+
       const result = await apiService.claimSoloCategory({
         soloGameId,
         category,
@@ -726,6 +792,15 @@ export default function SoloGame() {
       recordClaim(category, result.claim.numberCountAtClaim, result.claim.claimedAt);
       // Re-fetch rankings after successful claim
       fetchCategoryRankings(activeGameNumber);
+
+      // Install wall trigger: first solo claim, web users only (never in Flutter WebView).
+      // Plan: /Users/stageadmin/.claude/plans/merry-hatching-prism.md
+      if (wasFirstClaim && !isFlutterApp && !installWallShownRef.current) {
+        installWallShownRef.current = true;
+        setInstallWallCategory(category);
+        setInstallWallNumbersAtWin(result.claim.numberCountAtClaim);
+        setShowInstallWall(true);
+      }
       trackEvent({
         eventName: 'solo_claim_result',
         properties: {
@@ -911,6 +986,40 @@ export default function SoloGame() {
             वापस
           </Button>
         </HStack>
+
+        {/* Ready Screen — ticket visible, tap to play */}
+        {viewState === 'ready' && ticket && (
+          <SoloGameReady
+            ticket={ticket}
+            videoThumbnail={pendingVideoIdRef.current ? `https://img.youtube.com/vi/${pendingVideoIdRef.current}/hqdefault.jpg` : null}
+            onPlay={() => {
+              setVideoLoading(true);
+              setShouldAutoplay(true);
+              if (pendingVideoIdRef.current) {
+                setVideoId(pendingVideoIdRef.current);
+                pendingVideoIdRef.current = null;
+              }
+              setViewState('playing');
+              setPlaying(true);
+              trackEvent({
+                eventName: 'solo_game_started',
+                properties: {
+                  solo_game_id: soloGameId,
+                  game_number: activeGameNumber,
+                  started_from: 'ready_screen',
+                },
+              });
+            }}
+            isFirstTime={!localStorage.getItem('solo-played-before')}
+            playerCount={(() => {
+              const base = Math.max(200, 12);
+              const today = new Date();
+              const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+              return base + (seed * 9301 + 49297) % 150;
+            })()}
+            isLoading={false}
+          />
+        )}
 
         {/* Not Configured */}
         {viewState === 'not_configured' && (
@@ -1559,6 +1668,17 @@ export default function SoloGame() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Install wall — fires after the user's first claim on the open web.
+          Suppressed in the Stage Flutter app's WebView (they already have the app). */}
+      {installWallCategory && (
+        <InstallWall
+          isOpen={showInstallWall}
+          category={installWallCategory}
+          soloGameId={soloGameId}
+          numbersCalledAtWin={installWallNumbersAtWin}
+        />
+      )}
     </Box>
   );
 }
