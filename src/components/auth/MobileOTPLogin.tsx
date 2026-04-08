@@ -7,8 +7,18 @@ import { apiService } from '../../services/api.service';
 import { useAuthStore } from '../../stores/authStore';
 import { wsService } from '../../services/websocket.service';
 import { useTambolaTracking } from '../../hooks/useTambolaTracking';
+import { PENDING_MERGE_ANON_ID_KEY, isAnonymousUser } from '../../utils/anonymousUser';
 
-export function MobileOTPLogin() {
+interface MobileOTPLoginProps {
+  /**
+   * Optional path to navigate to after successful login. Used by the
+   * LoginWall to send users back to /soloGame instead of the default /lobby.
+   * Must be a path starting with `/`.
+   */
+  returnTo?: string;
+}
+
+export function MobileOTPLogin({ returnTo }: MobileOTPLoginProps = {}) {
   const [step, setStep] = useState<'SEND_OTP' | 'VERIFY_OTP'>('SEND_OTP');
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpId, setOtpId] = useState('');
@@ -62,7 +72,9 @@ export function MobileOTPLogin() {
       });
 
       if (response.success) {
-        // Save userId to localStorage
+        // Save userId to localStorage — this overwrites any anon_ ID that
+        // was there before, so subsequent solo API calls now use the real
+        // tambola userId.
         localStorage.setItem('app_user_id', response.userId);
 
         // Save userName if available (use localStorage for persistence)
@@ -89,8 +101,56 @@ export function MobileOTPLogin() {
         // Connect WebSocket
         wsService.connect(response.userId);
 
-        // Redirect to lobby
-        navigate('/lobby');
+        // 3-stage funnel: if the user came here from the LoginWall, they have
+        // a pending anon ID stashed in localStorage. Call the merge endpoint
+        // to re-key their SoloGame rows before navigating back to the game,
+        // so the backend lookup finds their previous progress.
+        // Plan: /Users/stageadmin/.claude/plans/merry-hatching-prism.md
+        const pendingAnonId = localStorage.getItem(PENDING_MERGE_ANON_ID_KEY);
+        if (
+          pendingAnonId &&
+          isAnonymousUser(pendingAnonId) &&
+          pendingAnonId !== response.userId
+        ) {
+          trackEvent({
+            eventName: 'solo_anonymous_merge_attempted',
+            properties: {
+              anon_id: pendingAnonId,
+              real_user_id: response.userId,
+            },
+          });
+          try {
+            const mergeResult = await apiService.mergeAnonymousSoloGames(pendingAnonId);
+            trackEvent({
+              eventName: 'solo_anonymous_merge_succeeded',
+              properties: {
+                anon_id: pendingAnonId,
+                real_user_id: response.userId,
+                merged_games: mergeResult.mergedGames,
+                dropped_games: mergeResult.droppedGames,
+              },
+            });
+          } catch (mergeErr: any) {
+            console.error('[MobileOTPLogin] Anonymous merge failed:', mergeErr);
+            trackEvent({
+              eventName: 'solo_anonymous_merge_failed',
+              properties: {
+                anon_id: pendingAnonId,
+                real_user_id: response.userId,
+                error: mergeErr?.message || 'unknown',
+              },
+            });
+            // Non-fatal — continue to navigate. The user sees a fresh game
+            // instead of their previous progress, which is acceptable
+            // compared to blocking the login entirely.
+          } finally {
+            localStorage.removeItem(PENDING_MERGE_ANON_ID_KEY);
+          }
+        }
+
+        // Navigate to returnTo if provided (e.g. /soloGame from the
+        // LoginWall), otherwise default to the lobby.
+        navigate(returnTo || '/lobby');
       }
     } catch (err: any) {
       console.error('Verify OTP error:', err);

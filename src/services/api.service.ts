@@ -807,6 +807,30 @@ class ApiService {
     });
   }
 
+  /**
+   * Merge all SoloGame rows owned by an anonymous user into the current
+   * (real) user's account. Called by MobileOTPLogin after successful OTP
+   * verification when the user came through the 3-stage funnel's LoginWall.
+   *
+   * The query-string userId is automatically populated by getSoloQuery()
+   * from localStorage.app_user_id, which by the time this is called has
+   * already been updated to the real tambola userId from the verifyOTP
+   * response.
+   *
+   * Plan: /Users/stageadmin/.claude/plans/merry-hatching-prism.md
+   */
+  async mergeAnonymousSoloGames(
+    anonymousUserId: string
+  ): Promise<{ mergedGames: number; droppedGames: number }> {
+    return this.request<{ mergedGames: number; droppedGames: number }>(
+      `/api/v1/solo/merge-anonymous${this.getSoloQuery()}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ anonymousUserId }),
+      }
+    );
+  }
+
   // ========== Solo Week Configuration (Organizer) ==========
 
   async configureSoloWeek(data: {

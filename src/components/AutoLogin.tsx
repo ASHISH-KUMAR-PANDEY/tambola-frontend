@@ -6,6 +6,8 @@ import { wsService } from '../services/websocket.service';
 import { apiService } from '../services/api.service';
 import { useAuthStore } from '../stores/authStore';
 import { useFlutterBridge } from '../hooks/useFlutterBridge';
+import { getOrCreateAnonymousUserId } from '../utils/anonymousUser';
+import { useTambolaTracking } from '../hooks/useTambolaTracking';
 
 const DEBUG_API_URL = 'https://api.tambola.me';
 
@@ -37,6 +39,7 @@ export const AutoLogin = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { setUser, loadUser } = useAuthStore();
+  const { trackEvent } = useTambolaTracking();
   const [progress, setProgress] = useState(10);
   const hasStarted = useRef(false);
 
@@ -134,11 +137,42 @@ export const AutoLogin = () => {
             }
           }
 
-          // Show tambola's own OTP login screen (stays on tambola domain).
-          // Tambola backend proxies Stage's OTP API server-to-server, so the
-          // user never sees a stage.in URL during the entire login flow.
-          logToBackend('REDIRECT_TO_TAMBOLA_LOGIN', { reason: 'no_valid_session' });
-          navigate('/login', { replace: true });
+          // 3-stage funnel: fresh web visitor with no auth gets dropped into
+          // the lobby as an anonymous user. They browse the lobby normally,
+          // click the Solo Tambola CTA, play, and hit the LoginWall after
+          // their first category claim. Login converts them to a real
+          // tambola user and the merge endpoint re-keys their SoloGame rows.
+          // Plan: /Users/stageadmin/.claude/plans/merry-hatching-prism.md
+          const anonId = getOrCreateAnonymousUserId();
+          localStorage.setItem('app_user_id', anonId);
+          setUser({
+            id: anonId,
+            email: '',
+            name: 'Player',
+          });
+
+          // Connect the WebSocket as we do for any logged-in user — anon
+          // users can still receive Sunday game events, lobby events, etc.
+          try {
+            wsService.connect(anonId);
+          } catch (e) {
+            console.warn('[AutoLogin] WebSocket connect failed for anon user:', e);
+          }
+
+          // Fire the one-time tracking event so we can attribute conversions
+          // in the funnel later.
+          trackEvent({
+            eventName: 'solo_anonymous_session_started',
+            properties: {
+              anon_id: anonId,
+              entry_path: window.location.pathname,
+              referrer: document.referrer || null,
+            },
+          });
+
+          logToBackend('ANONYMOUS_SESSION_STARTED', { anonId });
+          setProgress(100);
+          navigate('/lobby', { replace: true });
           return;
         }
 

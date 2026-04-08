@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -18,8 +18,18 @@ import { EmailPasswordLogin } from '../components/auth/EmailPasswordLogin';
 
 export default function Login() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
   const [tabIndex, setTabIndex] = useState(0); // 0 = Mobile (default), 1 = Email
+
+  // Optional returnTo query param — used by the LoginWall so the user lands
+  // back on /soloGame after OTP verification instead of the default /lobby.
+  // Only accept paths that start with / to prevent open-redirect abuse.
+  const rawReturnTo = searchParams.get('returnTo');
+  const returnTo =
+    rawReturnTo && rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')
+      ? rawReturnTo
+      : undefined;
 
   const inactivityMessage = (location.state as any)?.message;
 
@@ -83,11 +93,11 @@ export default function Login() {
 
             <TabPanels>
               <TabPanel px={0}>
-                <MobileOTPLogin />
+                <MobileOTPLogin returnTo={returnTo} />
               </TabPanel>
 
               <TabPanel px={0}>
-                <EmailPasswordLogin />
+                <EmailPasswordLogin returnTo={returnTo} />
               </TabPanel>
             </TabPanels>
           </Tabs>

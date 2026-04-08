@@ -12,7 +12,15 @@ import {
 } from '@chakra-ui/react';
 import { useAuthStore } from '../../stores/authStore';
 
-export function EmailPasswordLogin() {
+interface EmailPasswordLoginProps {
+  /**
+   * Optional path to navigate to after successful login. Honored by the
+   * LoginWall via the parent Login screen. Must start with `/`.
+   */
+  returnTo?: string;
+}
+
+export function EmailPasswordLogin({ returnTo }: EmailPasswordLoginProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoading, error, clearError } = useAuthStore();
@@ -22,7 +30,7 @@ export function EmailPasswordLogin() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const from = (location.state as any)?.from?.pathname || '/lobby';
+  const from = returnTo || (location.state as any)?.from?.pathname || '/lobby';
 
   const validateEmail = (email: string): boolean => {
     if (!email) {

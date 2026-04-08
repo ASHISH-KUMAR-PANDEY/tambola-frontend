@@ -34,9 +34,11 @@ import { SoloGameResults } from '../components/solo/SoloGameResults';
 import { SoloLeaderboard } from '../components/solo/SoloLeaderboard';
 import { HowToPlay } from '../components/solo/HowToPlay';
 import { InstallWall } from '../components/solo/InstallWall';
+import { LoginWall } from '../components/solo/LoginWall';
 import { Logo } from '../components/Logo';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import { useFlutterBridge } from '../hooks/useFlutterBridge';
+import { isAnonymousUser } from '../utils/anonymousUser';
 
 type ViewState = 'loading' | 'start' | 'not_configured' | 'playing' | 'paused' | 'completed' | 'sunday';
 
@@ -81,8 +83,20 @@ export default function SoloGame() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState('');
 
-  // Install wall (after first solo claim, web users only — never in Flutter WebView)
+  // 3-stage funnel walls — web users only, never in Flutter WebView.
+  // LoginWall fires when an anonymous user wins their first category.
+  // InstallWall fires when a logged-in user wins their first category
+  // in the current component mount (which is the SECOND claim overall
+  // for users who came through the LoginWall path, or the FIRST claim
+  // for users who were already logged in when they entered the game).
+  // Plan: /Users/stageadmin/.claude/plans/merry-hatching-prism.md
   const { isFlutterApp } = useFlutterBridge();
+  const [showLoginWall, setShowLoginWall] = useState(false);
+  const [loginWallCategory, setLoginWallCategory] = useState<WinCategory | null>(null);
+  const [loginWallNumbersAtWin, setLoginWallNumbersAtWin] = useState(0);
+  const [loginWallAnonId, setLoginWallAnonId] = useState('');
+  const loginWallShownRef = useRef(false);
+
   const [showInstallWall, setShowInstallWall] = useState(false);
   const [installWallCategory, setInstallWallCategory] = useState<WinCategory | null>(null);
   const [installWallNumbersAtWin, setInstallWallNumbersAtWin] = useState(0);
@@ -727,10 +741,6 @@ export default function SoloGame() {
       },
     });
     try {
-      // Snapshot whether this will be the user's FIRST claim in this game,
-      // BEFORE we mutate the store. Used by the install wall trigger below.
-      const wasFirstClaim = useSoloGameStore.getState().claims.size === 0;
-
       const result = await apiService.claimSoloCategory({
         soloGameId,
         category,
@@ -740,13 +750,31 @@ export default function SoloGame() {
       // Re-fetch rankings after successful claim
       fetchCategoryRankings(activeGameNumber);
 
-      // Install wall trigger: first solo claim, web users only (never in Flutter WebView).
+      // 3-stage funnel wall triggers — web users only.
       // Plan: /Users/stageadmin/.claude/plans/merry-hatching-prism.md
-      if (wasFirstClaim && !isFlutterApp && !installWallShownRef.current) {
-        installWallShownRef.current = true;
-        setInstallWallCategory(category);
-        setInstallWallNumbersAtWin(result.claim.numberCountAtClaim);
-        setShowInstallWall(true);
+      if (!isFlutterApp) {
+        const currentUserId = useAuthStore.getState().user?.id ?? '';
+        const isAnon = isAnonymousUser(currentUserId);
+
+        if (isAnon && !loginWallShownRef.current) {
+          // Anonymous user's first win → LoginWall (hard gate to convert
+          // them to a real tambola user before they can keep playing).
+          loginWallShownRef.current = true;
+          setLoginWallCategory(category);
+          setLoginWallNumbersAtWin(result.claim.numberCountAtClaim);
+          setLoginWallAnonId(currentUserId);
+          setShowLoginWall(true);
+        } else if (!isAnon && !installWallShownRef.current) {
+          // Logged-in user's first win in this component mount → InstallWall
+          // (existing behavior). For users who came through the LoginWall
+          // path this is naturally their second overall claim; for users
+          // who were already logged in when they entered the game this is
+          // their first claim.
+          installWallShownRef.current = true;
+          setInstallWallCategory(category);
+          setInstallWallNumbersAtWin(result.claim.numberCountAtClaim);
+          setShowInstallWall(true);
+        }
       }
       trackEvent({
         eventName: 'solo_claim_result',
@@ -1582,8 +1610,22 @@ export default function SoloGame() {
         </ModalContent>
       </Modal>
 
-      {/* Install wall — fires after the user's first claim on the open web.
-          Suppressed in the Stage Flutter app's WebView (they already have the app). */}
+      {/* Login wall — fires after the anonymous user's first claim on the
+          open web. Navigates to /login?returnTo=/soloGame on tap and stashes
+          the anon ID in localStorage for the post-login merge. */}
+      {loginWallCategory && (
+        <LoginWall
+          isOpen={showLoginWall}
+          category={loginWallCategory}
+          soloGameId={soloGameId}
+          numbersCalledAtWin={loginWallNumbersAtWin}
+          anonId={loginWallAnonId}
+        />
+      )}
+
+      {/* Install wall — fires after a logged-in user's first claim on the
+          open web. Suppressed in the Stage Flutter app's WebView (they
+          already have the app). */}
       {installWallCategory && (
         <InstallWall
           isOpen={showInstallWall}
