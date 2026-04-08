@@ -134,10 +134,11 @@ export const AutoLogin = () => {
             }
           }
 
-          // Redirect to Stage login
-          const stageLoginUrl = 'https://stage.in/hi/login';
-          const returnUrl = encodeURIComponent(window.location.href);
-          window.location.href = `${stageLoginUrl}?isTambolaFlow=true&returnUrl=${returnUrl}`;
+          // Show tambola's own OTP login screen (stays on tambola domain).
+          // Tambola backend proxies Stage's OTP API server-to-server, so the
+          // user never sees a stage.in URL during the entire login flow.
+          logToBackend('REDIRECT_TO_TAMBOLA_LOGIN', { reason: 'no_valid_session' });
+          navigate('/login', { replace: true });
           return;
         }
 
