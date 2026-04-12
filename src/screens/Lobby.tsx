@@ -1011,8 +1011,8 @@ export default function Lobby() {
                       </HStack>
                     </VStack>
 
-                    {/* Live video preview — only when game is ACTIVE and live stream exists */}
-                    {game.status === 'ACTIVE' && currentLiveStream && (
+                    {/* Video preview — live stream for both LOBBY and ACTIVE games */}
+                    {(game.status === 'ACTIVE' || game.status === 'LOBBY') && currentLiveStream && (
                       <Box px={4} pb={3}>
                         <Box borderRadius="10px" overflow="hidden" border="2px solid" borderColor="#e5a00d">
                           <AspectRatio ratio={16 / 9}>
