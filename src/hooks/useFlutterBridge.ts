@@ -182,9 +182,15 @@ export function useFlutterBridge() {
         return true;
       }
 
-      // Pattern 3: Check user agent for WebView indicators
+      // Pattern 3: Check user agent for Flutter-specific indicators
+      // NOTE: Do NOT check for 'wv' here — 'wv' matches ANY Android WebView,
+      // including Facebook/Instagram in-app browsers. This was causing 96.7%
+      // of anonymous funnel traffic (from FB ads) to be falsely detected as
+      // Flutter app users, suppressing LoginWall and InstallWall entirely.
+      // Real Flutter WebView users are reliably detected by Patterns 1 & 2
+      // (FlutterChannel / Flutter.postMessage).
       const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes('flutter') || ua.includes('dart') || ua.includes('wv')) {
+      if (ua.includes('flutter') || ua.includes('dart')) {
         logToBackend('detected_via_userAgent', { ua });
         setIsFlutterApp(true);
         return true;
