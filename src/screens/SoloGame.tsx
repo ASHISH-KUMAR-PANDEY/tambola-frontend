@@ -1213,7 +1213,7 @@ export default function SoloGame() {
               आज रिज़ल्ट डे है!
             </Heading>
             <Text fontSize="lg" color="white" textAlign="center" px={4}>
-              विजेताओं की घोषणा आने वाले रविवार को की जाएगी
+              विजेताओं की घोषणा रविवार को की जाएगी
             </Text>
             <Button
               colorScheme="brand"
