@@ -31,7 +31,6 @@ import { SoloTicket } from '../components/solo/SoloTicket';
 import { SoloNumberBoard } from '../components/solo/SoloNumberBoard';
 import { SoloClaimButtons } from '../components/solo/SoloClaimButtons';
 import { SoloGameResults } from '../components/solo/SoloGameResults';
-import { SoloLeaderboard } from '../components/solo/SoloLeaderboard';
 import { HowToPlay } from '../components/solo/HowToPlay';
 import { InstallWall } from '../components/solo/InstallWall';
 import { LoginWall } from '../components/solo/LoginWall';
@@ -1213,7 +1212,9 @@ export default function SoloGame() {
             <Heading size="lg" color="highlight.400" textAlign="center">
               आज रिज़ल्ट डे है!
             </Heading>
-            <SoloLeaderboard />
+            <Text fontSize="lg" color="white" textAlign="center" px={4}>
+              विजेताओं की घोषणा आने वाले रविवार को की जाएगी
+            </Text>
             <Button
               colorScheme="brand"
               variant="outline"
