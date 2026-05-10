@@ -811,6 +811,17 @@ export default function Lobby() {
           </HStack>
         )}
 
+        {/* Registration Card pinned at top of "All" tab */}
+        {activeTab === 'all' && currentRegistrationCard && (
+          <Box w="100%" mb={{ base: 4, md: 6 }}>
+            <RegistrationCard
+              card={currentRegistrationCard}
+              externalReminderSet={registrationReminderSet}
+              onReminderChange={setRegistrationReminderSet}
+            />
+          </Box>
+        )}
+
         {/* Games Section */}
         <Box w="100%">
           {/* Only show heading when there are games */}
@@ -829,7 +840,7 @@ export default function Lobby() {
                 <SoloLegends />
               )}
 
-              {(activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
+              {activeTab === 'sunday' && currentRegistrationCard && (
                 <RegistrationCard
                   card={currentRegistrationCard}
                   externalReminderSet={registrationReminderSet}
@@ -1116,8 +1127,8 @@ export default function Lobby() {
           )}
         </Box>
 
-        {/* Registration Card - shown when games exist */}
-        {games.length > 0 && (activeTab === 'all' || activeTab === 'sunday') && currentRegistrationCard && (
+        {/* Registration Card - shown when games exist (Sunday tab only; All tab pins it at top) */}
+        {games.length > 0 && activeTab === 'sunday' && currentRegistrationCard && (
           <RegistrationCard
             card={currentRegistrationCard}
             externalReminderSet={registrationReminderSet}
