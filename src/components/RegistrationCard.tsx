@@ -47,6 +47,19 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
 
   const pad = (n: number) => n.toString().padStart(2, '0');
 
+  // Format the target date/time in Hindi to match the card design.
+  // Example: "रविवार 22 मार्च, दोपहर 2:00 बजे"
+  const formatHindiDate = (iso: string): string => {
+    const d = new Date(iso);
+    const days = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+    const months = ['जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+    const h24 = d.getHours();
+    const mm = pad(d.getMinutes());
+    const period = h24 < 12 ? 'सुबह' : h24 < 16 ? 'दोपहर' : h24 < 20 ? 'शाम' : 'रात';
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}, ${period} ${h12}:${mm} बजे`;
+  };
+
   return (
     <Box
       w="100%"
@@ -63,6 +76,30 @@ export function RegistrationCard({ card, externalReminderSet, onReminderChange }
         borderRadius="12px"
         display="block"
       />
+
+      {/* Dynamic date overlay — covers the static date baked in the SVG cream band */}
+      {/* SVG is 360x301. Cream band date area: top ~y=14 to y=45 */}
+      <Box
+        position="absolute"
+        top="3%"
+        left="5%"
+        right="5%"
+        h="11%"
+        bg="#FAE6C8"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Text
+          fontSize={{ base: 'sm', md: 'md' }}
+          fontWeight="700"
+          color="#5A3F1E"
+          textAlign="center"
+          noOfLines={1}
+        >
+          📅 {formatHindiDate(card.targetDateTime)}
+        </Text>
+      </Box>
 
       {/* Dynamic countdown overlay — covers the static countdown baked in the SVG */}
       {/* SVG is 360x301. Countdown area: right of orange button, ~x=218 to x=350, y=229 to y=283 */}
